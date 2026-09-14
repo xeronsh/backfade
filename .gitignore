@@ -7,6 +7,7 @@
 # builds / deps
 node_modules/
 dist/
+web/dist/
 api/.venv/
 contracts/out/
 contracts/cache/
@@ -15,5 +16,5 @@ __pycache__/
 *.pyc
 .uv-cache/
 
-# deploy artifacts (contain local chain addresses only, but keep repo clean)
+# deploy artifacts
 contracts/deployments/
