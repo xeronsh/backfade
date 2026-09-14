@@ -1,0 +1,9 @@
+{
+  "name": "backfade",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "npm run build --prefix web",
+    "test": "npm run build --prefix web && forge test --root contracts"
+  }
+}
