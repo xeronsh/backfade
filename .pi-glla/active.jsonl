@@ -84,3 +84,4 @@
 {"type":"terminal_approval_render_persisted","value":{"goalId":"20260914065800-fmqoho","delivered":false,"lines":25},"at":"2026-09-14T08:23:36.883Z"}
 {"type":"terminal_completion_notice_sent","value":{"goalId":"20260914065800-fmqoho","payloadChars":1899},"at":"2026-09-14T08:23:36.889Z"}
 {"type":"terminal_approval_render_replayed","value":{"goalId":"20260914065800-fmqoho","createdAt":"2026-09-14T08:23:36.882Z"},"at":"2026-09-14T08:23:36.889Z"}
+{"type":"context_usage_sample","value":{"goalId":null,"provider":"workbuddy","model":"glm-5.3-flash","providerUsage":null,"contextUsage":{"tokens":206401,"contextWindow":1000000,"percent":20.6401}},"at":"2026-09-14T09:21:02.009Z"}
