@@ -1,0 +1,19 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.key
+
+# builds / deps
+node_modules/
+dist/
+api/.venv/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+__pycache__/
+*.pyc
+.uv-cache/
+
+# deploy artifacts (contain local chain addresses only, but keep repo clean)
+contracts/deployments/

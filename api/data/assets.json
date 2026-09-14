@@ -1,0 +1,14 @@
+{
+  "assets": [
+    { "symbol": "GME",  "name": "GameStop",        "feed": "0x1111111111111111111111111111111111111111", "enabled": true },
+    { "symbol": "AMC",  "name": "AMC Entertainment", "feed": "0x2222222222222222222222222222222222222222", "enabled": true },
+    { "symbol": "HOOD", "name": "Robinhood",        "feed": "0x3333333333333333333333333333333333333333", "enabled": true },
+    { "symbol": "COIN", "name": "Coinbase",         "feed": "0x4444444444444444444444444444444444444444", "enabled": true },
+    { "symbol": "NVDA", "name": "NVIDIA",           "feed": "0x5555555555555555555555555555555555555555", "enabled": true },
+    { "symbol": "PLTR", "name": "Palantir",         "feed": "0x6666666666666666666666666666666666666666", "enabled": true },
+    { "symbol": "CEG",  "name": "Constellation Energy", "feed": "0x7777777777777777777777777777777777777777", "enabled": true },
+    { "symbol": "VST",  "name": "Vistra",           "feed": "0x8888888888888888888888888888888888888888", "enabled": true },
+    { "symbol": "GEV",  "name": "GE Vernova",       "feed": "0x9999999999999999999999999999999999999999", "enabled": true },
+    { "symbol": "SPY",  "name": "S&P 500 ETF",      "feed": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "enabled": true }
+  ]
+}

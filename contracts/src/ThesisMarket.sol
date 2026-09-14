@@ -1,0 +1,275 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
+import {OracleMath} from "./OracleMath.sol";
+
+/// @title ThesisMarket
+/// @notice One bonded, priced, machine-verifiable thesis. BACK or FADE, oracle-resolved.
+/// @dev Immutable spec. No admin. No upgradeability. Chain is the database.
+contract ThesisMarket is ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    enum Side {
+        Back,
+        Fade
+    }
+
+    enum Outcome {
+        Unresolved,
+        Back,
+        Fade,
+        Cancelled
+    }
+
+    struct BasketAsset {
+        address feed;
+        uint16 weightBps;
+    }
+
+    struct MarketParams {
+        string narrative;
+        BasketAsset[] basket;
+        address benchmarkFeed;
+        int32 hurdleBps;
+        uint64 bettingEndsAt;
+        uint64 resolvesAt;
+        address collateral;
+    }
+
+    uint256 public constant MAX_SETTLEMENT_WINDOW = 30 minutes;
+    uint256 public constant HURDLE_MIN_BPS = 100;
+    uint256 public constant HURDLE_MAX_BPS = 5_000;
+    uint256 public constant BASKET_MIN = 1;
+    uint256 public constant BASKET_MAX = 5;
+    uint256 public constant WEIGHTS_TOTAL_BPS = 10_000;
+    uint256 public constant NARRATIVE_MAX_BYTES = 280;
+
+    string public narrative;
+    BasketAsset[] public basket;
+    address public immutable benchmarkFeed;
+    int32 public immutable hurdleBps;
+    uint64 public immutable bettingEndsAt;
+    uint64 public immutable resolvesAt;
+    IERC20 public immutable collateral;
+
+    address public immutable creator;
+    uint256 public creatorBond;
+
+    uint256 public backPool;
+    uint256 public fadePool;
+    mapping(address => uint256) public backStake;
+    mapping(address => uint256) public fadeStake;
+
+    uint256[] public startPrices; // normalized to 18 decimals
+    Outcome public outcome;
+    int256 public narrativeAlphaBps;
+    uint256 public totalClaimed;
+    bool public bondCaptured;
+
+    event MarketCreated(
+        address indexed creator,
+        string narrative,
+        uint256 creatorBond,
+        uint64 bettingEndsAt,
+        uint64 resolvesAt
+    );
+    event PositionTaken(address indexed user, Side side, uint256 amount, uint256 backPool, uint256 fadePool);
+    event MarketResolved(Outcome outcome, int256 narrativeAlphaBps);
+    event MarketCancelled();
+    event Claimed(address indexed user, uint256 payout);
+
+    error BettingClosed();
+    error BettingStillOpen();
+    error BeforeResolveTime();
+    error SettlementWindowPassed();
+    error AlreadyResolved();
+    error NotResolved();
+    error NothingToClaim();
+    error NotCancelled();
+    error NoPosition();
+    error InvalidParams(string reason);
+    error StartPriceFailed();
+
+    constructor(MarketParams memory params, address marketCreator, uint256 bondAmount) {
+        if (bytes(params.narrative).length == 0 || bytes(params.narrative).length > NARRATIVE_MAX_BYTES) {
+            revert InvalidParams("narrative length");
+        }
+        uint256 basketLen = params.basket.length;
+        if (basketLen < BASKET_MIN || basketLen > BASKET_MAX) revert InvalidParams("basket size");
+        uint256 weightSum;
+        for (uint256 i = 0; i < basketLen; i++) {
+            if (params.basket[i].feed == address(0)) revert InvalidParams("zero feed");
+            for (uint256 j = 0; j < i; j++) {
+                if (params.basket[i].feed == params.basket[j].feed) revert InvalidParams("duplicate feed");
+            }
+            if (params.basket[i].feed == params.benchmarkFeed) revert InvalidParams("feed is benchmark");
+            weightSum += params.basket[i].weightBps;
+            basket.push(params.basket[i]);
+        }
+        if (weightSum != WEIGHTS_TOTAL_BPS) revert InvalidParams("weights");
+        if (params.benchmarkFeed == address(0)) revert InvalidParams("benchmark feed");
+        if (params.collateral == address(0)) revert InvalidParams("collateral");
+        if (params.hurdleBps < int32(int256(HURDLE_MIN_BPS)) || params.hurdleBps > int32(int256(HURDLE_MAX_BPS))) {
+            revert InvalidParams("hurdle");
+        }
+        if (params.bettingEndsAt >= params.resolvesAt) revert InvalidParams("betting end >= resolve");
+        if (params.resolvesAt <= block.timestamp) revert InvalidParams("resolve in past");
+
+        narrative = params.narrative;
+        benchmarkFeed = params.benchmarkFeed;
+        hurdleBps = params.hurdleBps;
+        bettingEndsAt = params.bettingEndsAt;
+        resolvesAt = params.resolvesAt;
+        collateral = IERC20(params.collateral);
+        creator = marketCreator;
+
+        _captureStartPrices();
+
+        // creator bond: pulled from creator (already delivered to this contract by the
+        // factory), counted as BACK stake, locked until resolution
+        if (bondAmount == 0) revert InvalidParams("bond zero");
+        creatorBond = bondAmount;
+        bondCaptured = true;
+        backStake[marketCreator] = bondAmount;
+        backPool = bondAmount;
+
+        emit MarketCreated(marketCreator, params.narrative, bondAmount, params.bettingEndsAt, params.resolvesAt);
+    }
+
+    /// @notice Pull the creator bond out of the creator and count it as BACK stake.
+    /// @dev For direct market creation without the factory; the factory path funds
+    ///      the bond via the constructor.
+    function captureBond(uint256 amount) external {
+        if (msg.sender != creator) revert InvalidParams("not creator");
+        if (bondCaptured) revert InvalidParams("bond captured");
+        if (amount == 0) revert InvalidParams("bond zero");
+        bondCaptured = true;
+        backStake[creator] += amount;
+        backPool += amount;
+        collateral.safeTransferFrom(creator, address(this), amount);
+        emit PositionTaken(creator, Side.Back, amount, backPool, fadePool);
+    }
+
+    function back(uint256 amount) external nonReentrant {
+        _take(Side.Back, amount);
+    }
+
+    function fade(uint256 amount) external nonReentrant {
+        _take(Side.Fade, amount);
+    }
+
+    function _take(Side side, uint256 amount) private {
+        if (amount == 0) revert InvalidParams("zero amount");
+        if (block.timestamp >= bettingEndsAt) revert BettingClosed();
+        collateral.safeTransferFrom(msg.sender, address(this), amount);
+        if (side == Side.Back) {
+            backStake[msg.sender] += amount;
+            backPool += amount;
+        } else {
+            fadeStake[msg.sender] += amount;
+            fadePool += amount;
+        }
+        emit PositionTaken(msg.sender, side, amount, backPool, fadePool);
+    }
+
+    /// @notice Deterministic settlement from oracle prices. Permissionless, math decides.
+    function resolve() external {
+        if (outcome != Outcome.Unresolved) revert AlreadyResolved();
+        if (block.timestamp < resolvesAt) revert BeforeResolveTime();
+        if (block.timestamp > resolvesAt + MAX_SETTLEMENT_WINDOW) revert SettlementWindowPassed();
+
+        uint256 basketLen = basket.length;
+        int256[] memory returnsBps = new int256[](basketLen);
+        uint16[] memory weights = new uint16[](basketLen);
+        for (uint256 i = 0; i < basketLen; i++) {
+            (uint256 startP, ) = _startPrice(i);
+            (uint256 endP, ) = OracleMath.latestPrice(AggregatorV3Interface(basket[i].feed), MAX_SETTLEMENT_WINDOW);
+            returnsBps[i] = OracleMath.returnBps(startP, endP);
+            weights[i] = basket[i].weightBps;
+        }
+        (uint256 startB, ) = _startPrice(basketLen); // benchmark stored last
+        (uint256 endB, ) = OracleMath.latestPrice(AggregatorV3Interface(benchmarkFeed), MAX_SETTLEMENT_WINDOW);
+        int256 benchmarkReturnBps = OracleMath.returnBps(startB, endB);
+
+        int256 basketReturnBps = OracleMath.weightedReturnBps(returnsBps, weights);
+        int256 alpha = basketReturnBps - benchmarkReturnBps;
+        narrativeAlphaBps = alpha;
+
+        outcome = alpha >= hurdleBps ? Outcome.Back : Outcome.Fade;
+        emit MarketResolved(outcome, alpha);
+    }
+
+    /// @notice Fallback if no safe settlement was possible within the window. Permissionless.
+    function cancelAfterDeadline() external {
+        if (outcome != Outcome.Unresolved) revert AlreadyResolved();
+        if (block.timestamp <= resolvesAt + MAX_SETTLEMENT_WINDOW) revert NotCancelled();
+        outcome = Outcome.Cancelled;
+        emit MarketCancelled();
+    }
+
+    /// @notice Winners claim pro-rata of the opposite pool. Losses forfeit.
+    function claim() external nonReentrant {
+        Outcome o = outcome;
+        if (o == Outcome.Unresolved) revert NotResolved();
+        if (o == Outcome.Cancelled) revert NotCancelled();
+
+        uint256 stake = o == Outcome.Back ? backStake[msg.sender] : fadeStake[msg.sender];
+        if (stake == 0) revert NothingToClaim();
+
+        uint256 losingPool = o == Outcome.Back ? fadePool : backPool;
+        uint256 totalPool = backPool + fadePool;
+        // creator bond is inside backStake/backPool; nobody else can claim it
+        uint256 payout = stake + (stake * losingPool) / totalPool;
+
+        backStake[msg.sender] = 0;
+        fadeStake[msg.sender] = 0;
+        totalClaimed += payout;
+        collateral.safeTransfer(msg.sender, payout);
+        emit Claimed(msg.sender, payout);
+    }
+
+    /// @notice Refund principal after cancellation.
+    function refund() external nonReentrant {
+        if (outcome != Outcome.Cancelled) revert NotCancelled();
+        uint256 amount = backStake[msg.sender] + fadeStake[msg.sender];
+        if (amount == 0) revert NoPosition();
+        backStake[msg.sender] = 0;
+        fadeStake[msg.sender] = 0;
+        collateral.safeTransfer(msg.sender, amount);
+        emit Claimed(msg.sender, amount);
+    }
+
+    // --- views for the frontend ---
+
+    function basketLength() external view returns (uint256) {
+        return basket.length;
+    }
+
+    function basketAsset(uint256 i) external view returns (address feed, uint16 weightBps) {
+        BasketAsset memory a = basket[i];
+        return (a.feed, a.weightBps);
+    }
+
+    function backPct() external view returns (uint256) {
+        uint256 total = backPool + fadePool;
+        if (total == 0) return 0;
+        return (backPool * 10_000) / total;
+    }
+
+    function _captureStartPrices() private {
+        uint256 basketLen = basket.length;
+        for (uint256 i = 0; i < basketLen; i++) {
+            (uint256 p, ) = OracleMath.latestPrice(AggregatorV3Interface(basket[i].feed), type(uint256).max);
+            startPrices.push(p);
+        }
+        (uint256 pb, ) = OracleMath.latestPrice(AggregatorV3Interface(benchmarkFeed), type(uint256).max);
+        startPrices.push(pb);
+    }
+
+    function _startPrice(uint256 i) private view returns (uint256, uint8) {
+        return (startPrices[i], 18);
+    }
+}
