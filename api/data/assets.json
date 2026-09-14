@@ -1,14 +1,13 @@
-{
-  "assets": [
-    { "symbol": "GME",  "name": "GameStop",        "feed": "0x1111111111111111111111111111111111111111", "enabled": true },
-    { "symbol": "AMC",  "name": "AMC Entertainment", "feed": "0x2222222222222222222222222222222222222222", "enabled": true },
-    { "symbol": "HOOD", "name": "Robinhood",        "feed": "0x3333333333333333333333333333333333333333", "enabled": true },
-    { "symbol": "COIN", "name": "Coinbase",         "feed": "0x4444444444444444444444444444444444444444", "enabled": true },
-    { "symbol": "NVDA", "name": "NVIDIA",           "feed": "0x5555555555555555555555555555555555555555", "enabled": true },
-    { "symbol": "PLTR", "name": "Palantir",         "feed": "0x6666666666666666666666666666666666666666", "enabled": true },
-    { "symbol": "CEG",  "name": "Constellation Energy", "feed": "0x7777777777777777777777777777777777777777", "enabled": true },
-    { "symbol": "VST",  "name": "Vistra",           "feed": "0x8888888888888888888888888888888888888888", "enabled": true },
-    { "symbol": "GEV",  "name": "GE Vernova",       "feed": "0x9999999999999999999999999999999999999999", "enabled": true },
-    { "symbol": "SPY",  "name": "S&P 500 ETF",      "feed": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "enabled": true }
-  ]
-}
+[
+  { "symbol": "TSLA", "name": "Tesla",       "feed": "0x81b48EC24970aA75Ae940e2492fdA006071aC31B", "enabled": true },
+  { "symbol": "AMZN", "name": "Amazon",      "feed": "0x8D165612B0d63416141833834257386586f34224", "enabled": true },
+  { "symbol": "PLTR", "name": "Palantir",    "feed": "0x84206ED5EBF05B1519486742344d0499Df875Bd0", "enabled": true },
+  { "symbol": "AMD",  "name": "AMD",         "feed": "0x5406FC983e7f84B544FF6fc855e06c22Cf36A795", "enabled": true },
+  { "symbol": "NVDA", "name": "NVIDIA",      "feed": "0xBf15aA8CB0f376DB8fcb309347CB7375567bEC6B", "enabled": true },
+  { "symbol": "GME",  "name": "GameStop",    "feed": "0x7ca5707aCC7a2B87c16B60848fb2582311BE3b4f", "enabled": true },
+  { "symbol": "AAPL", "name": "Apple",       "feed": "0x139C8342c1A138817D0A83872881CC8CEC183749", "enabled": true },
+  { "symbol": "NFLX", "name": "Netflix",     "feed": "0x5ca7a619217e5eFFD9B57Ba58CC5981AEcE1Bec6", "enabled": true },
+  { "symbol": "META", "name": "Meta",        "feed": "0xA022D2d137fE6E8980666DB672CB92005A8A78B9", "enabled": true },
+  { "symbol": "COIN", "name": "Coinbase",    "feed": "0x1f1699510abfdAd90D82e2624136224B6b4EC7C8", "enabled": true },
+  { "symbol": "ETH",  "name": "Ether (testnet feed)", "feed": "0xfd8ADe2E2a8AE0645b9eC1473b65579A5456553E", "enabled": false }
+]

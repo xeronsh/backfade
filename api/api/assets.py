@@ -10,7 +10,8 @@ DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "assets.json"
 @lru_cache
 def load_assets() -> list[dict]:
     with open(DATA_PATH) as f:
-        return json.load(f)["assets"]
+        data = json.load(f)
+    return data["assets"] if isinstance(data, dict) else data
 
 
 def symbol_to_feed() -> dict[str, str]:

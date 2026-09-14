@@ -1,0 +1,35 @@
+[
+  {
+    "goalId": "20260914065800-fmqoho",
+    "objective": "Build Backfade v0.1 complete loop per BACKFADE_GOAL.md, from empty repo, in three parts per spec §5–7: (1) Foundry contracts — ThesisFactory + ThesisMarket + OracleMath + MockUSDG, WEIGHTED_BASKET_EXCESS_RETURN settlement via mock Chainlink-compatible feeds, oracle safety cases per §5.9, fuzz + inva",
+    "chatLines": [
+      "## Done: Build Backfade v0.1 complete loop per BACKFADE_GOAL.md, from empty repo… — Backfade v0.1 complete loop shipped; auditor findings from the prior review repaired…",
+      "",
+      "— 0 turns · 1h 25m elapsed · 4 audits",
+      "",
+      "### Key Findings & Remediation",
+      "1. **Changed** — web/src/styles.css (valid CSS entry, Tailwind import before tokens), web/vite.config.ts (tailwindcss plugin), web/package.json (tailwindcss + @tailwindcss/vite deps); commits through efac486.",
+      "2. **Evidence** — built dist CSS contains the :root token block, conviction bar, brand/back/fade colors and Tailwind preflight.",
+      "",
+      "### Verification Summary",
+      "| Quality Gate | Scope | Status | Notes |",
+      "| --- | --- | --- | --- |",
+      "| forge test | contracts/test all suites | PASS | 27 passed, 0 failed — unit incl. §5.9 oracle-safety, fuzz, invariant |",
+      "| Root npm run build | root package.json delegating to web/ vite build | REPORTED | exit 0; web/dist/{index,create,market,profile}.html emitted |",
+      "| Built CSS render check | dist/assets/*.css content assertions | PASS | PASS — tailwind preflight, :root tokens, conviction__bar 8px/999px, brand #cfff63, back #9be879, fade #ff756f all present in dist CSS |",
+      "| API selfcheck | api/selfcheck.py incl. live uvicorn + §6.10 envelope | PASS | 4 passed |",
+      "| Anvil E2E | DemoCreate + DemoResolve broadcast receipts | PASS | PASS — 'E2E COMPLETE: create -> back -> fade -> resolve -> claim', outcome=1, payout > 0 |",
+      "| Repo hygiene | git grep 64-hex scan | PASS | PASS — .env* ignored, only commented anvil test keys, no 46630 broadcast |",
+      "| Audit | audit: auditor approved (4 verdicts) | APPROVED ×4 | audit: auditor approved (4 verdicts) |",
+      "",
+      "### Next",
+      "- **Left out** — Robinhood testnet (46630) deployment and real feed addresses — excluded per contract; Deploy.s.sol ready for when keys/feeds are available",
+      "",
+      "• auditor approved.",
+      "• audit: auditor approved (4 verdicts).",
+      "• record: .pi-glla/archive/20260914065800-fmqoho.md"
+    ],
+    "createdAt": "2026-09-14T08:23:36.882Z",
+    "deliveredAt": "2026-09-14T08:23:36.883Z"
+  }
+]

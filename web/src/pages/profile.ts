@@ -1,6 +1,6 @@
 // Profile page (spec §8.5) — /profile.html?address=0x…
 import { createPublicClient, http, formatUnits, type Address } from "viem";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { FACTORY_ABI, MARKET_ABI, FACTORY_ADDRESS, RPC_URL } from "../contracts";
 
 const client = createPublicClient({ transport: http(RPC_URL) });
@@ -8,6 +8,7 @@ const client = createPublicClient({ transport: http(RPC_URL) });
 async function main() {
   const root = document.getElementById("app")!;
   root.appendChild(AppHeader("profile"));
+  root.appendChild(TestnetBanner());
   const page = document.createElement("main");
   page.className = "page";
   root.appendChild(page);

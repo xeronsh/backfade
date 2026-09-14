@@ -1,6 +1,6 @@
 // Market detail page (spec §8.4, §11.5, §12.3) — /market.html?address=0x…
 import { createPublicClient, http, formatUnits, parseUnits, type Address } from "viem";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ConvictionBar } from "../components/ConvictionBar";
 import { MarketStatus, type MarketState } from "../components/MarketStatus";
 import { toast } from "../components/Toast";
@@ -15,6 +15,7 @@ let side: "back" | "fade" | null = null;
 async function main() {
   const root = document.getElementById("app")!;
   root.appendChild(AppHeader("feed"));
+  root.appendChild(TestnetBanner());
   const page = document.createElement("main");
   page.className = "page page--market";
   root.appendChild(page);

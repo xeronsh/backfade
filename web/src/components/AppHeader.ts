@@ -2,8 +2,7 @@
 import { connect, currentAccount, ensureChain, shortAddress } from "../wallet";
 import { CHAIN_ID } from "../contracts";
 
-export function AppHeader(active: "feed" | "create" | "profile"): HTMLElement {
-  const header = document.createElement("header");
+export function AppHeader(active: "feed" | "create" | "profile"): HTMLElement {  const header = document.createElement("header");
   header.className = "header";
 
   const logo = document.createElement("a");
@@ -24,6 +23,13 @@ export function AppHeader(active: "feed" | "create" | "profile"): HTMLElement {
 
   header.appendChild(WalletButton());
   return header;
+}
+
+export function TestnetBanner(): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "testnet-banner";
+  el.textContent = "Robinhood Chain Testnet · Testnet collateral · No real funds";
+  return el;
 }
 
 function navLink(label: string, href: string, isActive: boolean): HTMLAnchorElement {

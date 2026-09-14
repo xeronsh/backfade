@@ -147,26 +147,38 @@ async def _compile_with_llm(
 def mock_compile(text: str, preferred_duration_days: int | None, universe: list[dict]) -> ThesisSpec:
     """Deterministic fallback: keywords -> basket. Keeps the demo loop alive without a key."""
     duration = preferred_duration_days or 30
-    enabled = [a for a in universe if a.get("enabled")]
+    if isinstance(universe, dict):
+        universe = universe.get("assets", [])
+    enabled = [a for a in universe if isinstance(a, dict) and a.get("enabled", True)]
     by_symbol = {a["symbol"]: a for a in enabled}
 
     keyword_map = {
-        "nuclear": (["CEG", "VST", "GEV"], [4000, 3500, 2500], "NVDA"),
-        "energy": (["CEG", "VST", "GEV"], [4000, 3500, 2500], "NVDA"),
-        "ai": (["NVDA", "PLTR"], [6000, 4000], "SPY"),
-        "crypto": (["COIN", "HOOD"], [5000, 5000], "SPY"),
-        "meme": (["GME", "AMC"], [5000, 5000], "SPY"),
+        "nuclear": (["AMD", "PLTR", "NVDA"], [4000, 3500, 2500], "TSLA"),
+        "energy": (["AMD", "PLTR"], [5000, 5000], "TSLA"),
+        "ai": (["NVDA", "PLTR"], [6000, 4000], "AMZN"),
+        "electric": (["TSLA", "RIVN"], [6000, 4000], "SPY"),
+        "crypto": (["COIN"], [10000], "ETH"),
+        "meme": (["GME"], [10000], "TSLA"),
     }
     lowered = text.lower()
-    chosen: tuple | None = None
+    chosen = None
     for kw, val in keyword_map.items():
         if kw in lowered:
-            chosen = val
-            break
+            # only use assets present in the registry
+            syms = [s for s in val[0] if s in by_symbol]
+            bench = val[2] if val[2] in by_symbol else None
+            if syms and bench:
+                w = [v for s, v in zip(val[0], val[1]) if s in by_symbol]
+                chosen = (syms, w, bench)
+                break
     if chosen is None:
-        # default: equal-weight top-3 non-benchmark assets vs SPY
-        syms = [a["symbol"] for a in enabled if a["symbol"] != "SPY"][:3]
-        chosen = (syms, [10_000 // len(syms)] * len(syms), "SPY")
+        # default: equal-weight top-3 enabled assets vs the last one as benchmark
+        syms_all = [a["symbol"] for a in enabled]
+        syms = syms_all[:3]
+        bench = syms_all[3] if len(syms_all) > 3 else syms_all[-1]
+        if bench in syms:
+            syms = [s for s in syms if s != bench] or [syms_all[0]]
+        chosen = (syms, [10_000 // len(syms)] * len(syms), bench)
 
     syms, weights, benchmark = chosen
     basket = [

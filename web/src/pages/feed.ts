@@ -1,6 +1,6 @@
 // Feed page (spec §8.2) — reads factory markets from chain, cards link to detail.
 import { createPublicClient, http, formatUnits, type Address } from "viem";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ThesisCard } from "../components/ThesisCard";
 import type { MarketState } from "../components/MarketStatus";
 import { FACTORY_ABI, MARKET_ABI, FACTORY_ADDRESS, RPC_URL } from "../contracts";
@@ -11,6 +11,7 @@ const client = createPublicClient({ transport: http(RPC_URL) });
 async function main() {
   const root = document.getElementById("app")!;
   root.appendChild(AppHeader("feed"));
+  root.appendChild(TestnetBanner());
   const page = document.createElement("main");
   page.className = "page page--feed";
   root.appendChild(page);

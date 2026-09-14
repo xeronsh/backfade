@@ -302,3 +302,14 @@ input, textarea { font-family: inherit; }
   .detail-grid, .preview__grid { grid-template-columns: 1fr; }
   .btn { min-height: 44px; }
 }
+
+/* testnet banner */
+.testnet-banner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 24px 0;
+  width: 100%;
+  color: var(--warning);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}

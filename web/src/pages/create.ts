@@ -1,7 +1,7 @@
 // Create page (spec §8.3, §11.6, §11.7, §11.8, §12.4)
 // narrative -> Compile -> Preview -> confirm -> conviction -> approve -> create -> redirect
 import { createPublicClient, createWalletClient, custom, http, parseUnits, type Address } from "viem";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ThesisPreview } from "../components/ThesisPreview";
 import { compileThesis, type ThesisSpec } from "../api";
 import { toast } from "../components/Toast";
@@ -22,6 +22,7 @@ let compiled: ThesisSpec | null = null;
 async function main() {
   const root = document.getElementById("app")!;
   root.appendChild(AppHeader("create"));
+  root.appendChild(TestnetBanner());
   const page = document.createElement("main");
   page.className = "page page--create";
   root.appendChild(page);

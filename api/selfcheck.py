@@ -18,8 +18,8 @@ def test_mock_compile_valid():
     validated = validate_spec(spec, symbol_to_feed())
     assert sum(a.weight_bps for a in validated.basket) == 10_000
     assert len(validated.basket) == 3
-    assert validated.basket[0].symbol == "CEG"
-    assert validated.benchmark.symbol == "NVDA"
+    assert validated.basket[0].symbol == "AMD"
+    assert validated.benchmark.symbol == "TSLA"
     # feeds must come from the mapping, not from anywhere else
     mapping = symbol_to_feed()
     assert all(a.feed == mapping[a.symbol] for a in validated.basket)
@@ -43,6 +43,7 @@ def test_validator_rejects_bad_weights():
 def test_validator_rejects_benchmark_in_basket():
     universe = load_assets()
     spec = mock_compile("crypto exchange flows", 30, universe)
+    spec.basket[0] = spec.basket[0].model_copy(update={"symbol": spec.benchmark.symbol})
     spec.basket[0] = spec.basket[0].model_copy(update={"symbol": "SPY"})
     try:
         validate_spec(spec, symbol_to_feed())
