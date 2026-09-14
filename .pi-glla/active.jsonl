@@ -85,3 +85,15 @@
 {"type":"terminal_completion_notice_sent","value":{"goalId":"20260914065800-fmqoho","payloadChars":1899},"at":"2026-09-14T08:23:36.889Z"}
 {"type":"terminal_approval_render_replayed","value":{"goalId":"20260914065800-fmqoho","createdAt":"2026-09-14T08:23:36.882Z"},"at":"2026-09-14T08:23:36.889Z"}
 {"type":"context_usage_sample","value":{"goalId":null,"provider":"workbuddy","model":"glm-5.3-flash","providerUsage":null,"contextUsage":{"tokens":206401,"contextWindow":1000000,"percent":20.6401}},"at":"2026-09-14T09:21:02.009Z"}
+{"type":"context_usage_sample","value":{"goalId":null,"provider":"workbuddy","model":"glm-5.3-flash","providerUsage":null,"contextUsage":{"tokens":208777,"contextWindow":1000000,"percent":20.877699999999997}},"at":"2026-09-14T09:26:50.953Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:27:27.074Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:27:32.431Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:27:38.561Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:27:44.128Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:27:59.045Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:28:16.734Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:03.382Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:13.563Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:20.909Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:42.638Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:53.854Z"}

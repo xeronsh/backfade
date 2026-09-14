@@ -1,6 +1,6 @@
 // Create page (spec §8.3, §11.6, §11.7, §11.8, §12.4)
 // narrative -> Compile -> Preview -> confirm -> conviction -> approve -> create -> redirect
-import { createPublicClient, createWalletClient, custom, http, parseUnits, type Address } from "viem";
+import { createPublicClient, createWalletClient, custom, http, parseUnits, decodeEventLog, type Address } from "viem";
 import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ThesisPreview } from "../components/ThesisPreview";
 import { compileThesis, type ThesisSpec } from "../api";
@@ -142,25 +142,47 @@ async function main() {
     const spec = compiled;
     setBusy(launch, "Launching…");
     try {
-      // 1. asset feeds from backend spec are demo placeholder addresses on Anvil; map
-      //    basket feeds to the deployed mock feeds via factory demo config (see README).
-      //    For the Anvil demo the spec feeds are used directly.
-      const basket = spec.basket.map((a) => ({
-        feed: a.feed as Address,
-        weightBps: a.weight_bps,
-      }));
+      // 1. approve collateral to factory, then create market with creator bond
+      const collateral = (import.meta.env.VITE_COLLATERAL_ADDRESS as Address) ??
+        "0xf910f0e62868c8479a25aa34fb407bc4ef66c112";
+      const factory = (import.meta.env.VITE_FACTORY_ADDRESS as Address) ??
+        "0x49e769a20fb4b7ced6c31f94402f555038bd7e8f";
+      const conviction = parseUnits(String(amount), 18);
+      const allowance = (await client.readContract({
+        address: collateral, abi: ERC20_ABI, functionName: "allowance",
+        args: [currentAccount!, factory],
+      })) as bigint;
+      if (allowance < conviction) {
+        toast("Approval required — confirm in wallet.", "info");
+        const approveTx = await wallet.writeContract({
+          chain: null, account: currentAccount!,
+          address: collateral, abi: ERC20_ABI, functionName: "approve", args: [factory, conviction],
+        });
+        await client.waitForTransactionReceipt({ hash: approveTx });
+      }
+      const now = Math.floor(Date.now() / 1000);
       const params = {
         narrative: spec.narrative,
-        basket,
+        basket: spec.basket.map((a) => ({ feed: a.feed as Address, weightBps: a.weight_bps })),
         benchmarkFeed: spec.benchmark.feed as Address,
         hurdleBps: spec.hurdle_bps,
-        bettingEndsAt: BigInt(Math.floor(Date.now() / 1000) + spec.duration_days * 86400 / 2),
-        resolvesAt: BigInt(Math.floor(Date.now() / 1000) + spec.duration_days * 86400),
-        collateral: (import.meta.env.VITE_COLLATERAL_ADDRESS as Address) ?? basket[0].feed, // demo placeholder
+        bettingEndsAt: BigInt(now + 1800),
+        resolvesAt: BigInt(now + 86400),
+        collateral,
       };
-      toast("Collateral address not configured for demo — see web/README.md", "error");
-      void params;
-      void wallet;
+      const tx = await wallet.writeContract({
+        chain: null, account: currentAccount!,
+        address: factory, abi: FACTORY_ABI, functionName: "createMarket",
+        args: [params, conviction],
+      });
+      toast("Thesis submitted — waiting for receipt…", "info");
+      const receipt = await client.waitForTransactionReceipt({ hash: tx });
+      const created = receipt.logs
+        .map((l) => decodeEventLog({ abi: FACTORY_ABI, data: l.data, topics: l.topics }))
+        .find((e) => e.eventName === "MarketCreated");
+      const marketAddr = created?.args && "market" in created.args ? String(created.args.market) : null;
+      toast("Thesis launched onchain.", "success");
+      if (marketAddr) window.location.href = `market.html?address=${marketAddr}`;
     } finally {
       restore(launch, "Launch thesis");
     }
