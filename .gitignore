@@ -37,3 +37,4 @@ __pycache__/
 
 # ===== 内部工具状态 =====
 .pi-glla/
+.wrangler/
