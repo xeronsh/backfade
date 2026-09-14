@@ -97,3 +97,12 @@
 {"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:20.909Z"}
 {"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:42.638Z"}
 {"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:29:53.854Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:30:07.499Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:30:29.090Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:39:40.639Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":1,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:41:28.872Z"}
+{"type":"context_usage_sample","value":{"goalId":null,"provider":"workbuddy","model":"glm-5.3-flash","providerUsage":null,"contextUsage":{"tokens":211461,"contextWindow":1000000,"percent":21.1461}},"at":"2026-09-14T09:41:28.941Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":2,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:41:29.052Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":2,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:41:34.389Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":2,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:41:43.696Z"}
+{"type":"context_hygiene_dropped","value":{"dropped":2,"kept":1,"lastError":"This operation was aborted","generation":1},"at":"2026-09-14T09:42:41.412Z"}

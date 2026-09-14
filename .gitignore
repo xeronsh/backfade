@@ -1,20 +1,39 @@
-# secrets
+# ===== 秘密与密钥（绝不提交）=====
 .env
 .env.*
 !.env.example
 *.key
+*.pem
+secrets/
+contracts/.env
 
-# builds / deps
+# ===== 依赖 =====
 node_modules/
-dist/
-web/dist/
 api/.venv/
-contracts/out/
-contracts/cache/
-contracts/broadcast/
-__pycache__/
-*.pyc
 .uv-cache/
 
-# deploy artifacts
+# ===== 构建产物 =====
+dist/
+web/dist/
+api/dist/
+contracts/out/
+contracts/cache/
+
+# ===== 部署/广播产物（含交易记录）=====
+contracts/broadcast/
 contracts/deployments/
+
+# ===== Python =====
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# ===== 编辑器 / 系统 =====
+.DS_Store
+*.swp
+.idea/
+.vscode/
+*.log
+
+# ===== 内部工具状态 =====
+.pi-glla/
