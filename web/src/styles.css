@@ -1,4 +1,6 @@
-// Backfade v0.1 — dark only, brand green used sparingly (spec §9)
+@import "tailwindcss";
+
+/* Backfade v0.1 — dark only, brand green used sparingly (spec §9) */
 :root {
   --canvas: #0b0d0e;
   --surface-1: #111416;
