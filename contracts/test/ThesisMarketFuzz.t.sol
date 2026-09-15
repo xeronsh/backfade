@@ -13,6 +13,9 @@ contract ThesisMarketFuzzTest is BaseTest {
 
     /// Outcome must match the pure math for arbitrary positive prices.
     function testFuzz_OutcomeMatchesMath(uint256 cegEnd, uint256 vstEnd, uint256 gevEnd, uint256 nvdaEnd) public {
+        // An opposing stake keeps this a two-sided market. A thesis that nobody fades and that
+        // then fails settles as a full refund by design, which is not what this test asserts.
+        fadeFrom(fader, 100e18);
         cegEnd = bound(cegEnd, 1e8, 10_000e8);
         vstEnd = bound(vstEnd, 1e8, 10_000e8);
         gevEnd = bound(gevEnd, 1e8, 10_000e8);

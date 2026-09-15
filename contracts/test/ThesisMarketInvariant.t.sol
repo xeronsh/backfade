@@ -145,6 +145,18 @@ contract PoolConservationInvariantTest is StdInvariant, BaseTest {
         assertTrue(stake == market().creatorBond() || stake == 0, "bond accounting broken");
     }
 
+    /// A settled market must never strand collateral: either the winning pool is non-empty and
+    /// winners can be paid, or the market settled as a refund. This guards the empty-winning-pool
+    /// case, where pro-rata payout would divide by zero and lock every stake forever.
+    function invariant_SettledMarketIsAlwaysPayable() public view {
+        ThesisMarket.Outcome o = market().outcome();
+        if (o == ThesisMarket.Outcome.Back) {
+            assertGt(market().backPool(), 0, "BACK settled with an empty winning pool");
+        } else if (o == ThesisMarket.Outcome.Fade) {
+            assertGt(market().fadePool(), 0, "FADE settled with an empty winning pool");
+        }
+    }
+
     /// Once every winner has claimed out a resolved market, nothing material is left.
     function invariant_FullyClaimedMarketIsEmpty() public view {
         ThesisMarket.Outcome o = market().outcome();

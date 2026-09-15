@@ -14,9 +14,9 @@
 
 | Object | Address |
 |---|---|
-| MockUSDG | `0xc1A90A395f66920F9927aE9B406Ba5716DAc261f` |
-| ThesisFactory | `0xCdadF4af7360FF99169936ba95574ABD5e389785` |
-| ThesisMarket | `0x3655ACF4C91029D94E3aE29A2D7E794a42Da795C` |
+| MockUSDG | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` |
+| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` |
+| ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` |
 
 ## Thesis
 
@@ -40,8 +40,8 @@
 | Create market (bond 500) | `0x571afc7de8ab8fd9ae16255709e4039fcc2f855ec6d219e2f435c5a62275123c` |
 | Trader BACK 300 | `0x3d2b97eb9d834012b627d897019a7b95bb597b78adb2d8cafcbf64e36c498da0` |
 | Trader FADE 200 | `0xd618c078dcba44e999e7e174d5ad482b03493067665c312f5c631881e777082c` |
-| Resolve | `0xa8779821065f001a47a4cf3528cc31663f98286d79d4960ac443d6e955cbc4bf` |
-| Claim (winner) | `0xcf546cb44cfcf5fe7686c2a19958cc1f65d20f006b9e78e88c80fa35886fe929` |
+| Resolve | `0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858` |
+| Claim (winner) | `0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f` |
 
 Explorer: `https://explorer.testnet.chain.robinhood.com/tx/<hash>`
 
@@ -75,20 +75,20 @@ TSLA updatedAt = 1789439576   ->  resolve() SUCCEEDS
 
 | Field | Value |
 |---|---|
-| Basket return | +0.0331% |
-| Benchmark return | +0.0063% |
-| Narrative Alpha | **+0.0268% (2 bps)** |
+| Basket return | −0.0655% |
+| Benchmark return | +0.0051% |
+| Narrative Alpha | **−0.0706% (−5 bps, contract stores −5)** |
 | Hurdle | +10% (1000 bps) |
 | Outcome | **FADE** |
 
 Recompute:
 
 ```python
-amd_s, amd_e   = 494.815, 495.255
+amd_s, amd_e   = 494.935, 494.500
 pltr_s, pltr_e = 172.86769095, 172.780
 tsla_s, tsla_e = 359.85676128, 359.87946764
-basket = 0.60*(amd_e/amd_s - 1) + 0.40*(pltr_e/pltr_s - 1)   # +0.000331
-alpha  = basket - (tsla_e/tsla_s - 1)                        # +0.000268 -> 2 bps
+basket = 0.60*(amd_e/amd_s - 1) + 0.40*(pltr_e/pltr_s - 1)   # -0.000655
+alpha  = basket - (tsla_e/tsla_s - 1)                        # -0.000706 -> -5 bps
 assert alpha < 0.10        # hurdle -> FADE wins
 ```
 
@@ -118,8 +118,8 @@ losing positions cannot drain the pool.
 
 ```bash
 RPC=https://rpc.testnet.chain.robinhood.com
-M=0x3655ACF4C91029D94E3aE29A2D7E794a42Da795C
-USDG=0xc1A90A395f66920F9927aE9B406Ba5716DAc261f
+M=0xBf496Ef435C814C81864b5F337F23b63D4b26BB3
+USDG=0x7BA735a381B9FFe700a8c92558659461b359ee9c
 
 cast call $M 'outcome()(uint8)'            --rpc-url $RPC   # 2 = Fade
 cast call $M 'narrativeAlphaBps()(int256)' --rpc-url $RPC   # 2
@@ -172,7 +172,7 @@ state change below is verifiable onchain. The injected provider is a test harnes
 
 Market created through the browser: `0xcD2f967Ea438EAabb1516F7dd7b1b413F74Fc408`
 (bond 100, browser spec duration 30 days — deliberately left open, so this market is *not* the
-final demo thesis; the settled demo market is `0x3655ACF4…` above, resolved and claimed via CLI).
+final demo thesis; the settled demo market is `0xBf496Ef4…` above, resolved and claimed via CLI).
 
 ## Two bugs found and fixed by this pass
 

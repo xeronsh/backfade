@@ -15,6 +15,7 @@ assumptions rather than implying stronger ones.
 | Start-price freshness | **Enforced** (`maxStartAge`, default 30 min, cap 24 h) |
 | Settlement window | **Bounded** per market (default 30 min, bounds 15 min–24 h) |
 | Dead / stale feeds | **Cancellation + full refund**, never a stale-price settlement |
+| Empty winning pool | **Cancellation + full refund** (no stranded collateral) |
 | Database / indexer | **None.** Chain is the source of truth. |
 | Custody | **None.** Contracts hold only market collateral, claimable by participants. |
 | Mainnet deployment | **None.** Testnet only (chain 46630). |
@@ -46,6 +47,11 @@ payout = stake * totalPool / winningPool        // totalPool = backPool + fadePo
 - Rounding dust is bounded and expected. There is **no admin sweep** to paper over a math error.
 - The creator bond is an ordinary BACK position and only the creator can claim it.
 - Losing positions can never claim; double claims revert (`NothingToClaim`).
+- If a market settles in favour of a side that never received a single stake, the winning pool is
+  empty and pro-rata payout would divide by zero. Settlement therefore falls back to
+  `Cancelled` and every participant takes back their own stake, so no collateral can be stranded.
+  This is enforced by `invariant_SettledMarketIsAlwaysPayable` and
+  `test_NoOpposingCapitalAndThesisFailsRefundsEveryStake`.
 
 ## Oracle assumptions
 

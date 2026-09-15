@@ -105,9 +105,9 @@ All on **Robinhood Chain Testnet** (Chain ID `46630`) and **source verified**.
 
 | Contract | Address | Explorer |
 |---|---|---|
-| MockUSDG | `0xc1A90A395f66920F9927aE9B406Ba5716DAc261f` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xc1a90a395f66920f9927ae9b406ba5716dac261f) |
-| ThesisFactory | `0xCdadF4af7360FF99169936ba95574ABD5e389785` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xcdadf4af7360ff99169936ba95574abd5e389785) |
-| Demo ThesisMarket | `0x3655ACF4C91029D94E3aE29A2D7E794a42Da795C` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x3655acf4c91029d94e3ae29a2d7e794a42da795c) |
+| MockUSDG | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x7ba735a381b9ffe700a8c92558659461b359ee9c) |
+| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x9db674834f4c060114cb53f21e179fc54f905342) |
+| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xbf496ef435c814c81864b5f337f23b63d4b26bb3) |
 
 Superseded pre-hardening deployments are recorded in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md).
 
@@ -117,7 +117,7 @@ The demo thesis settled **honestly** — the narrative did not clear its hurdle:
 
 | | |
 |---|---|
-| Narrative Alpha | **+2 bps** |
+| Narrative Alpha | **−5 bps** |
 | Hurdle | **+1000 bps** |
 | Outcome | **FADE** |
 | Winner payout | 1000 MockUSDG |
@@ -182,9 +182,9 @@ forge test
 
 | Gate | Result |
 |---|---|
-| Solidity tests | **67 passed** |
+| Solidity tests | **71 passed** |
 | Fuzz | 7 suites × 256 runs |
-| Invariant | 6 suites × 2048 calls |
+| Invariant | 7 suites × 2048 calls |
 | Frontend types | `npx tsc --noEmit` |
 | Frontend build | `npm run build` |
 | API selfcheck | `uv run python selfcheck.py` |

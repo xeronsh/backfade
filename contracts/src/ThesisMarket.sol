@@ -223,7 +223,20 @@ contract ThesisMarket is ReentrancyGuard {
         int256 alpha = basketReturnBps - benchmarkReturnBps;
         narrativeAlphaBps = alpha;
 
-        outcome = alpha >= hurdleBps ? Outcome.Back : Outcome.Fade;
+        Outcome decided = alpha >= hurdleBps ? Outcome.Back : Outcome.Fade;
+        // A market where the winning side never received a single stake has nobody to pay:
+        // the winning pool is empty, so pro-rata payout would divide by zero and every
+        // participant's stake would be unrecoverable. The only correct settlement is a full
+        // refund, which is what cancel() already means. This is reachable whenever a thesis
+        // attracts no opposing capital and is then judged unsuccessful.
+        uint256 winningPool = decided == Outcome.Back ? backPool : fadePool;
+        if (winningPool == 0) {
+            outcome = Outcome.Cancelled;
+            emit MarketCancelled();
+            return;
+        }
+
+        outcome = decided;
         emit MarketResolved(outcome, alpha);
     }
 

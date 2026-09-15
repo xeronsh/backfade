@@ -192,6 +192,8 @@ contract ThesisMarketTest is BaseTest {
     }
 
     function test_ResolveFadeWins() public {
+        // a real FADE position must exist, otherwise an unsuccessful thesis refunds instead
+        fadeFrom(fader, 200e18);
         warpAndPrintFadeWins();
         market().resolve();
         assertEq(uint8(market().outcome()), uint8(ThesisMarket.Outcome.Fade));
@@ -611,6 +613,49 @@ contract ThesisMarketTest is BaseTest {
         // 4 total, 2 winners -> at most 1 wei dust per winner
         assertLe(usdg.balanceOf(marketAddr()), 2, "dust beyond rounding bound");
         assertLe(market().totalClaimed(), 5);
+    }
+
+    /// A market whose winning side holds no stake has nobody to pay. Pro-rata payout would
+    /// divide by an empty winning pool and strand every stake forever, so settlement must fall
+    /// back to a full refund. Reachable whenever a thesis attracts no opposing capital and is
+    /// then judged unsuccessful.
+    function test_NoOpposingCapitalAndThesisFailsRefundsEveryStake() public {
+        assertEq(market().fadePool(), 0);
+        warpAndPrintFadeWins(); // FADE wins, but nobody ever faded
+        market().resolve();
+
+        assertEq(uint8(market().outcome()), uint8(ThesisMarket.Outcome.Cancelled));
+
+        uint256 before = usdg.balanceOf(creator);
+        vm.prank(creator);
+        market().refund();
+        assertEq(usdg.balanceOf(creator), before + BOND, "bond must be recoverable");
+        assertEq(usdg.balanceOf(marketAddr()), 0, "nothing may remain locked");
+    }
+
+    /// The same shape with a backer on the losing side: everyone gets their own stake back.
+    function test_UnbackedThesisFailingRefundsAllParticipants() public {
+        backFrom(backer, 100e18);
+        warpAndPrintFadeWins();
+        market().resolve();
+        assertEq(uint8(market().outcome()), uint8(ThesisMarket.Outcome.Cancelled));
+
+        vm.prank(creator);
+        market().refund();
+        vm.prank(backer);
+        market().refund();
+        assertEq(usdg.balanceOf(creator), 10_000e18);
+        assertEq(usdg.balanceOf(backer), 10_000e18);
+        assertEq(usdg.balanceOf(marketAddr()), 0);
+    }
+
+    /// A normal two-sided market still resolves normally and never takes the refund path.
+    function test_TwoSidedMarketStillResolvesOnOutcome() public {
+        fadeFrom(fader, 200e18);
+        warpAndPrintFadeWins();
+        market().resolve();
+        assertEq(uint8(market().outcome()), uint8(ThesisMarket.Outcome.Fade));
+        assertGt(market().fadePool(), 0);
     }
 
     function market() internal view returns (ThesisMarket) {

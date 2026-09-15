@@ -38,9 +38,9 @@ All three are **source verified** (`Pass - Verified`) on the Robinhood Chain Tes
 
 | Contract | Address | Verified | Explorer |
 |---|---|---|---|
-| MockUSDG (testnet collateral) | `0xc1A90A395f66920F9927aE9B406Ba5716DAc261f` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0xc1a90a395f66920f9927ae9b406ba5716dac261f) |
-| ThesisFactory | `0xCdadF4af7360FF99169936ba95574ABD5e389785` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0xcdadf4af7360ff99169936ba95574abd5e389785) |
-| Demo ThesisMarket | `0x3655ACF4C91029D94E3aE29A2D7E794a42Da795C` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0x3655acf4c91029d94e3ae29a2d7e794a42da795c) |
+| MockUSDG (testnet collateral) | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0x7ba735a381b9ffe700a8c92558659461b359ee9c) |
+| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0x9db674834f4c060114cb53f21e179fc54f905342) |
+| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0xbf496ef435c814c81864b5f337f23b63d4b26bb3) |
 
 Full deployment record: `docs/DEPLOYMENTS_FINAL.md`.
 
@@ -52,7 +52,7 @@ Full deployment record: `docs/DEPLOYMENTS_FINAL.md`.
 | Basket | AMD 60% + PLTR 40% |
 | Benchmark | TSLA |
 | Hurdle | +10% |
-| Outcome | **FADE** — Narrative Alpha settled at **+2 bps**, far below the hurdle |
+| Outcome | **FADE** — Narrative Alpha settled at **−5 bps**, far below the hurdle |
 
 The narrative did not clear its hurdle and BACK lost. No oracle value was fabricated to produce
 a prettier demo. Full transaction and recomputation trail: `docs/LIVE_E2E_FINAL.md`.
@@ -64,8 +64,8 @@ a prettier demo. Full transaction and recomputation trail: `docs/LIVE_E2E_FINAL.
 | Create market (creator bond 500, BACK) | `0x571afc7de8ab8fd9ae16255709e4039fcc2f855ec6d219e2f435c5a62275123c` |
 | Trader BACK 300 | `0x3d2b97eb9d834012b627d897019a7b95bb597b78adb2d8cafcbf64e36c498da0` |
 | Trader FADE 200 | `0xd618c078dcba44e999e7e174d5ad482b03493067665c312f5c631881e777082c` |
-| Resolve | `0xa8779821065f001a47a4cf3528cc31663f98286d79d4960ac443d6e955cbc4bf` |
-| Winner claim | `0xcf546cb44cfcf5fe7686c2a19958cc1f65d20f006b9e78e88c80fa35886fe929` |
+| Resolve | `0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858` |
+| Winner claim | `0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f` |
 
 ## Oracle evidence
 
