@@ -54,7 +54,8 @@ a prettier demo. Full transaction and recomputation trail: `docs/LIVE_E2E.md`.
 
 | Step | Tx |
 |---|---|
-| Create market (creator bond 500, BACK) | `0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754` |
+| Approve collateral | [`0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754`](https://explorer.testnet.chain.robinhood.com/tx/0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754) |
+| Create market (factory) | [`0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c`](https://explorer.testnet.chain.robinhood.com/tx/0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c) |
 | Trader BACK 300 | `0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b` |
 | Trader FADE 200 | `0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb` |
 | Resolve | `0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858` |
