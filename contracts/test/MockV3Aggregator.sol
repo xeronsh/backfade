@@ -35,3 +35,32 @@ contract MockV3Aggregator is AggregatorV3Interface {
         return (1, latestAnswer, latestUpdatedAt, latestUpdatedAt, 1);
     }
 }
+
+/// @title BrokenV3Aggregator
+/// @notice Feed-shaped contract with a settable (even invalid) timestamp, used to prove the
+///         oracle guards reject future, zero and out-of-window observations.
+contract BrokenV3Aggregator is AggregatorV3Interface {
+    int256 public answer;
+    uint256 public updatedAt;
+
+    constructor(int256 answer_, uint256 updatedAt_) {
+        answer = answer_;
+        updatedAt = updatedAt_;
+    }
+
+    function setAnswer(int256 answer_) external {
+        answer = answer_;
+    }
+
+    function setUpdatedAt(uint256 updatedAt_) external {
+        updatedAt = updatedAt_;
+    }
+
+    function decimals() external pure returns (uint8) {
+        return 8;
+    }
+
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
+        return (1, answer, updatedAt, updatedAt, 1);
+    }
+}

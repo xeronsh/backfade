@@ -1,5 +1,15 @@
 # Robinhood Chain Testnet Deployments
 
+> ⚠️ **SUPERSEDED — pre-hardening deployments.**
+>
+> This file records the original Anvil/testnet deployment used during v0.1 development. Those
+> contracts predate the pari-mutuel payout fix and the oracle bounded-settlement work, and are
+> **not** the submission deployment.
+>
+> The final, verified submission deployment lives in
+> [`DEPLOYMENTS_FINAL.md`](DEPLOYMENTS_FINAL.md).
+
+
 - Network: **Robinhood Chain Testnet**, Chain ID **46630**
 - RPC: `https://rpc.testnet.chain.robinhood.com`
 - Explorer: `https://explorer.testnet.chain.robinhood.com`

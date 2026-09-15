@@ -160,14 +160,18 @@ async function main() {
         });
         await client.waitForTransactionReceipt({ hash: approveTx });
       }
+      // PHASE 4.6 §13 — all times are unix seconds derived from the compiled spec, never
+      // browser-local date strings. bettingEndsAt is a short entry window; resolvesAt honours
+      // the compiler's duration_days so the onchain expiry matches the thesis the user saw.
       const now = Math.floor(Date.now() / 1000);
+      const durationDays = spec.duration_days > 0 ? spec.duration_days : 30;
       const params = {
         narrative: spec.narrative,
         basket: spec.basket.map((a) => ({ feed: a.feed as Address, weightBps: a.weight_bps })),
         benchmarkFeed: spec.benchmark.feed as Address,
         hurdleBps: spec.hurdle_bps,
         bettingEndsAt: BigInt(now + 1800),
-        resolvesAt: BigInt(now + 86400),
+        resolvesAt: BigInt(now + durationDays * 86400),
         collateral,
       };
       const tx = await wallet.writeContract({
@@ -177,12 +181,26 @@ async function main() {
       });
       toast("Thesis submitted — waiting for receipt…", "info");
       const receipt = await client.waitForTransactionReceipt({ hash: tx });
-      const created = receipt.logs
-        .map((l) => decodeEventLog({ abi: FACTORY_ABI, data: l.data, topics: l.topics }))
-        .find((e) => e.eventName === "MarketCreated");
-      const marketAddr = created?.args && "market" in created.args ? String(created.args.market) : null;
+      // The receipt carries every log from the transaction, including the collateral
+      // ERC20 Transfer events, which are not in FACTORY_ABI. Decoding those throws, so
+      // restrict to the factory's own logs and tolerate any that still do not decode.
+      let marketAddr: string | null = null;
+      for (const l of receipt.logs) {
+        if (l.address.toLowerCase() !== factory.toLowerCase()) continue;
+        try {
+          const ev = decodeEventLog({ abi: FACTORY_ABI, data: l.data, topics: l.topics });
+          if (ev.eventName === "MarketCreated" && ev.args && "market" in ev.args) {
+            marketAddr = String(ev.args.market);
+            break;
+          }
+        } catch {
+          // not a factory event we know about — skip it
+        }
+      }
       toast("Thesis launched onchain.", "success");
       if (marketAddr) window.location.href = `market.html?address=${marketAddr}`;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Launch failed. Check your wallet and try again.", "error");
     } finally {
       restore(launch, "Launch thesis");
     }

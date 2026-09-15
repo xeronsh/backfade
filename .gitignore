@@ -38,3 +38,8 @@ __pycache__/
 # ===== 内部工具状态 =====
 .pi-glla/
 .wrangler/
+smoke-state.json
+
+# web build env (may contain deployment addresses only)
+web/.env.local
+web/.env.production.local

@@ -21,5 +21,9 @@ export function timeLeft(unixSeconds: bigint | number): string {
 
 export function bpsToSignedPct(bps: bigint | number): string {
   const v = Number(bps) / 100;
-  return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+  // Small alphas are the interesting case on short windows: 2 bps must not render as
+  // "+0.0%". Keep two decimals below 1%, one decimal above it.
+  const abs = Math.abs(v);
+  const digits = abs < 1 ? 2 : 1;
+  return `${v >= 0 ? "+" : ""}${v.toFixed(digits)}%`;
 }

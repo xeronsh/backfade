@@ -20,10 +20,14 @@ abstract contract BaseTest is Test {
     address creator = makeAddr("creator");
     address backer = makeAddr("backer");
     address fader = makeAddr("fader");
+    address third = makeAddr("third");
 
     uint256 constant BOND = 500e18;
-    uint64 constant BETTING_END = 3 days;
-    uint64 constant RESOLVES_AT = 30 days;
+    uint64 public constant BETTING_END = 3 days;
+    uint64 public constant RESOLVES_AT = 30 days;
+    /// @dev Mirrors the factory defaults so tests exercise the shipped production shape.
+    uint64 constant DEFAULT_WINDOW = 30 minutes;
+    uint256 constant DEFAULT_START_AGE = 30 minutes;
 
     function setUp() public virtual {
         usdg = new MockUSDG();
@@ -37,6 +41,7 @@ abstract contract BaseTest is Test {
         usdg.mint(creator, 10_000e18);
         usdg.mint(backer, 10_000e18);
         usdg.mint(fader, 10_000e18);
+        usdg.mint(third, 10_000e18);
     }
 
     function defaultParams() internal view returns (ThesisMarket.MarketParams memory p) {
@@ -62,6 +67,23 @@ abstract contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    /// @dev Direct-deploy path: the constructor assumes the factory already delivered the
+    ///      bond, so the test funds the market explicitly. Lets tests pick bond/window/age.
+    function deployMarket(ThesisMarket.MarketParams memory p, uint256 bond) internal returns (ThesisMarket market) {
+        return deployMarketWith(p, bond, factory.DEFAULT_SETTLEMENT_WINDOW(), factory.DEFAULT_MAX_START_AGE());
+    }
+
+    function deployMarketWith(
+        ThesisMarket.MarketParams memory p,
+        uint256 bond,
+        uint64 settlementWindow_,
+        uint256 maxStartAge_
+    ) internal returns (ThesisMarket market) {
+        market = new ThesisMarket(p, creator, bond, settlementWindow_, maxStartAge_);
+        vm.prank(creator);
+        usdg.transfer(address(market), bond);
+    }
+
     function backFrom(address who, uint256 amount) internal {
         vm.startPrank(who);
         usdg.approve(address(marketAddr()), amount);
@@ -74,6 +96,28 @@ abstract contract BaseTest is Test {
         usdg.approve(address(marketAddr()), amount);
         ThesisMarket(marketAddr()).fade(amount);
         vm.stopPrank();
+    }
+
+    /// @dev Move to just past resolvesAt and print prices that make BACK win (alpha > hurdle).
+    ///      Timestamps come from the mock feed's own clock, so the prints can never be
+    ///      stamped before the warped `resolvesAt` and are always inside the window.
+    function warpAndPrintBackWins() internal {
+        vm.warp(block.timestamp + RESOLVES_AT + 1);
+        // basket +25%, benchmark +5% => alpha +20% >= 10% hurdle
+        cegFeed.updateAnswer(250e8);
+        vstFeed.updateAnswer(125e8);
+        gevFeed.updateAnswer(375e8);
+        nvdaFeed.updateAnswer(525e8);
+    }
+
+    /// @dev Move to just past resolvesAt and print prices that make FADE win (alpha < hurdle).
+    function warpAndPrintFadeWins() internal {
+        vm.warp(block.timestamp + RESOLVES_AT + 1);
+        // basket -5%, benchmark +2% => alpha -7% < hurdle
+        cegFeed.updateAnswer(190e8);
+        vstFeed.updateAnswer(95e8);
+        gevFeed.updateAnswer(285e8);
+        nvdaFeed.updateAnswer(510e8);
     }
 
     address marketAddr_;

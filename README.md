@@ -2,147 +2,239 @@
 
 > **Back the thesis. Fade the noise.**
 
-Backfade 把市场观点变成**有保证金、有基准、链上可验证的论文（Thesis）**。
+Backfade turns market narratives into **bonded, benchmarked and verifiable onchain theses**.
 
-一个创作者发布投资叙事，AI 编译器把它编译成结构化的金融命题，创作者 bond 资金表达信念（Creator Conviction），市场其他人用 BACK / FADE 对赌，最后由 Chainlink 兼容喂价**确定性地**结算。
-
-不是「AI 预测市场克隆」——核心创新是 **Narrative Alpha**：叙事的相对收益可以客观度量、可以链上结算、可以沉淀为永久战绩。
+Markets trade assets.
+Communities trade narratives.
 
 ---
 
-## 问题
+## The Problem
 
-市面上的市场观点（X / Reddit / Telegram）有三个死穴：
+Anyone can post a market take.
 
-1. **无结构** —「看好核电」不是一个可交易的对象；
-2. **无成本** — 说错了不用负责，删帖即走；
-3. **无战绩** — 无法比较谁的观点真的有 alpha。
+Very few people can prove they were:
 
-Backfade 的回答：把观点变成金融对象。
+- early
+- right
+- and willing to risk capital
 
-## 核心洞察：Narrative Alpha
+Backfade makes market opinions accountable.
 
-一个 narrative 被编译为：
-
-```text
-加权篮子收益  −  基准收益  ≥  门槛（hurdle）
-```
-
-例：「AI 资本开支正在转向 AMD 和 PLTR」→
+## Core Mechanism
 
 ```text
-AMD 40% + PLTR 60%  vs  TSLA
-30 天，+10% Narrative Alpha
+Narrative
+  ↓
+Thesis Compiler
+  ↓
+Creator Conviction
+  ↓
+BACK / FADE
+  ↓
+Oracle Settlement
+  ↓
+Narrative Alpha
+  ↓
+Proof of Insight
 ```
 
-到期时喂价确定性结算：alpha ≥ 门槛 → BACK 赢；否则 FADE 赢。
-结算公式完全在链上、无人工干预、无管理员密钥。
+A creator writes a view in natural language. The compiler turns it into a deterministic
+specification. The creator bonds capital. The market takes the other side or joins. Expiry
+resolves it from oracle prices, with no human deciding the winner.
 
-## 工作原理
+## Narrative Alpha
+
+Success is **relative**, not absolute:
 
 ```text
-叙事（自然语言）
-  → Thesis Compiler（AI 结构化，feed 地址来自确定性注册表）
-  → 预览 / 确认（绝不自动提交）
-  → Creator Conviction（创作者 bond，计入 BACK）
-  → 链上市场创建
-  → BACK / FADE（pari-mutuel 池）
-  → 到期 → 喂价确定性结算
-  → 赢家 claim → 链上永久战绩
+Narrative Alpha = Weighted Basket Return − Benchmark Return
 ```
 
-## 为什么是 Robinhood Chain
+Example: a thesis of **AMD 40% + PLTR 60%** benchmarked against **TSLA**.
 
-Robinhood Chain 把真实股票变成链上 Stock Token，并配套 Chainlink 价格喂价——
-这是第一个可以对「真实股票叙事」做链上结算的消费级链。
-本 demo 部署在 **Robinhood Chain Testnet (46630)**。
-
-## Demo（真实部署）
-
-| 项目 | 地址 |
+| | Return |
 |---|---|
-| MockUSDG（测试网抵押品） | [`0xf910f0e62868c8479a25aa34fb407bc4ef66c112`](https://explorer.testnet.chain.robinhood.com/address/0xf910f0e62868c8479a25aa34fb407bc4ef66c112) |
-| ThesisFactory | [`0x49e769a20fb4b7ced6c31f94402f555038bd7e8f`](https://explorer.testnet.chain.robinhood.com/address/0x49e769a20fb4b7ced6c31f94402f555038bd7e8f) |
-| Demo ThesisMarket | [`0x0a9c3c881aA3df08bDaEEC8f283e09c5aa532334`](https://explorer.testnet.chain.robinhood.com/address/0x0a9c3c881aA3df08bDaEEC8f283e09c5aa532334) |
+| Basket | +8.2% |
+| TSLA benchmark | +3.0% |
+| **Narrative Alpha** | **+5.2%** |
 
-- 网络：Robinhood Chain Testnet，Chain ID **46630**
-- RPC：`https://rpc.testnet.chain.robinhood.com`
-- 已验证资产喂价：见 [`docs/TESTNET_ASSETS.md`](docs/TESTNET_ASSETS.md)（11 个，逐个 RPC 实测）
-- 链上 E2E 交易记录：见 [`docs/LIVE_E2E.md`](docs/LIVE_E2E.md) 和 [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md)
-- 前端：<https://backfade.pages.dev>
+BACK wins only when `Narrative Alpha >= hurdle`. A basket that rises but trails its benchmark
+still loses — that is the point.
 
-## 架构
+## Creator Conviction
+
+A creator must bond capital behind every thesis, and the creator bond is automatically part of
+the
+BACK pool. Opinions are not free to publish. The creator has skin in the game.
+
+## Why Robinhood Chain
+
+Backfade turns narratives about real-world markets into onchain financial claims. Robinhood Chain
+provides the natural environment for Stock Token-based market narratives and oracle-settled
+relative performance.
+
+Testnet honesty: this demo runs on **verified AggregatorV3-compatible seeded testnet feeds**, not
+mainnet production feeds. See [Testnet oracle transparency](#testnet-oracle-transparency).
+
+## Live Demo
+
+| Service | URL |
+|---|---|
+| Frontend | `https://water-moderate-exec-significance.trycloudflare.com` |
+| Thesis Compiler API | `https://phi-diameter-block-earliest.trycloudflare.com` |
+
+Temporary development tunnel (Cloudflare Quick Tunnel). Runs locally, exposed publicly. No VPS,
+no database. The chain is the source of truth.
+
+## What It Looks Like
 
 ```text
-web/        Vite + 原生 TS + Tailwind v4（无 React/wagmi/路由），viem + EIP-1193
-api/        FastAPI Thesis Compiler（Pydantic v2，无数据库）
-contracts/  Foundry：ThesisFactory / ThesisMarket / OracleMath / MockUSDG
+Feed                      Market
+┌──────────────────────┐  ┌──────────────────────────────────────┐
+│ Thesis narratives    │  │ Narrative: AI infrastructure …       │
+│ read from chain      │  │ BACK 80% / FADE 20%                  │
+│ (Factory.marketAt)   │  │ Creator Conviction  $500             │
+└──────────────────────┘  │ Narrative Alpha  +0.02%  →  FAILED   │
+                          └──────────────────────────────────────┘
 ```
 
-- **链是数据库**：v0.1 无任何 DB/indexer，事件即索引（spec §2.4）。
-- **AI 只做编译器，不做神谕**：LLM 只输出 symbol/权重；喂价地址永远来自确定性注册表 `api/data/assets.json`，验证 fail-closed。
-- **合约无管理员**：`resolve()` 无权限、纯数学；`cancelAfterDeadline()` 提供 oracle 失效退款兜底。
-- 抵押品为测试网 MockUSDG，页面明确标注 Testnet collateral。
+## Final Contracts
 
-## 合约
+All on **Robinhood Chain Testnet** (Chain ID `46630`) and **source verified**.
+
+| Contract | Address | Explorer |
+|---|---|---|
+| MockUSDG | `0xc1A90A395f66920F9927aE9B406Ba5716DAc261f` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xc1a90a395f66920f9927ae9b406ba5716dac261f) |
+| ThesisFactory | `0xCdadF4af7360FF99169936ba95574ABD5e389785` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xcdadf4af7360ff99169936ba95574abd5e389785) |
+| Demo ThesisMarket | `0x3655ACF4C91029D94E3aE29A2D7E794a42Da795C` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x3655acf4c91029d94e3ae29a2d7e794a42da795c) |
+
+Superseded pre-hardening deployments are recorded in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md).
+
+## Final Live E2E
+
+The demo thesis settled **honestly** — the narrative did not clear its hurdle:
+
+| | |
+|---|---|
+| Narrative Alpha | **+2 bps** |
+| Hurdle | **+1000 bps** |
+| Outcome | **FADE** |
+| Winner payout | 1000 MockUSDG |
+| Final market balance | **0** |
+
+**No oracle result was fabricated.** BACK lost because the basket failed to beat its benchmark by
+the required margin. Every transaction is onchain:
+[`docs/LIVE_E2E_FINAL.md`](docs/LIVE_E2E_FINAL.md).
+
+## Testnet Oracle Transparency
+
+Feed cadence was measured from ~4,000 real testnet update transactions:
+
+| Percentile | Gap |
+|---|---|
+| median | 36–52 sec |
+| p90 | 0.75–5.0 min |
+| p99 | 2.8–6.2 min |
+| worst observed | 21.1 h (TSLA/GME history) |
+
+**Important limitation:** testnet AggregatorV3 feeds do **not** expose `getRoundData` round
+history, so a "first post-expiry round" cannot be cryptographically selected here. The shipped
+fallback:
+
+- pre-expiry oracle values are **rejected** (`OracleMath: pre-expiry price`)
+- settlement is bounded to a **30 minute** window
+- stale or dead feeds lead to **cancellation with a full refund**, never a stale-price settlement
+
+This was verified against real testnet data:
 
 ```text
-contracts/src/
-├── ThesisFactory.sol   createMarket(params, bond) — 校验、收 bond、部署市场
-├── ThesisMarket.sol    back / fade / resolve / claim / refund（不可变规格）
-├── OracleMath.sol      18 位归一化、加权收益、alpha 计算（纯函数）
-└── MockUSDG.sol        测试网抵押品
+resolvesAt     = 1789439524
+TSLA updatedAt = 1789439516   →  resolve() REVERTED: pre-expiry price
+TSLA updatedAt = 1789439576   →  resolve() SUCCEEDED
 ```
 
-## 测试
+## Architecture
+
+```text
+Browser ──HTTPS──▶ Cloudflare Tunnel ──▶ Vite preview :4173  (frontend)
+                                     └─▶ FastAPI      :8000  (thesis compiler)
+
+Frontend ──RPC──▶ Robinhood Chain Testnet 46630  (contracts)
+```
+
+No database, no indexer, no queue. Markets are read from `Factory.marketsLength()` /
+`Factory.marketAt()` and contract events.
+
+| Layer | Stack |
+|---|---|
+| Contracts | Solidity 0.8.24, Foundry, OpenZeppelin |
+| Backend | Python 3.12+, FastAPI, Pydantic v2, httpx |
+| Frontend | Vite, vanilla TypeScript, TailwindCSS, viem, EIP-1193 |
+| Chain | Robinhood Chain Testnet, ID 46630 |
+
+## Testing
 
 ```bash
-cd contracts && forge test
-# 4 个套件，27 个测试全绿：
-# - 单元（创建校验 / 下注 / 结算 / claim / §5.9 oracle 安全用例）
-# - fuzz（outcomeMatchesMath / poolConservation / claimNeverExceedsPool）
-# - invariant（抵押品 == backPool + fadePool，64 runs × 32 depth）
+cd contracts
+forge test
 ```
 
-前端与后端：
+| Gate | Result |
+|---|---|
+| Solidity tests | **67 passed** |
+| Fuzz | 7 suites × 256 runs |
+| Invariant | 6 suites × 2048 calls |
+| Frontend types | `npx tsc --noEmit` |
+| Frontend build | `npm run build` |
+| API selfcheck | `uv run python selfcheck.py` |
+| ABI parity | `python3 scripts/abi_parity.py` |
+
+## Security
+
+No proxy, no upgradeability, no owner-controlled settlement, permissionless resolve,
+deterministic payout. This is **hackathon testnet software** and has not received a professional
+security audit. See [`SECURITY.md`](SECURITY.md).
+
+## Local Development
 
 ```bash
-cd web && npm run build && npx tsc --noEmit   # 多页构建 4 页 + 0 类型错误
-cd api  && uv run python selfcheck.py          # 校验器 + mock 编译 + 线上端点
+# contracts
+cd contracts && forge build && forge test
+
+# backend
+cd api && uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
+
+# frontend
+cd web && npm install && npm run build && npx vite preview --host 127.0.0.1 --port 4173
 ```
 
-## 本地开发
+## Tunnel Development
 
 ```bash
-# 合约（Anvil 全流程）
-cd contracts && anvil &
-forge script script/DemoCreate.s.sol --fork-url http://localhost:8545 --broadcast
-cast rpc evm_setNextBlockTimestamp $(($(cast block latest -f timestamp) + 1300)) && cast rpc evm_mine
-forge script script/DemoResolve.s.sol --fork-url http://localhost:8545 --broadcast
-
-# API
-cd api && uv run uvicorn api.main:app --port 8000   # 无 key 自动用 mock 编译器
-
-# Web
-cd web && npm install && npm run dev                # /v1 代理到 localhost:8000
+cloudflared tunnel --url http://127.0.0.1:4173   # frontend
+cloudflared tunnel --url http://127.0.0.1:8000   # API
 ```
 
-生产配置（web/.env.production）：`VITE_CHAIN_ID=46630`、`VITE_FACTORY_ADDRESS`、
-`VITE_COLLATERAL_ADDRESS`、`VITE_RPC_URL`、`VITE_API_BASE`。
+Then rebuild the frontend with `VITE_API_BASE=<api tunnel url>` and allow that origin via
+`BACKFADE_CORS_ORIGINS`.
 
-LLM 配置（api/.env，勿提交）：`BACKFADE_LLM_API_KEY` / `BACKFADE_LLM_BASE_URL` / `BACKFADE_LLM_MODEL`。
-无 key 时自动降级为确定性 mock 编译器，demo 永不中断。
+## Documentation
 
-## 安全
-
-- 私钥只存 gitignored `contracts/.env`，仓库历史无任何 secret（已扫描）
-- 合约无升级代理、无 owner、无隐藏费用；claim/refund 有 `ReentrancyGuard`，转账走 `SafeERC20`
-- 编译器验证 fail-closed：权重和 ≠ 10000、篮子重复、基准混入、hurdle 越界一律 `THESIS_INVALID`
-- 只部署 Testnet；禁用主网
+| Doc | Contents |
+|---|---|
+| [`SECURITY.md`](SECURITY.md) | Trust assumptions, oracle limits, testnet caveats |
+| [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Evaluator navigation page |
+| [`docs/DEPLOYMENTS_FINAL.md`](docs/DEPLOYMENTS_FINAL.md) | Final deployment + verification record |
+| [`docs/LIVE_E2E_FINAL.md`](docs/LIVE_E2E_FINAL.md) | Full live E2E evidence and recomputation |
+| [`docs/TESTNET_ASSETS.md`](docs/TESTNET_ASSETS.md) | Verified feeds + measured cadence |
 
 ## Roadmap
 
-- 主网部署（官方 Chainlink Stock Token feeds 已在主网实测可用）
-- 排行榜（Proof Rate）+ creator 战绩页增强
-- 多 thesis 类型（相对强弱、事件驱动）
-- 索引器（当事件查询量真的成为问题时）
+- Named Cloudflare tunnel or stable hosting for a permanent demo URL
+- Production mainnet Stock Token feeds instead of testnet seeded feeds
+- Additional thesis primitives beyond weighted-basket excess return
+
+## License
+
+MIT

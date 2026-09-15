@@ -1,5 +1,6 @@
 """Backfade Thesis Compiler API. No DB, no queue, five endpoints max."""
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -11,6 +12,22 @@ from api.llm import compile_thesis, llm_enabled
 from api.models import CompileRequest, ErrorResponse, ThesisSpec
 from api.validator import ValidationError, validate_spec
 
+# PHASE 8 §34: explicit origin allowlist, never "*". Comma-separated override via
+# BACKFADE_CORS_ORIGINS; the defaults cover local dev plus the production preview port.
+DEFAULT_CORS_ORIGINS = [
+    "http://127.0.0.1:4173",
+    "http://localhost:4173",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+
+def cors_origins() -> list[str]:
+    raw = os.environ.get("BACKFADE_CORS_ORIGINS", "").strip()
+    if not raw:
+        return DEFAULT_CORS_ORIGINS
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,7 +38,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Backfade Thesis Compiler", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins(),
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
