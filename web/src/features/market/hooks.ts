@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import { type Address, type Hash, isAddress } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import {
+  type ContractResult,
   readContractResult,
   requireContractResult,
-  type ContractResult,
 } from "@/features/market/chainReads";
 import { formatAmount, formatBps, shortAddress } from "@/lib/format";
 import { deriveMarketState, type MarketState } from "@/lib/market/state";
