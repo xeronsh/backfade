@@ -15,6 +15,7 @@ api/.venv/
 # ===== 构建产物 =====
 dist/
 web/dist/
+web/test-results/
 api/dist/
 contracts/out/
 contracts/cache/
