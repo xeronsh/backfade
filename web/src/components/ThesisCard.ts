@@ -1,4 +1,4 @@
-// ThesisCard (spec §11.3) — feed card. CTA clicks must not trigger card navigation.
+// ThesisCard — feed card. CTA clicks must not trigger card navigation.
 import type { ThesisSpec } from "../api-types";
 import { ConvictionBar } from "./ConvictionBar";
 import { MarketStatus, type MarketState } from "./MarketStatus";

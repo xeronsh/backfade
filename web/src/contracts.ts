@@ -1,11 +1,15 @@
-// Chain + contract config. Addresses are injected after deployment (Anvil demo defaults).
-export const CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? 31337);
-export const CHAIN_NAME = import.meta.env.VITE_CHAIN_NAME ?? "Anvil Local";
-export const RPC_URL = import.meta.env.VITE_RPC_URL ?? "http://localhost:8545";
-export const FACTORY_ADDRESS =
-  (import.meta.env.VITE_FACTORY_ADDRESS as `0x${string}` | undefined) ??
-  "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-export const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+// Chain config lives in config.ts; re-exported here so existing imports keep working.
+export {
+  CHAIN_ID,
+  CHAIN_NAME,
+  RPC_URL,
+  EXPLORER_URL,
+  FACTORY_ADDRESS,
+  COLLATERAL_ADDRESS,
+  API_BASE,
+  CHAIN,
+  NATIVE_CURRENCY,
+} from "./config";
 
 // minimal ABIs — the frontend reads events and calls back/fade/resolve/claim
 export const FACTORY_ABI = [

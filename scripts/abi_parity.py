@@ -3,7 +3,7 @@
 
 Run from the repo root:  python3 scripts/abi_parity.py
 Exits non-zero and prints every drift on mismatch. This is the check that would have
-caught the missing settlementWindow/maxStartAge entries (PHASE 4.6).
+caught the missing settlementWindow/maxStartAge entries during ABI hardening.
 """
 import json, re, subprocess, sys, pathlib
 

@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "build": "npm run build --prefix web",
-    "test": "npm run build --prefix web && forge test --root contracts"
+    "typecheck": "npm run typecheck --prefix web",
+    "test": "npm run test --prefix web && forge test --root contracts",
+    "test:abi": "python3 scripts/abi_parity.py"
   }
 }

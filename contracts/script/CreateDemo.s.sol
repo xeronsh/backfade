@@ -6,9 +6,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ThesisFactory} from "../src/ThesisFactory.sol";
 import {ThesisMarket} from "../src/ThesisMarket.sol";
 
-/// @notice PHASE 6 — the single final demo thesis: AI capex rotating into AMD + PLTR
+/// @notice The demo thesis: AI capex rotating into AMD + PLTR
 ///         versus a TSLA benchmark, hurdle +10%, on the live testnet seeded feeds.
-contract CreateFinalDemo is Script {
+contract CreateDemo is Script {
     address constant AMD_FEED = 0x5406FC983e7f84B544FF6fc855e06c22Cf36A795;
     address constant PLTR_FEED = 0x84206ED5EBF05B1519486742344d0499Df875Bd0;
     address constant TSLA_FEED = 0x81b48EC24970aA75Ae940e2492fdA006071aC31B;

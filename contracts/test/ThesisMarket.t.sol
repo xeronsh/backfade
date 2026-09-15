@@ -262,7 +262,7 @@ contract ThesisMarketTest is BaseTest {
         market().resolve();
     }
 
-    /// Spec §8: anyone may resolve, and the caller cannot steer the result. The same
+    /// anyone may resolve, and the caller cannot steer the result. The same
     /// legal observation set produces the identical outcome and alpha whoever pushes it.
     function test_ResolveIsPermissionlessAndCallerIndependent() public {
         backFrom(backer, 300e18);
@@ -275,7 +275,7 @@ contract ThesisMarketTest is BaseTest {
         assertEq(market().narrativeAlphaBps(), 2000);
     }
 
-    /// Spec §8: once a legal post-expiry observation settles the market, a later print
+    /// once a legal post-expiry observation settles the market, a later print
     /// inside the same window cannot re-open it — the outcome is frozen for everyone.
     function test_OutcomeFrozenAtFirstLegalResolution() public {
         warpAndPrintBackWins();
@@ -295,7 +295,7 @@ contract ThesisMarketTest is BaseTest {
         assertEq(uint8(market().outcome()), uint8(ThesisMarket.Outcome.Back));
     }
 
-    /// Spec §8: a non-positive answer observed after expiry must still be refused.
+    /// a non-positive answer observed after expiry must still be refused.
     function test_RejectNonPositiveEndAnswerAtResolve() public {
         uint64 resolvesAt = uint64(block.timestamp + RESOLVES_AT);
         // start price is valid; the feed later reports a non-positive answer inside the window
@@ -314,7 +314,7 @@ contract ThesisMarketTest is BaseTest {
         market().resolve();
     }
 
-    /// Spec §8: a zero-timestamp observation must be refused even if it is recent.
+    /// a zero-timestamp observation must be refused even if it is recent.
     function test_RejectZeroUpdatedAtEndPriceAtResolve() public {
         uint64 resolvesAt = uint64(block.timestamp + RESOLVES_AT);
         BrokenV3Aggregator noStamp = new BrokenV3Aggregator(200e8, block.timestamp);
@@ -331,7 +331,7 @@ contract ThesisMarketTest is BaseTest {
         market().resolve();
     }
 
-    /// Spec §8: the settlement observation must sit inside the window, not merely be recent
+    /// the settlement observation must sit inside the window, not merely be recent
     /// in wall-clock terms. A print 45 minutes after expiry fails a 30 minute window.
     function test_RejectObservationOutsideWindowEvenIfFresh() public {
         uint64 resolvesAt = uint64(block.timestamp + RESOLVES_AT);

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Backfade v0.1 — dark only, brand green used sparingly (spec §9) */
+/* Backfade v0.1 — dark only, brand green used sparingly */
 :root {
   --canvas: #0b0d0e;
   --surface-1: #111416;
@@ -207,6 +207,7 @@ input, textarea { font-family: inherit; }
 .pill--proven { color: var(--back); background: var(--back-soft); border-color: transparent; }
 .pill--failed { color: var(--fade); background: var(--fade-soft); border-color: transparent; }
 .pill--cancelled { color: var(--text-3); }
+.pill--cancellable { color: var(--warning); border-color: var(--warning); }
 
 /* composer */
 .composer textarea {

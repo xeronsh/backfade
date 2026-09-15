@@ -1,6 +1,5 @@
-// Create page (spec §8.3, §11.6, §11.7, §11.8, §12.4)
-// narrative -> Compile -> Preview -> confirm -> conviction -> approve -> create -> redirect
-import { createPublicClient, createWalletClient, custom, http, parseUnits, decodeEventLog, type Address } from "viem";
+// Create page — narrative -> Compile -> Preview -> confirm -> conviction -> approve -> create
+import { createPublicClient, http, parseUnits, decodeEventLog, type Address } from "viem";
 import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ThesisPreview } from "../components/ThesisPreview";
 import { compileThesis, type ThesisSpec } from "../api";
@@ -10,8 +9,7 @@ import {
   FACTORY_ABI,
   ERC20_ABI,
   FACTORY_ADDRESS,
-  CHAIN_ID,
-  CHAIN_NAME,
+  COLLATERAL_ADDRESS,
   RPC_URL,
 } from "../contracts";
 
@@ -128,10 +126,18 @@ async function main() {
     result.appendChild(convictionCard);
   }
 
-  async function launchClicked(conviction: string, launch: HTMLButtonElement) {
+  async function launchClicked(convictionInput: string, launch: HTMLButtonElement) {
     if (!compiled) return;
-    const amount = Number(conviction);
-    if (!(amount > 0)) return toast("Enter a conviction amount.", "error");
+    // Parse the decimal string straight to base units. Routing through Number() would lose
+    // precision on large values and accept forms like "1e3" that parseUnits rejects.
+    let conviction: bigint;
+    try {
+      conviction = parseUnits(convictionInput.trim(), 18);
+    } catch {
+      return toast("Enter a valid amount.", "error");
+    }
+    if (conviction <= 0n) return toast("Enter a conviction amount.", "error");
+
     if (!currentAccount) {
       await connect();
       await ensureChain();
@@ -143,11 +149,8 @@ async function main() {
     setBusy(launch, "Launching…");
     try {
       // 1. approve collateral to factory, then create market with creator bond
-      const collateral = (import.meta.env.VITE_COLLATERAL_ADDRESS as Address) ??
-        "0xf910f0e62868c8479a25aa34fb407bc4ef66c112";
-      const factory = (import.meta.env.VITE_FACTORY_ADDRESS as Address) ??
-        "0x49e769a20fb4b7ced6c31f94402f555038bd7e8f";
-      const conviction = parseUnits(String(amount), 18);
+      const collateral = COLLATERAL_ADDRESS;
+      const factory = FACTORY_ADDRESS;
       const allowance = (await client.readContract({
         address: collateral, abi: ERC20_ABI, functionName: "allowance",
         args: [currentAccount!, factory],
@@ -160,9 +163,9 @@ async function main() {
         });
         await client.waitForTransactionReceipt({ hash: approveTx });
       }
-      // PHASE 4.6 §13 — all times are unix seconds derived from the compiled spec, never
-      // browser-local date strings. bettingEndsAt is a short entry window; resolvesAt honours
-      // the compiler's duration_days so the onchain expiry matches the thesis the user saw.
+      // All times are unix seconds derived from the compiled spec, never browser-local date
+      // strings. bettingEndsAt is a short entry window; resolvesAt honours the compiler's
+      // duration_days so the onchain expiry matches the thesis the user saw.
       const now = Math.floor(Date.now() / 1000);
       const durationDays = spec.duration_days > 0 ? spec.duration_days : 30;
       const params = {
@@ -219,5 +222,4 @@ function restore(btn: HTMLButtonElement, fallback: string) {
   btn.disabled = false;
 }
 
-void CHAIN_ID; void CHAIN_NAME; void parseUnits; void createWalletClient; void custom;
 main().catch(console.error);

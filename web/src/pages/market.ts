@@ -1,11 +1,13 @@
-// Market detail page (spec §8.4, §11.5, §12.3) — /market.html?address=0x…
+// Market detail page — /market.html?address=0x…
 import { createPublicClient, http, formatUnits, parseUnits, type Address } from "viem";
 import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ConvictionBar } from "../components/ConvictionBar";
-import { MarketStatus, type MarketState } from "../components/MarketStatus";
+import { MarketStatus } from "../components/MarketStatus";
 import { toast } from "../components/Toast";
 import { connect, currentAccount, ensureChain, getWallet, shortAddress } from "../wallet";
 import { MARKET_ABI, ERC20_ABI, RPC_URL } from "../contracts";
+import { marketState } from "../market-lifecycle";
+import { getAssets } from "../api";
 import { formatUsd, timeLeft, bpsToSignedPct } from "../format";
 
 const client = createPublicClient({ transport: http(RPC_URL) });
@@ -33,23 +35,61 @@ async function main() {
   });
 }
 
+/// Feed address -> symbol, from the compiler API. Falls back to a short address so the page
+/// still renders when the API is offline.
+async function feedSymbols(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  try {
+    for (const a of await getAssets()) map.set(a.feed.toLowerCase(), a.symbol);
+  } catch {
+    // API offline — short addresses are shown instead
+  }
+  return map;
+}
+
 async function renderMarket(page: HTMLElement, address: Address) {
   const read = <F extends (typeof MARKET_ABI)[number]["name"]>(fn: F, args: unknown[] = []) =>
     client.readContract({ address, abi: MARKET_ABI, functionName: fn as never, args: args as never }) as Promise<never>;
 
-  const [narrative, hurdleBps, bettingEndsAt, resolvesAt, creator, creatorBond, backPool, fadePool, outcome, alpha] =
-    await Promise.all([
-      read("narrative") as Promise<string>,
-      read("hurdleBps") as Promise<number>,
-      read("bettingEndsAt") as Promise<bigint>,
-      read("resolvesAt") as Promise<bigint>,
-      read("creator") as Promise<Address>,
-      read("creatorBond") as Promise<bigint>,
-      read("backPool") as Promise<bigint>,
-      read("fadePool") as Promise<bigint>,
-      read("outcome") as Promise<number>,
-      read("narrativeAlphaBps") as Promise<bigint>,
-    ]);
+  const [
+    narrative,
+    hurdleBps,
+    bettingEndsAt,
+    resolvesAt,
+    settlementWindow,
+    creator,
+    creatorBond,
+    backPool,
+    fadePool,
+    outcome,
+    alpha,
+    basketLen,
+    benchmarkFeed,
+  ] = await Promise.all([
+    read("narrative") as Promise<string>,
+    read("hurdleBps") as Promise<number>,
+    read("bettingEndsAt") as Promise<bigint>,
+    read("resolvesAt") as Promise<bigint>,
+    read("settlementWindow") as Promise<bigint>,
+    read("creator") as Promise<Address>,
+    read("creatorBond") as Promise<bigint>,
+    read("backPool") as Promise<bigint>,
+    read("fadePool") as Promise<bigint>,
+    read("outcome") as Promise<number>,
+    read("narrativeAlphaBps") as Promise<bigint>,
+    read("basketLength") as Promise<bigint>,
+    read("benchmarkFeed") as Promise<Address>,
+  ]);
+
+  const n = Number(basketLen);
+  const basket = await Promise.all(
+    Array.from({ length: n }, (_, i) =>
+      read("basketAsset", [i]) as Promise<readonly [Address, number]>,
+    ),
+  );
+
+  const symbols = await feedSymbols();
+  const label = (feed: string) => symbols.get(feed.toLowerCase()) ?? shortAddress(feed);
 
   const collateral = (await read("collateral")) as Address;
   const [symbol, decimals] = await Promise.all([
@@ -58,13 +98,7 @@ async function renderMarket(page: HTMLElement, address: Address) {
   ]);
 
   const now = BigInt(Math.floor(Date.now() / 1000));
-  let state: MarketState;
-  if (outcome === 1) state = "PROVEN";
-  else if (outcome === 2) state = "FAILED";
-  else if (outcome === 3) state = "CANCELLED";
-  else if (now >= resolvesAt) state = "READY";
-  else if (now >= bettingEndsAt) state = "CLOSED";
-  else state = "OPEN";
+  const state = marketState({ outcome, resolvesAt, settlementWindow, bettingEndsAt, now });
 
   page.innerHTML = "";
   const wrap = document.createElement("div");
@@ -132,6 +166,23 @@ async function renderMarket(page: HTMLElement, address: Address) {
     resolveBtn.textContent = "Resolve";
     resolveBtn.addEventListener("click", () => void resolveMarket(address));
     marketCard.appendChild(resolveBtn);
+  } else if (state === "CANCELLABLE") {
+    marketCard.appendChild(
+      note(
+        "The settlement window closed without an acceptable oracle print. Anyone can cancel the market, after which every participant refunds their own stake.",
+      ),
+    );
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn btn--primary btn--wide";
+    cancelBtn.style.marginTop = "16px";
+    cancelBtn.textContent = "Cancel & enable refunds";
+    cancelBtn.addEventListener("click", () => void cancelMarket(address));
+    marketCard.appendChild(cancelBtn);
+  } else if (state === "CANCELLED") {
+    marketCard.appendChild(
+      note("This market was cancelled. Every participant can withdraw their own stake."),
+    );
+    marketCard.appendChild(refundButton(address));
   } else if (state === "PROVEN" || state === "FAILED") {
     const info = document.createElement("div");
     info.className = "card__row";
@@ -150,7 +201,18 @@ async function renderMarket(page: HTMLElement, address: Address) {
   // condition + timeline
   const detailCard = document.createElement("div");
   detailCard.className = "card";
+  const basketRows = basket
+    .map(([feed, weightBps]) => {
+      const name = label(feed);
+      const pct = Number(weightBps) / 100;
+      return `<div class="kv"><span class="kv__key">${name}</span><span class="kv__val">${pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1)}%</span></div>`;
+    })
+    .join("");
   detailCard.innerHTML = `
+    <div class="kv"><span class="kv__key">Basket</span><span class="kv__val"></span></div>
+    ${basketRows}
+    <div class="kv"><span class="kv__key">Benchmark</span><span class="kv__val">${label(benchmarkFeed)}</span></div>
+    <div class="kv"><span class="kv__key">Hurdle</span><span class="kv__val">+${Number(hurdleBps) / 100}%</span></div>
     <div class="kv"><span class="kv__key">Condition</span><span class="kv__val">Basket ≥ benchmark + ${Number(hurdleBps) / 100}%</span></div>
     <div class="kv"><span class="kv__key">Creator conviction</span><span class="kv__val">${formatUsd(creatorBond)}</span></div>
     <div class="kv"><span class="kv__key">Betting ends</span><span class="kv__val">${timeLeft(bettingEndsAt)}</span></div>
@@ -161,19 +223,48 @@ async function renderMarket(page: HTMLElement, address: Address) {
   page.appendChild(wrap);
 }
 
+function note(text: string): HTMLElement {
+  const el = document.createElement("p");
+  el.className = "muted";
+  el.style.cssText = "margin-top:16px;font-size:14px;line-height:1.5";
+  el.textContent = text;
+  return el;
+}
+
+function actionButton(label: string, onClick: () => void): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.className = "btn btn--primary btn--wide";
+  btn.style.marginTop = "16px";
+  btn.textContent = label;
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
+/// Refund is idempotent from the user's point of view but reverts onchain once the stake is
+/// zero, so the button is offered continuously and the revert is surfaced as a toast.
+function refundButton(market: Address): HTMLButtonElement {
+  return actionButton("Refund my stake", () => void refund(market));
+}
+
 async function takePosition(market: Address, collateral: Address, amountStr: string, decimals: number) {
   if (!side) return toast("Choose BACK or FADE.", "error");
-  const value = Number(amountStr);
-  if (!(value > 0)) return toast("Enter a positive amount.", "error");
+  // Parse the decimal string directly to base units — no float round-trip.
+  let amount: bigint;
+  try {
+    amount = parseUnits(amountStr.trim(), decimals);
+  } catch {
+    return toast("Enter a valid amount.", "error");
+  }
+  if (amount <= 0n) return toast("Enter a positive amount.", "error");
+
   if (!currentAccount) {
     await connect();
     await ensureChain();
   }
   const wallet = getWallet();
-  const amount = parseUnits(amountStr, decimals);
 
   try {
-    // allowance check -> approve if needed (spec §12.3)
+    // allowance check -> approve if needed
     const allowance = (await client.readContract({
       address: collateral,
       abi: ERC20_ABI,
@@ -226,6 +317,22 @@ async function resolveMarket(market: Address) {
   }
 }
 
+async function cancelMarket(market: Address) {
+  if (!currentAccount) {
+    await connect();
+    await ensureChain();
+  }
+  try {
+    const tx = await getWallet().writeContract({ chain: null, account: currentAccount!, address: market, abi: MARKET_ABI, functionName: "cancelAfterDeadline" });
+    toast("Cancelling…", "info");
+    await client.waitForTransactionReceipt({ hash: tx });
+    toast("Market cancelled — refunds are open.", "success");
+    window.setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    toast((e as Error).message.slice(0, 160), "error");
+  }
+}
+
 async function claim(market: Address) {
   if (!currentAccount) {
     await connect();
@@ -236,6 +343,22 @@ async function claim(market: Address) {
     toast("Claim submitted.", "info");
     await client.waitForTransactionReceipt({ hash: tx });
     toast("Claim confirmed.", "success");
+    window.setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    toast((e as Error).message.slice(0, 160), "error");
+  }
+}
+
+async function refund(market: Address) {
+  if (!currentAccount) {
+    await connect();
+    await ensureChain();
+  }
+  try {
+    const tx = await getWallet().writeContract({ chain: null, account: currentAccount!, address: market, abi: MARKET_ABI, functionName: "refund" });
+    toast("Refund submitted.", "info");
+    await client.waitForTransactionReceipt({ hash: tx });
+    toast("Refund confirmed.", "success");
     window.setTimeout(() => location.reload(), 800);
   } catch (e) {
     toast((e as Error).message.slice(0, 160), "error");

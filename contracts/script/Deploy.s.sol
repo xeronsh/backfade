@@ -1,24 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Script} from "forge-std/Script.sol";
+import {Script, console2} from "forge-std/Script.sol";
 import {ThesisFactory} from "../src/ThesisFactory.sol";
 import {MockUSDG} from "../src/MockUSDG.sol";
-import {MockV3Aggregator} from "../test/MockV3Aggregator.sol";
 
+/// @notice Robinhood Chain Testnet deployment. Deployer key comes from the
+///         environment and is never written to disk or printed.
 contract Deploy is Script {
-    function run() external returns (ThesisFactory factory, MockUSDG usdg) {
-        uint256 pk = vm.envUint("DEPLOYER_KEY");
+    function run() external {
+        uint256 pk = vm.envUint("DEPLOYER_PK");
+        address deployer = vm.addr(pk);
         vm.startBroadcast(pk);
 
-        usdg = new MockUSDG();
-        // demo feed set: CEG VST GEV + benchmark NVDA
-        new MockV3Aggregator(8, 200e8); // CEG
-        new MockV3Aggregator(8, 100e8); // VST
-        new MockV3Aggregator(8, 300e8); // GEV
-        new MockV3Aggregator(8, 500e8); // NVDA
-        factory = new ThesisFactory();
+        MockUSDG usdg = new MockUSDG();
+        ThesisFactory factory = new ThesisFactory();
 
         vm.stopBroadcast();
+
+        console2.log("deployer:", deployer);
+        console2.log("MockUSDG:", address(usdg));
+        console2.log("ThesisFactory:", address(factory));
+
+        string memory j = "final";
+        vm.serializeAddress(j, "usdg", address(usdg));
+        string memory out = vm.serializeAddress(j, "factory", address(factory));
+        vm.writeFile("deployment.json", out);
     }
 }

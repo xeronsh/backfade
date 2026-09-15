@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/market-lifecycle.test.mjs"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

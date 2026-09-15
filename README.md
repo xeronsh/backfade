@@ -79,13 +79,20 @@ mainnet production feeds. See [Testnet oracle transparency](#testnet-oracle-tran
 
 ## Live Demo
 
-| Service | URL |
-|---|---|
-| Frontend | `https://water-moderate-exec-significance.trycloudflare.com` |
-| Thesis Compiler API | `https://phi-diameter-block-earliest.trycloudflare.com` |
+The demo runs the production build locally and exposes it through one Cloudflare Tunnel. Vite
+proxies `/v1` to the FastAPI process, so the browser sees a single origin and no CORS is
+involved. No VPS, no database — the chain is the source of truth.
 
-Temporary development tunnel (Cloudflare Quick Tunnel). Runs locally, exposed publicly. No VPS,
-no database. The chain is the source of truth.
+Run it:
+
+```bash
+cd api  && uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 &
+cd web  && npm run build && npx vite preview --host 127.0.0.1 --port 4173 &
+cloudflared tunnel --url http://127.0.0.1:4173 --protocol http2
+```
+
+The tunnel hostname is assigned at runtime (see the `cloudflared` output) and changes on every
+restart, so it is read from the terminal rather than hardcoded here.
 
 ## What It Looks Like
 
@@ -95,7 +102,7 @@ Feed                      Market
 │ Thesis narratives    │  │ Narrative: AI infrastructure …       │
 │ read from chain      │  │ BACK 80% / FADE 20%                  │
 │ (Factory.marketAt)   │  │ Creator Conviction  $500             │
-└──────────────────────┘  │ Narrative Alpha  +0.02%  →  FAILED   │
+└──────────────────────┘  │ Narrative Alpha  −0.05%  →  FAILED   │
                           └──────────────────────────────────────┘
 ```
 
@@ -108,8 +115,6 @@ All on **Robinhood Chain Testnet** (Chain ID `46630`) and **source verified**.
 | MockUSDG | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x7ba735a381b9ffe700a8c92558659461b359ee9c) |
 | ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x9db674834f4c060114cb53f21e179fc54f905342) |
 | Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xbf496ef435c814c81864b5f337f23b63d4b26bb3) |
-
-Superseded pre-hardening deployments are recorded in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md).
 
 ## Final Live E2E
 
@@ -125,7 +130,7 @@ The demo thesis settled **honestly** — the narrative did not clear its hurdle:
 
 **No oracle result was fabricated.** BACK lost because the basket failed to beat its benchmark by
 the required margin. Every transaction is onchain:
-[`docs/LIVE_E2E_FINAL.md`](docs/LIVE_E2E_FINAL.md).
+[`docs/LIVE_E2E.md`](docs/LIVE_E2E.md).
 
 ## Testnet Oracle Transparency
 
@@ -146,19 +151,30 @@ fallback:
 - settlement is bounded to a **30 minute** window
 - stale or dead feeds lead to **cancellation with a full refund**, never a stale-price settlement
 
-This was verified against real testnet data:
+This was verified against real testnet data, on the contract that is deployed now:
 
 ```text
-resolvesAt     = 1789439524
-TSLA updatedAt = 1789439516   →  resolve() REVERTED: pre-expiry price
-TSLA updatedAt = 1789439576   →  resolve() SUCCEEDED
+expiry (resolvesAt)  = 1789449886
+TSLA updatedAt       = 1789449885   →  resolve() REVERTED: pre-expiry price
+TSLA updatedAt       = 1789449956   →  resolve() SUCCEEDED
+```
+
+The refund fallback was exercised on the same deployment. A thesis that decided FADE while
+nobody had taken the FADE side cannot pay anyone, so it cancelled instead of locking the
+creator's bond forever:
+
+```text
+narrativeAlphaBps = +16        →  decided FADE
+fadePool          = 0          →  no winning side to pay
+outcome           = Cancelled  →  refund(); market balance 100 → 0
 ```
 
 ## Architecture
 
 ```text
-Browser ──HTTPS──▶ Cloudflare Tunnel ──▶ Vite preview :4173  (frontend)
-                                     └─▶ FastAPI      :8000  (thesis compiler)
+Browser ──HTTPS──▶ Cloudflare Tunnel ──▶ Vite preview :4173
+                                          ├── static frontend
+                                          └── /v1 ──▶ FastAPI :8000   (thesis compiler)
 
 Frontend ──RPC──▶ Robinhood Chain Testnet 46630  (contracts)
 ```
@@ -211,13 +227,16 @@ cd web && npm install && npm run build && npx vite preview --host 127.0.0.1 --po
 
 ## Tunnel Development
 
+One tunnel is enough. `vite preview` proxies `/v1` to the API, so a single public hostname
+serves the whole app same-origin:
+
 ```bash
-cloudflared tunnel --url http://127.0.0.1:4173   # frontend
-cloudflared tunnel --url http://127.0.0.1:8000   # API
+cloudflared tunnel --url http://127.0.0.1:4173 --protocol http2
 ```
 
-Then rebuild the frontend with `VITE_API_BASE=<api tunnel url>` and allow that origin via
-`BACKFADE_CORS_ORIGINS`.
+`--protocol http2` is required on networks where QUIC is blocked; without it the tunnel
+connects and then fails to serve. For a stable hostname, point a named tunnel at port 4173 and
+add the domain to `preview.allowedHosts` in `web/vite.config.ts`.
 
 ## Documentation
 
@@ -225,16 +244,15 @@ Then rebuild the frontend with `VITE_API_BASE=<api tunnel url>` and allow that o
 |---|---|
 | [`SECURITY.md`](SECURITY.md) | Trust assumptions, oracle limits, testnet caveats |
 | [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Evaluator navigation page |
-| [`docs/DEPLOYMENTS_FINAL.md`](docs/DEPLOYMENTS_FINAL.md) | Final deployment + verification record |
-| [`docs/LIVE_E2E_FINAL.md`](docs/LIVE_E2E_FINAL.md) | Full live E2E evidence and recomputation |
+| [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md) | Final deployment + verification record |
+| [`docs/LIVE_E2E.md`](docs/LIVE_E2E.md) | Full live E2E evidence and recomputation |
 | [`docs/TESTNET_ASSETS.md`](docs/TESTNET_ASSETS.md) | Verified feeds + measured cadence |
 
 ## Roadmap
 
-- Named Cloudflare tunnel or stable hosting for a permanent demo URL
 - Production mainnet Stock Token feeds instead of testnet seeded feeds
 - Additional thesis primitives beyond weighted-basket excess return
 
 ## License
 
-MIT
+MIT — see [`LICENSE`](LICENSE).

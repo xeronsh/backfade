@@ -8,20 +8,20 @@ Markets trade assets. Communities trade narratives.
 
 ---
 
-## Live demo (Tunnel)
+## Live demo
 
-| Service | URL |
-|---|---|
-| Frontend (public HTTPS) | `https://water-moderate-exec-significance.trycloudflare.com` |
-| Thesis Compiler API | `https://phi-diameter-block-earliest.trycloudflare.com` |
+The demo runs the production build locally and exposes it through **one** Cloudflare Tunnel.
+`vite preview` proxies `/v1` to FastAPI, so the browser sees a single origin with no CORS.
 
-Both run **locally** (`vite preview` on `127.0.0.1:4173`, FastAPI on `127.0.0.1:8000`) and are
-exposed through Cloudflare Quick Tunnels. No VPS, no database. The chain is the source of truth.
+```bash
+cd api && uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 &
+cd web && npm run build && npx vite preview --host 127.0.0.1 --port 4173 &
+cloudflared tunnel --url http://127.0.0.1:4173 --protocol http2
+```
 
-**Temporary development tunnel.** These Quick-Tunnel URLs are ephemeral by design and change
-whenever the tunnel restarts. They are used for live testing and demo recording only. The final
-submission URL will be a stable named tunnel (e.g. `dev.backfade.fun` / `api-dev.backfade.fun`)
-or equivalent hosting — still served from the local stack, no VPS required.
+The public hostname is printed by `cloudflared` at startup and changes on every restart, so it is
+read from the terminal rather than pinned here. No VPS is involved: the app runs on a laptop and
+the tunnel gives it a public HTTPS origin.
 
 ## Network
 
@@ -42,7 +42,7 @@ All three are **source verified** (`Pass - Verified`) on the Robinhood Chain Tes
 | ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0x9db674834f4c060114cb53f21e179fc54f905342) |
 | Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0xbf496ef435c814c81864b5f337f23b63d4b26bb3) |
 
-Full deployment record: `docs/DEPLOYMENTS_FINAL.md`.
+Full deployment record: `docs/DEPLOYMENTS.md`.
 
 ## Demo thesis
 
@@ -55,15 +55,15 @@ Full deployment record: `docs/DEPLOYMENTS_FINAL.md`.
 | Outcome | **FADE** — Narrative Alpha settled at **−5 bps**, far below the hurdle |
 
 The narrative did not clear its hurdle and BACK lost. No oracle value was fabricated to produce
-a prettier demo. Full transaction and recomputation trail: `docs/LIVE_E2E_FINAL.md`.
+a prettier demo. Full transaction and recomputation trail: `docs/LIVE_E2E.md`.
 
 ## Transactions
 
 | Step | Tx |
 |---|---|
-| Create market (creator bond 500, BACK) | `0x571afc7de8ab8fd9ae16255709e4039fcc2f855ec6d219e2f435c5a62275123c` |
-| Trader BACK 300 | `0x3d2b97eb9d834012b627d897019a7b95bb597b78adb2d8cafcbf64e36c498da0` |
-| Trader FADE 200 | `0xd618c078dcba44e999e7e174d5ad482b03493067665c312f5c631881e777082c` |
+| Create market (creator bond 500, BACK) | `0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754` |
+| Trader BACK 300 | `0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b` |
+| Trader FADE 200 | `0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb` |
 | Resolve | `0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858` |
 | Winner claim | `0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f` |
 
@@ -98,10 +98,14 @@ The shipped fallback, which is what the code actually enforces:
 The core integrity property was demonstrated on live testnet data:
 
 ```
-resolvesAt      = 1789439524
-TSLA updatedAt  = 1789439516  ->  resolve() REVERTED: OracleMath: pre-expiry price
-TSLA updatedAt  = 1789439576  ->  resolve() SUCCEEDED
+expiry (resolvesAt)   = 1789449886
+TSLA updatedAt        = 1789449885  ->  resolve() REVERTED: pre-expiry price
+TSLA updatedAt        = 1789449956  ->  resolve() SUCCEEDED
 ```
+
+Separately, the cancellation fallback was exercised end to end: past the settlement window
+`resolve()` reverts `SettlementWindowPassed`, `cancelAfterDeadline()` opens refunds, and every
+participant recovers their own stake exactly (market balance 200 → 0).
 
 A pre-expiry price cannot settle a market.
 
@@ -109,9 +113,9 @@ A pre-expiry price cannot settle a market.
 
 | Gate | Result |
 |---|---|
-| `forge test` | **67 passed / 0 failed** |
+| `forge test` | **71 passed / 0 failed** |
 | Fuzz | 7 suites × 256 runs |
-| Invariant | 6 suites × 64 runs × 2048 calls |
+| Invariant | 7 suites × 2048 calls |
 | `npx tsc --noEmit` | PASS |
 | `npm run build` | PASS |
 | `uv run python selfcheck.py` | ALL BACKEND CHECKS PASSED |
@@ -159,55 +163,15 @@ See `SECURITY.md` for the full security posture.
 
 ---
 
-## Judge review — the six questions
-
-**1. Why is this not Polymarket?**
-
-Polymarket prices *event probability* — will X happen, yes or no. Backfade prices whether an
-**investment narrative generates benchmark-relative alpha**. The traded object is not an event
-outcome; it is whether a basket outperforms a benchmark by a required margin.
-
-**2. Why does the Creator Bond exist?**
-
-It turns a free market opinion into a **costly signal**. Posting a take costs nothing and can be
-deleted. Bonding capital means the creator is exposed to being wrong.
-
-**3. Why is this not just an index builder?**
-
-The basket is only the **machine representation** of a narrative. The traded object is the thesis
-and its alpha against a benchmark, with a hurdle and a settlement deadline. An index has no
-counterparty, no hurdle, and no resolution.
-
-**4. Why Robinhood Chain?**
-
-Because Backfade turns real-world stock narratives into onchain claims and resolves them using
-market-linked price infrastructure. Robinhood Chain's Stock Token direction supplies that
-environment, so a narrative about real equities becomes a claim the chain can settle.
-
-**5. Where is the AI?**
-
-AI **compiles** a human narrative into a restricted, deterministic `ThesisSpec` (basket, weights,
-benchmark, hurdle, duration) under a fail-closed validator. AI **never** determines settlement, and
-it cannot supply feed addresses — those come from a deterministic registry. The oracle and the
-math decide the winner.
-
-**6. Why should this be trusted?**
-
-Capital, specification, oracle settlement, and payout all live onchain. There is no proxy, no
-upgradeability, no owner, no admin settlement, and no database. Anyone can call `resolve()`; the
-math decides. Both documentation and the published evidence record the protocol's limits rather
-than hiding them.
-
----
-
 ## Submission package checklist
 
 | Item | Location |
 |---|---|
 | README (English-first) | [`README.md`](../README.md) |
 | Security posture | [`SECURITY.md`](../SECURITY.md) |
-| Final deployment + verification | [`DEPLOYMENTS_FINAL.md`](DEPLOYMENTS_FINAL.md) |
-| Live E2E evidence | [`LIVE_E2E_FINAL.md`](LIVE_E2E_FINAL.md) |
+| Final deployment + verification | [`DEPLOYMENTS.md`](DEPLOYMENTS.md) |
+| Live E2E evidence | [`LIVE_E2E.md`](LIVE_E2E.md) |
 | Verified feeds + cadence | [`TESTNET_ASSETS.md`](TESTNET_ASSETS.md) |
-| Superseded deployments | [`DEPLOYMENTS.md`](DEPLOYMENTS.md) |
+| Cancellation + refund evidence | [`LIVE_E2E.md`](LIVE_E2E.md#cancellation-and-refund) |
+| Pitch notes | [`PITCH.md`](PITCH.md) |
 | Demo video | linked in the submission form |

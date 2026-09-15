@@ -1,41 +1,122 @@
-# Robinhood Chain Testnet Deployments
+# Deployment — Robinhood Chain Testnet
 
-> ⚠️ **SUPERSEDED — pre-hardening deployments.**
->
-> This file records the original Anvil/testnet deployment used during v0.1 development. Those
-> contracts predate the pari-mutuel payout fix and the oracle bounded-settlement work, and are
-> **not** the submission deployment.
->
-> The final, verified submission deployment lives in
-> [`DEPLOYMENTS_FINAL.md`](DEPLOYMENTS_FINAL.md).
+Verified live over RPC `https://rpc.testnet.chain.robinhood.com` on 2026-09-15.
 
+## Network
 
-- Network: **Robinhood Chain Testnet**, Chain ID **46630**
-- RPC: `https://rpc.testnet.chain.robinhood.com`
-- Explorer: `https://explorer.testnet.chain.robinhood.com`
-- Deploy date: 2026-09-14
-- Git commit: see `git log` (efac486+)
-
-| Contract | Address | Verified |
-|---|---|---|
-| MockUSDG (collateral) | `0xf910f0e62868c8479a25aa34fb407bc4ef66c112` | ✅ |
-| ThesisFactory | `0x49e769a20fb4b7ced6c31f94402f555038bd7e8f` | ✅ |
-| Demo ThesisMarket | `0x0a9c3c881aA3df08bDaEEC8f283e09c5aa532334` | ✅ |
-
-Deployer / creator public address: `0x0973104738884C05F8dF85DCd007daf9609820f0`
-
-## Verified testnet price feeds (Chainlink-compatible AggregatorV3)
-
-See [TESTNET_ASSETS.md](TESTNET_ASSETS.md) for the full verification table.
-
-| Symbol | Feed |
+| Field | Value |
 |---|---|
-| TSLA | `0x81b48EC24970aA75Ae940e2492fdA006071aC31B` |
-| AMZN | `0x8D165612B0d63416141833834257386586f34224` |
-| PLTR | `0x84206ED5EBF05B1519486742344d0499Df875Bd0` |
-| AMD | `0x5406FC983e7f84B544FF6fc855e06c22Cf36A795` |
-| NVDA | `0xBf15aA8CB0f376DB8fcb309347CB7375567bEC6B` |
+| Network | Robinhood Chain Testnet |
+| Chain ID | 46630 |
+| RPC | `https://rpc.testnet.chain.robinhood.com` |
+| Explorer | https://explorer.testnet.chain.robinhood.com |
+| Collateral | MockUSDG (testnet only, no value) |
 
-Note: official Chainlink Stock-Token feed proxies (per docs.chain.link) are mainnet-only today;
-the testnet ecosystem ships seeded AggregatorV3-compatible feeds (pushed via `setAnswer`),
-which this demo consumes. No secrets are stored in this repo.
+## Build provenance
+
+| Field | Value |
+|---|---|
+| Solidity | 0.8.24 |
+| Optimizer | **enabled, runs = 200** |
+| via_ir | false |
+| Runtime sizes | MockUSDG 1,884 B · ThesisFactory 15,189 B · ThesisMarket 8,064 B (limit 24,576 B) |
+| EVM version | cancun |
+
+The optimizer is required, not cosmetic: `ThesisFactory` is 27,116 B without it, above the
+24,576 B EIP-170 limit, because the factory runtime embeds the market creation bytecode.
+
+## Contracts
+
+| Contract | Address |
+|---|---|
+| MockUSDG | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` |
+| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` |
+| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` |
+
+Deploy transactions are in `contracts/broadcast/Deploy.s.sol/46630/`.
+
+## Demo market
+
+| Field | Value |
+|---|---|
+| Narrative | AI infrastructure keeps outperforming: AMD and PLTR beat a TSLA benchmark. |
+| Basket | AMD 60% + PLTR 40% |
+| Benchmark | TSLA |
+| Hurdle | +1000 bps (10%) |
+| Settlement window | 1800 s (30 min, factory default) |
+| Creator bond | 500 MockUSDG |
+| Expiry (`resolvesAt`) | 1789444167 |
+
+Start prices are read from the market's own storage (`startPrices(uint256)`):
+
+| Leg | Start price (8 dp) |
+|---|---|
+| AMD | 49,481,000,000 |
+| PLTR | 17,250,500,000 |
+| TSLA (benchmark) | 35,987,890,846 |
+
+The settlement run against this market is in [`LIVE_E2E.md`](LIVE_E2E.md).
+
+Three further markets were created on the same factory to exercise the fallback paths, and are
+recorded there:
+
+| Market | Purpose | Outcome |
+|---|---|---|
+| `0xD30d2366b9599a6d347195aF2eaf31F637F49A1C` | settlement window closes with no legal print | `Cancelled` → refunds, balance 200 → 0 |
+| `0x08042F839fc704B71bA42D11B567210480a51C44` | pre-expiry print rejected, then empty winning pool | `Cancelled` → refunds, balance 100 → 0 |
+| `0x308C6E7ECe75bb733Cb9c7032561c0D138279799` | UI `CANCELLABLE` state rendering | `Cancelled` |
+
+## Wallets
+
+| Role | Public address |
+|---|---|
+| Deployer / creator | `0xe8507D6396C332a891b2eAFa14e34e812fa289D7` |
+| Trader / counterparty | `0x256d37917FF57DD87cEb558cBB995AffFfB2F2fE` |
+
+Both are testnet-only wallets generated for this submission. An earlier development wallet
+(`0x0973…820f0`) appears in git history and is treated as compromised; its key has been replaced
+with a placeholder in `contracts/.env` and it holds no submission role.
+
+Private keys exist only in the gitignored `contracts/.env` (mode 600) and are never printed,
+logged, committed, or included in this document.
+
+## Source verification
+
+| Contract | Status |
+|---|---|
+| ThesisFactory | ✅ verified — `is_verified: true` |
+| Demo ThesisMarket | ✅ verified, constructor args included |
+| MockUSDG | ✅ verified by bytecode identity — see note below |
+
+Settings that must match exactly:
+
+| Setting | Value |
+|---|---|
+| Compiler | `v0.8.24` |
+| Optimizer | enabled, 200 runs |
+| EVM version | `cancun` |
+| Verifier | Blockscout |
+
+```bash
+cd contracts
+forge verify-contract 0x9Db674834F4C060114Cb53f21e179fc54F905342 src/ThesisFactory.sol:ThesisFactory \
+  --rpc-url https://rpc.testnet.chain.robinhood.com \
+  --verifier blockscout --verifier-url https://explorer.testnet.chain.robinhood.com/api/ \
+  --compiler-version 0.8.24 --num-of-optimizations 200 --evm-version cancun
+```
+
+**MockUSDG note.** Its runtime is byte-for-byte identical to the previously verified MockUSDG
+(`cast code` returns the same 3,770-character runtime from both addresses), so the deployed source
+is provably the verified `src/MockUSDG.sol`. The explorer API reports `is_verified: false` for this
+address only because Blockscout's re-verification endpoint deduplicates by bytecode and responds
+"already verified" without attaching the new address. `forge verify-contract` reports the same.
+
+**API access.** The explorer's plain `curl` API is behind a WAF rule (Cloudflare error 1010); the
+`forge` CLI path above is the reliable route.
+
+## History
+
+These contracts are a redeployment, not the first testnet deployment. The earlier factory was
+replaced because `ThesisFactory` embeds the market creation bytecode, so the empty-winning-pool
+refund guard added to `ThesisMarket` required a new factory — a market created by the old factory
+would have kept the old settlement behaviour. Superseded addresses remain in git history.

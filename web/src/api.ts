@@ -1,7 +1,6 @@
 // Thesis Compiler API client
 import type { ThesisSpec } from "./api-types";
-
-const API_BASE = (import.meta.env.VITE_API_BASE ?? "") as string;
+import { API_BASE } from "./contracts";
 
 export type { ThesisSpec };
 

@@ -1,4 +1,4 @@
-// ThesisPreview (spec §11.7) — every financial field inspectable before launch
+// ThesisPreview — every financial field inspectable before launch
 import type { ThesisSpec } from "../api-types";
 import { formatPct } from "../format";
 

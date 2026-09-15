@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  contracts:
+    name: Contracts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Format
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build --sizes
+
+      - name: Test (unit + fuzz + invariant)
+        run: forge test -vv
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        env:
+          VITE_CHAIN_ID: "46630"
+          VITE_CHAIN_NAME: Robinhood Chain Testnet
+          VITE_RPC_URL: https://rpc.testnet.chain.robinhood.com
+          VITE_EXPLORER_URL: https://explorer.testnet.chain.robinhood.com
+          VITE_FACTORY_ADDRESS: "0x9Db674834F4C060114Cb53f21e179fc54F905342"
+          VITE_COLLATERAL_ADDRESS: "0x7BA735a381B9FFe700a8c92558659461b359ee9c"
+          VITE_API_BASE: ""
+        run: npm run build
+
+  api:
+    name: API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - run: uv sync
+
+      - name: Self-check
+        run: uv run python selfcheck.py
+
+  abi-parity:
+    name: ABI parity (frontend vs forge artifacts)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build artifacts for the parity check
+        run: forge build
+        working-directory: contracts
+
+      - name: Compare ABIs
+        run: python3 scripts/abi_parity.py

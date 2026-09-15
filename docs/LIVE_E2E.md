@@ -1,46 +1,166 @@
-# Live-Chain E2E — Robinhood Chain Testnet (46630)
+# Live E2E — final deployment
 
-Full lifecycle executed onchain on 2026-09-14 with two addresses.
-Explorer: https://explorer.testnet.chain.robinhood.com
+Every number below was read back from Robinhood Chain Testnet, not copied from an earlier run.
+Reproduce any line with the `cast` command shown next to it.
 
-## Participants
+Network
 
-| Role | Address | Notes |
-|---|---|---|
-| Creator (Wallet A) | `0x0973104738884C05F8dF85DCd007daf9609820f0` | deployer + creator, posts 500 USDG Creator Conviction |
-| Trader (Wallet B) | `0x734382d94Cd1e6d93B21c07c32cee594223CE636` | throwaway testnet trader, BACK 300 + FADE 100 |
+| | |
+|---|---|
+| Chain ID | `46630` |
+| RPC | `https://rpc.testnet.chain.robinhood.com` |
+| Explorer | `https://explorer.testnet.chain.robinhood.com` |
 
-## Thesis
+Contracts
 
-> "AI capex keeps rotating into AMD and PLTR; both outperform TSLA."
+| Contract | Address |
+|---|---|
+| MockUSDG (collateral, 18 dp) | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` |
+| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` |
+| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` |
 
-- Basket: AMD 40% + PLTR 60% (weights normalized on creation)
-- Benchmark: TSLA
-- Hurdle: +10% (1000 bps)
-- Betting: 30 min · Resolve: +60 min after creation
-- Settlement: verified testnet AggregatorV3 feeds (see [TESTNET_ASSETS.md](TESTNET_ASSETS.md))
+## The thesis
+
+> "AI infrastructure keeps outperforming: AMD and PLTR beat a TSLA benchmark."
+
+| Parameter | Value |
+|---|---|
+| Basket | AMD 6000 bps (60%) + PLTR 4000 bps (40%) |
+| Benchmark | TSLA |
+| Hurdle | +1000 bps (+10%) |
+| Creator bond | 500 MockUSDG (BACK side) |
+| Entry window (`bettingEndsAt`) | 1789442967 |
+| Expiry (`resolvesAt`) | 1789444167 |
+| Settlement window | 1800 s |
 
 ## Transactions
 
-| Step | Tx hash | Status |
-|---|---|---|
-| Deploy MockUSDG | `0xabd9b2c781cf6807c3…` (full hash in broadcast/) | ✅ |
-| Deploy ThesisFactory | `0x910a6c5dc219847f4f…` | ✅ |
-| Create market + creator bond 500 USDG | see `contracts/broadcast/CreateTestnetDemo.s.sol/46630/` | ✅ |
-| Trader BACK 300 USDG | `0x2e1c973b9c35e56dbea141a43fed9acf01fa6a1689beb0eaef5b975b8b42a902` | ✅ |
-| Trader FADE 100 USDG | `0x6f0ba52b3d40e7488b5ad7620e39ac01749ce0babccdce2c0f50f9b8501b9993` | ✅ |
-| Resolve | _pending resolve window_ | ⏳ |
-| Claim | _pending_ | ⏳ |
+| Step | Transaction |
+|---|---|
+| Create market | `0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754` |
+| BACK 300 (trader) | `0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b` |
+| FADE 200 (trader) | `0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb` |
+| Resolve | `0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858` |
+| Winner claim | `0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f` |
 
-Market: `0x0a9c3c881aA3df08bDaEEC8f283e09c5aa532334`
-Creator address: `0x0973104738884C05F8dF85DCd007daf9609820f0`
-Trader address: `0x734382d94Cd1e6d93B21c07c32cee594223CE636`
+## Oracle observations
 
-Pools after betting: BACK 800e18 / FADE 100e18
+Prices are the feed value the contract actually recorded. Start prices are read from the
+market's own storage, so they are exactly what settlement used:
 
-## Outcome
+```bash
+cast call 0xBf496Ef435C814C81864b5F337F23b63D4b26BB3 \
+  'startPrices(uint256)(int256)' 0 --rpc-url https://rpc.testnet.chain.robinhood.com   # AMD
+```
 
-Filled after resolve executes inside the 30-minute settlement window.
-No mock oracle is substituted for real settlement — if the settlement window
-passes without a valid resolve, the market is cancelled and principal refunded
-per contract rules.
+| Feed | Start (8 dp) | End (8 dp) | Start block | End block |
+|---|---|---|---|---|
+| AMD | 49,481,000,000 | 49,450,000,000 | 119698588 | 119707718 |
+| PLTR | 17,250,500,000 | 17,243,500,000 | 119698593 | 119707721 |
+| TSLA (benchmark) | 35,987,890,846 | 35,989,721,393 | 119697936 | 119707711 |
+
+## Recomputation
+
+`OracleMath.returnBps` scales by 1e18 before converting to bps, then **truncates toward
+zero** (Solidity `/`), which is not Python's `//` for negative values:
+
+```python
+def div_toward_zero(a, b):
+    """Solidity integer division: truncates toward zero, unlike Python's //."""
+    q = abs(a) // abs(b)
+    return q if (a < 0) == (b < 0) else -q
+
+def return_bps(start, end):
+    scaled = div_toward_zero(end * 10**18, start) - 10**18
+    return div_toward_zero(scaled * 10_000, 10**18)
+
+amd  = return_bps(49_481_000_000, 49_450_000_000)   # -6
+pltr = return_bps(17_250_500_000, 17_243_500_000)   # -4
+tsla = return_bps(35_987_890_846, 35_989_721_393)   #  0
+
+basket = div_toward_zero(amd * 6000 + pltr * 4000, 10_000)   # -5
+alpha  = basket - tsla                                       # -5
+
+assert alpha == -5          # matches narrativeAlphaBps() onchain
+assert alpha < 1000         # below the hurdle -> FADE
+```
+
+Onchain read-back:
+
+```bash
+cast call $MARKET 'narrativeAlphaBps()(int256)' --rpc-url $RPC   # -5
+cast call $MARKET 'outcome()(uint8)'            --rpc-url $RPC   # 2 = Fade
+```
+
+## Result
+
+| | |
+|---|---|
+| Narrative Alpha | **−5 bps** |
+| Hurdle | +1000 bps |
+| Outcome | **FADE** |
+| Pools | 800 BACK / 200 FADE |
+| Winner payout | **1000 MockUSDG** (200 stake × 1000 total ÷ 200 winning pool) |
+| Market balance after claim | **0** |
+| `totalClaimed` | 1000 |
+
+The losing side's `claim()` reverts, as it must. After the winner claimed, the market held
+exactly zero collateral: pari-mutuel, no house cut, nothing left behind.
+
+## Settlement-window rejection
+
+Reproduced on this deployment. A second market (`0x08042F839fc704B71bA42D11B567210480a51C44`,
+expiry `1789449886`) was resolved immediately after expiry while the TSLA print was still stamped
+one second *before* expiry:
+
+```
+TSLA updatedAt = 1789449885  ->  resolve() REVERTED: OracleMath: pre-expiry price
+TSLA updatedAt = 1789449956  ->  resolve() SUCCEEDED
+```
+
+Settlement refused to price an expired thesis off a stale observation and only accepted the market
+once a post-expiry print existed. This is the anti-lookback guard doing its job, observed on the
+live chain rather than asserted only in a unit test.
+
+## Empty winning pool -> cancellation
+
+That same market then exercised the refund guard. Settlement decided FADE (alpha +16 bps, below
+the +1000 bps hurdle), but nobody had ever taken the FADE side, so the winning pool was empty and
+pro-rata payout had nobody to pay:
+
+| | |
+|---|---|
+| `narrativeAlphaBps` | +16 |
+| `backPool` / `fadePool` | 100 / **0** |
+| `outcome` | `Cancelled` (3) |
+| `resolve()` tx | `0x16d9d21ce938731513381797402edd5dc106c5dc8e6c67ca966fe37eea445bef` |
+| `claim()` | **reverted** — a cancelled market pays through `refund()` |
+| `refund()` tx | `0xe48731995c38b44403616f128517c9f4f5a87c58ba931af88fddc136b47f6588` |
+| Market balance | 100 → **0** |
+
+Without this guard the creator's 100 MockUSDG would have been permanently unreachable: the
+winning side held no stake, and cancellation was already blocked by `AlreadyResolved`. The
+refund path returns every stake instead.
+
+## Cancellation and refund
+
+The same deployment was exercised on its fallback path. A market was created with a 30-minute
+settlement window and one FADE position of 200 MockUSDG, then left until the window closed.
+
+| Step | Result |
+|---|---|
+| `resolve()` after the window | **reverted** `SettlementWindowPassed` |
+| `cancelAfterDeadline()` | `0x5e643655a3b9717ebd717897fd390999e6d78b799ecdf280ee0756c333a94eab` |
+| `claim()` on a cancelled market | **reverted** `NotCancelled` |
+| `refund()` (FADE holder) | `0x479594b28063dac7410722110b81134badc65a0327b97b323a3825d3e9e34d8d` |
+| `refund()` a second time | **reverted** `NoPosition` |
+| Market balance | 200 → **0** |
+
+The participant's balance returned to its pre-position value exactly. Placing a position on the
+other side of this market is not possible in the same run, which is the point: a market that never
+gets a legal oracle print refunds everyone rather than settling on a stale price or stranding
+collateral.
+
+The UI derives these states from the same inputs and is covered by
+`web/test/market-lifecycle.test.mjs`; all four branches (OPEN, CLOSED, READY, CANCELLABLE,
+CANCELLED, PROVEN/FAILED) were rendered against live markets during this run.

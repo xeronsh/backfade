@@ -6,7 +6,7 @@ import {ThesisFactory} from "../src/ThesisFactory.sol";
 import {MockUSDG} from "../src/MockUSDG.sol";
 import {MockV3Aggregator} from "../test/MockV3Aggregator.sol";
 
-/// @notice Anvil-only local stack for the ABI smoke test (PHASE 4.6 §14).
+/// @notice Anvil-only local stack used by the ABI smoke test.
 contract SmokeDeploy is Script {
     function run() external {
         uint256 pk = vm.envOr("SMOKE_PK", uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80));

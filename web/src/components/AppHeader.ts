@@ -1,8 +1,8 @@
-// AppHeader + WalletButton (spec §11.1, §11.2)
+// AppHeader + WalletButton
 import { connect, currentAccount, ensureChain, shortAddress } from "../wallet";
-import { CHAIN_ID } from "../contracts";
 
-export function AppHeader(active: "feed" | "create" | "profile"): HTMLElement {  const header = document.createElement("header");
+export function AppHeader(active: "feed" | "create" | "profile"): HTMLElement {
+  const header = document.createElement("header");
   header.className = "header";
 
   const logo = document.createElement("a");
@@ -69,6 +69,5 @@ export function WalletButton(): HTMLButtonElement {
     }
   });
 
-  void CHAIN_ID;
   return btn;
 }

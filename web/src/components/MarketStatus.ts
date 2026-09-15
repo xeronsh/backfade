@@ -1,5 +1,12 @@
-// MarketStatus pill (spec §11.9)
-export type MarketState = "OPEN" | "CLOSED" | "READY" | "PROVEN" | "FAILED" | "CANCELLED";
+// MarketStatus pill
+export type MarketState =
+  | "OPEN"
+  | "CLOSED"
+  | "READY"
+  | "CANCELLABLE"
+  | "PROVEN"
+  | "FAILED"
+  | "CANCELLED";
 
 export function MarketStatus(state: MarketState): HTMLElement {
   const el = document.createElement("span");

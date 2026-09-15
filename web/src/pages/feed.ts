@@ -1,10 +1,9 @@
-// Feed page (spec §8.2) — reads factory markets from chain, cards link to detail.
-import { createPublicClient, http, formatUnits, type Address } from "viem";
+// Feed page — reads factory markets from chain, cards link to detail.
+import { createPublicClient, http, type Address } from "viem";
 import { AppHeader, TestnetBanner } from "../components/AppHeader";
 import { ThesisCard } from "../components/ThesisCard";
 import type { MarketState } from "../components/MarketStatus";
 import { FACTORY_ABI, MARKET_ABI, FACTORY_ADDRESS, RPC_URL } from "../contracts";
-import { formatUsd } from "../format";
 
 const client = createPublicClient({ transport: http(RPC_URL) });
 
@@ -93,5 +92,4 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 }
 
-void formatUnits;
 main().catch(console.error);
