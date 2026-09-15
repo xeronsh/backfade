@@ -32,6 +32,14 @@ Key handling
   in this repository.
 - `git ls-files | grep '\.env$'` reports nothing, and a full history scan finds no real key.
 
+## Frontend and backend boundary
+
+The browser wallet is the only transaction signer. `VITE_*` values contain public network and
+contract configuration only; no private key, mnemonic, LLM key, or backend secret may enter the
+bundle. FastAPI compiles narrative input and serves enabled assets, but has no wallet client,
+transaction forwarder, custody path, database, queue, or user authentication. Request logs carry
+request IDs and timing, not API keys, authorization headers, or full thesis text.
+
 ## Payout
 
 Pari-mutuel, floor division:

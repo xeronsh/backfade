@@ -14,9 +14,9 @@ The demo runs the production build locally and exposes it through **one** Cloudf
 `vite preview` proxies `/v1` to FastAPI, so the browser sees a single origin with no CORS.
 
 ```bash
-cd api && uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 &
-cd web && npm run build && npx vite preview --host 127.0.0.1 --port 4173 &
-cloudflared tunnel --url http://127.0.0.1:4173 --protocol http2
+make dev
+# optional public same-origin tunnel
+cloudflared tunnel --url http://127.0.0.1:5173 --protocol http2
 ```
 
 The public hostname is printed by `cloudflared` at startup and changes on every restart, so it is
@@ -34,15 +34,8 @@ the tunnel gives it a public HTTPS origin.
 
 ## Final contracts
 
-All three are **source verified** (`Pass - Verified`) on the Robinhood Chain Testnet explorer.
+All deployment addresses, verification status, and explorer links are canonical in [`docs/DEPLOYMENTS.md`](DEPLOYMENTS.md).
 
-| Contract | Address | Verified | Explorer |
-|---|---|---|---|
-| MockUSDG (testnet collateral) | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0x7ba735a381b9ffe700a8c92558659461b359ee9c) |
-| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0x9db674834f4c060114cb53f21e179fc54f905342) |
-| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` | ✅ | [link](https://explorer.testnet.chain.robinhood.com/address/0xbf496ef435c814c81864b5f337f23b63d4b26bb3) |
-
-Full deployment record: `docs/DEPLOYMENTS.md`.
 
 ## Demo thesis
 

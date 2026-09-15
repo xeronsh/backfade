@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "npm run build --prefix web",
+    "build": "make web-check",
     "typecheck": "npm run typecheck --prefix web",
-    "test": "npm run test --prefix web && forge test --root contracts",
-    "test:abi": "python3 scripts/abi_parity.py"
+    "test": "make test",
+    "test:abi": "python3 scripts/abi_parity.py",
+    "codegen": "make codegen",
+    "check": "make check",
+    "dev": "make dev"
   }
 }

@@ -5,100 +5,133 @@ on:
     branches: [master]
   pull_request:
 
+env:
+  VITE_CHAIN_ID: "46630"
+  VITE_CHAIN_NAME: Robinhood Chain Testnet
+  VITE_RPC_URL: https://rpc.testnet.chain.robinhood.com
+  VITE_EXPLORER_URL: https://explorer.testnet.chain.robinhood.com
+  VITE_FACTORY_ADDRESS: "0x9Db674834F4C060114Cb53f21e179fc54F905342"
+  VITE_COLLATERAL_ADDRESS: "0x7BA735a381B9FFe700a8c92558659461b359ee9c"
+  VITE_API_BASE: /v1
+  VITE_WALLETCONNECT_PROJECT_ID: ci-placeholder
+
 jobs:
   contracts:
     name: Contracts
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: contracts
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Pinned: forge 1.8.x tallies invariant suites differently in its summary line, which
-      # would make CI report a different test count than the documented 71.
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.7.1
+      - run: forge fmt --check
+        working-directory: contracts
+      - run: forge build --sizes
+        working-directory: contracts
+      - run: forge test -vv
+        working-directory: contracts
 
-      - name: Format
-        run: forge fmt --check
-
-      - name: Build
-        run: forge build --sizes
-
-      - name: Test (unit + fuzz + invariant)
-        run: forge test -vv
-
-  web:
-    name: Web
+  api:
+    name: API
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen
+        working-directory: api
+      - run: uv run ruff format --check api
+        working-directory: api
+      - run: uv run ruff check api
+        working-directory: api
+      - run: uv run mypy api
+        working-directory: api
+      - run: uv run pytest
+        working-directory: api
+      - run: uv run python export_openapi.py
+        working-directory: api
 
+  codegen:
+    name: Codegen and ABI parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
-
+      - uses: astral-sh/setup-uv@v5
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
       - run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        env:
-          VITE_CHAIN_ID: "46630"
-          VITE_CHAIN_NAME: Robinhood Chain Testnet
-          VITE_RPC_URL: https://rpc.testnet.chain.robinhood.com
-          VITE_EXPLORER_URL: https://explorer.testnet.chain.robinhood.com
-          VITE_FACTORY_ADDRESS: "0x9Db674834F4C060114Cb53f21e179fc54F905342"
-          VITE_COLLATERAL_ADDRESS: "0x7BA735a381B9FFe700a8c92558659461b359ee9c"
-          VITE_API_BASE: ""
-        run: npm run build
-
-  api:
-    name: API
-    runs-on: ubuntu-latest
-    defaults:
-      run:
+        working-directory: web
+      - run: uv sync --frozen
         working-directory: api
+      - run: forge build
+        working-directory: contracts
+      - run: node scripts/codegen/contracts.mjs
+      - run: uv run python export_openapi.py
+        working-directory: api
+      - run: npm run codegen
+        working-directory: web
+      - run: git diff --exit-code -- api/openapi.json web/src/generated web/src/lib/api/generated
+      - run: python3 scripts/abi_parity.py
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run lint
+        working-directory: web
+      - run: npm run typecheck
+        working-directory: web
+      - run: npm test
+        working-directory: web
+      - run: npm run build
+        working-directory: web
 
-      - uses: astral-sh/setup-uv@v5
-
-      - run: uv sync
-
-      - name: Self-check
-        run: uv run python selfcheck.py
+  e2e:
+    name: Browser smoke
+    runs-on: ubuntu-latest
+    needs: [web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium firefox
+        working-directory: web
+      - run: npm run e2e
+        working-directory: web
 
   abi-parity:
-    name: ABI parity (frontend vs forge artifacts)
+    name: ABI parity
     runs-on: ubuntu-latest
+    needs: [contracts, codegen]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Pinned: forge 1.8.x tallies invariant suites differently in its summary line, which
-      # would make CI report a different test count than the documented 71.
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.7.1
-
-      - name: Build artifacts for the parity check
-        run: forge build
+      - run: forge build
         working-directory: contracts
-
-      - name: Compare ABIs
-        run: python3 scripts/abi_parity.py
+      - run: python3 scripts/abi_parity.py

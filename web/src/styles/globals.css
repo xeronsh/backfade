@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #090b0c;
+  --surface-1: #0f1214;
+  --surface-2: #15191c;
+  --surface-3: #1b2024;
+  --border: #242b2f;
+  --border-strong: #343d42;
+  --text-1: #f3f5f3;
+  --text-2: #a8b0ab;
+  --text-3: #707a74;
+  --brand: #d4ff68;
+  --brand-hover: #dfff88;
+  --brand-pressed: #bfe84e;
+  --brand-on: #0d1205;
+  --back: #63d9a2;
+  --back-soft: #12261d;
+  --fade: #ff756d;
+  --fade-soft: #2b1818;
+  --warning: #e5c45e;
+  --info: #79bfff;
+  --font-sans-family:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-mono-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-pressed: var(--brand-pressed);
+  --color-brand-on: var(--brand-on);
+  --color-back: var(--back);
+  --color-back-soft: var(--back-soft);
+  --color-fade: var(--fade);
+  --color-fade-soft: var(--fade-soft);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --font-sans: var(--font-sans-family);
+  --font-mono: var(--font-mono-family);
+  --radius-micro: 4px;
+  --radius-chip: 6px;
+  --radius-field: 8px;
+  --radius-button: 10px;
+  --radius-card: 12px;
+  --radius-panel: 14px;
+  --shadow-popover: 0 16px 48px rgb(0 0 0 / 35%);
+  --ease-standard: var(--ease-standard);
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  background: var(--canvas);
+}
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text-1);
+  font-family: var(--font-sans-family);
+  font-size: 15px;
+  line-height: 22px;
+  text-rendering: optimizeLegibility;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+[data-financial] {
+  font-variant-numeric: tabular-nums;
+}
+[data-mono] {
+  font-family: var(--font-mono-family);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

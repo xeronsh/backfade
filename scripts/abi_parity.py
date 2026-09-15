@@ -9,7 +9,7 @@ import json, re, subprocess, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CONTRACTS = ROOT / "contracts"
-WEB_ABI = ROOT / "web/src/contracts.ts"
+WEB_ABI = ROOT / "web/src/generated/contracts.ts"
 
 def artifact_abi(contract: str):
     out = subprocess.run(
@@ -57,7 +57,7 @@ def web_signatures(src: str, const_name: str):
 
 # The exact surface the frontend reads/writes. ABI drift here is what silently breaks the
 # Create / Market / Profile pages at runtime, so every entry must exist onchain with the
-# same name and input arity. Extra optional entries are allowed but must also exist onchain.
+# same name and input arity. Generated output is the source; this gate is an extra parity check.
 REQUIRED = {
     "MARKET_ABI": [
         "narrative", "hurdleBps", "bettingEndsAt", "resolvesAt", "collateral", "creator",

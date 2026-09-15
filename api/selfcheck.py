@@ -5,10 +5,8 @@ import sys
 import time
 
 import httpx
-
 from api.assets import load_assets, symbol_to_feed
 from api.llm import mock_compile
-from api.models import ThesisSpec
 from api.validator import ValidationError, validate_spec
 
 
@@ -66,11 +64,14 @@ def test_live_endpoint():
             try:
                 if httpx.get(f"{base}/health", timeout=1).status_code == 200:
                     break
-            except Exception:
+            except httpx.HTTPError:
                 time.sleep(0.2)
         r = httpx.post(
             f"{base}/v1/thesis/compile",
-            json={"text": "AI is rotating into nuclear energy.", "preferred_duration_days": 30},
+            json={
+                "text": "AI is rotating into nuclear energy.",
+                "preferred_duration_days": 30,
+            },
             timeout=10,
         )
         assert r.status_code == 200, r.text

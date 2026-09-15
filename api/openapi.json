@@ -1,0 +1,317 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Backfade Thesis Compiler",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assets": {
+      "get": {
+        "tags": [
+          "assets"
+        ],
+        "summary": "Assets",
+        "operationId": "listAssets",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "type": "object",
+                  "title": "Response Listassets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/thesis/compile": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Compile Thesis",
+        "operationId": "compileThesis",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThesisSpec"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CompileRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "preferred_duration_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Duration Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "CompileRequest"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "llm": {
+            "type": "string",
+            "enum": [
+              "enabled",
+              "mock"
+            ],
+            "title": "Llm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "llm"
+        ],
+        "title": "HealthResponse"
+      },
+      "ThesisAsset": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "feed": {
+            "type": "string",
+            "title": "Feed"
+          },
+          "weight_bps": {
+            "type": "integer",
+            "title": "Weight Bps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "feed",
+          "weight_bps"
+        ],
+        "title": "ThesisAsset"
+      },
+      "ThesisBenchmark": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "feed": {
+            "type": "string",
+            "title": "Feed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "feed"
+        ],
+        "title": "ThesisBenchmark"
+      },
+      "ThesisRisk": {
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "title": "Level"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level",
+          "warnings"
+        ],
+        "title": "ThesisRisk"
+      },
+      "ThesisSpec": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version"
+          },
+          "narrative": {
+            "type": "string",
+            "title": "Narrative"
+          },
+          "basket": {
+            "items": {
+              "$ref": "#/components/schemas/ThesisAsset"
+            },
+            "type": "array",
+            "title": "Basket"
+          },
+          "benchmark": {
+            "$ref": "#/components/schemas/ThesisBenchmark"
+          },
+          "hurdle_bps": {
+            "type": "integer",
+            "title": "Hurdle Bps"
+          },
+          "duration_days": {
+            "type": "integer",
+            "title": "Duration Days"
+          },
+          "human_condition": {
+            "type": "string",
+            "title": "Human Condition"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/ThesisRisk"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "narrative",
+          "basket",
+          "benchmark",
+          "hurdle_bps",
+          "duration_days",
+          "human_condition",
+          "risk"
+        ],
+        "title": "ThesisSpec"
+      }
+    }
+  }
+}

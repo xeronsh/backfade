@@ -86,9 +86,9 @@ involved. No VPS, no database — the chain is the source of truth.
 Run it:
 
 ```bash
-cd api  && uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 &
-cd web  && npm run build && npx vite preview --host 127.0.0.1 --port 4173 &
-cloudflared tunnel --url http://127.0.0.1:4173 --protocol http2
+make dev
+# optional public same-origin tunnel
+cloudflared tunnel --url http://127.0.0.1:5173 --protocol http2
 ```
 
 The tunnel hostname is assigned at runtime (see the `cloudflared` output) and changes on every
@@ -106,15 +106,9 @@ Feed                      Market
                           └──────────────────────────────────────┘
 ```
 
-## Final Contracts
+## Contracts
 
-All on **Robinhood Chain Testnet** (Chain ID `46630`) and **source verified**.
-
-| Contract | Address | Explorer |
-|---|---|---|
-| MockUSDG | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x7ba735a381b9ffe700a8c92558659461b359ee9c) |
-| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` | [verify](https://explorer.testnet.chain.robinhood.com/address/0x9db674834f4c060114cb53f21e179fc54f905342) |
-| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` | [verify](https://explorer.testnet.chain.robinhood.com/address/0xbf496ef435c814c81864b5f337f23b63d4b26bb3) |
+All deployed contracts, addresses, verification settings, and deployment history live in the canonical [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md).
 
 ## Final Live E2E
 
@@ -186,25 +180,17 @@ No database, no indexer, no queue. Markets are read from `Factory.marketsLength(
 |---|---|
 | Contracts | Solidity 0.8.24, Foundry, OpenZeppelin |
 | Backend | Python 3.12+, FastAPI, Pydantic v2, httpx |
-| Frontend | Vite, vanilla TypeScript, TailwindCSS, viem, EIP-1193 |
+| Frontend | React, Vite, TypeScript, TailwindCSS v4, RainbowKit, Wagmi, Viem, TanStack Query |
 | Chain | Robinhood Chain Testnet, ID 46630 |
 
 ## Testing
 
 ```bash
-cd contracts
-forge test
+make check
+make e2e
 ```
 
-| Gate | Result |
-|---|---|
-| Solidity tests | **71 passed** |
-| Fuzz | 7 suites × 256 runs |
-| Invariant | 7 suites × 2048 calls |
-| Frontend types | `npx tsc --noEmit` |
-| Frontend build | `npm run build` |
-| API selfcheck | `uv run python selfcheck.py` |
-| ABI parity | `python3 scripts/abi_parity.py` |
+The gates cover contracts, generated ABI/OpenAPI output, FastAPI quality/tests, frontend typecheck/unit tests/build, and Chromium/Firefox smoke routes.
 
 ## Security
 
@@ -215,15 +201,12 @@ security audit. See [`SECURITY.md`](SECURITY.md).
 ## Local Development
 
 ```bash
-# contracts
-cd contracts && forge build && forge test
-
-# backend
-cd api && uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
-
-# frontend
-cd web && npm install && npm run build && npx vite preview --host 127.0.0.1 --port 4173
+npm ci --prefix web
+uv sync --project api
+make dev
 ```
+
+Copy `web/.env.example` to `web/.env.local` and provide the current deployment addresses before starting the frontend.
 
 ## Tunnel Development
 
@@ -243,9 +226,13 @@ add the domain to `preview.allowedHosts` in `web/vite.config.ts`.
 | Doc | Contents |
 |---|---|
 | [`SECURITY.md`](SECURITY.md) | Trust assumptions, oracle limits, testnet caveats |
+| [`docs/BASELINE.md`](docs/BASELINE.md) | Migration baseline evidence |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Runtime boundaries and codegen |
+| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | Tokens, components, accessibility |
+| [`docs/WEB3.md`](docs/WEB3.md) | Wallet and transaction architecture |
 | [`docs/SUBMISSION.md`](docs/SUBMISSION.md) | Evaluator navigation page |
-| [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md) | Final deployment + verification record |
-| [`docs/LIVE_E2E.md`](docs/LIVE_E2E.md) | Full live E2E evidence and recomputation |
+| [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md) | Canonical deployment + verification record |
+| [`docs/LIVE_E2E.md`](docs/LIVE_E2E.md) | Canonical live E2E evidence and recomputation |
 | [`docs/TESTNET_ASSETS.md`](docs/TESTNET_ASSETS.md) | Verified feeds + measured cadence |
 
 ## Roadmap

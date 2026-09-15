@@ -1,0 +1,32 @@
+import { spawnSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const env = {
+  ...process.env,
+  VITE_CHAIN_ID: process.env.VITE_CHAIN_ID ?? "46630",
+  VITE_CHAIN_NAME: process.env.VITE_CHAIN_NAME ?? "Robinhood Chain Testnet",
+  VITE_RPC_URL:
+    process.env.VITE_RPC_URL ?? "https://rpc.testnet.chain.robinhood.com",
+  VITE_EXPLORER_URL:
+    process.env.VITE_EXPLORER_URL ??
+    "https://explorer.testnet.chain.robinhood.com",
+  VITE_FACTORY_ADDRESS:
+    process.env.VITE_FACTORY_ADDRESS ??
+    "0x9Db674834F4C060114Cb53f21e179fc54F905342",
+  VITE_COLLATERAL_ADDRESS:
+    process.env.VITE_COLLATERAL_ADDRESS ??
+    "0x7BA735a381B9FFe700a8c92558659461b359ee9c",
+  VITE_API_BASE: process.env.VITE_API_BASE ?? "/v1",
+  VITE_WALLETCONNECT_PROJECT_ID:
+    process.env.VITE_WALLETCONNECT_PROJECT_ID ?? "ci-placeholder",
+};
+
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const result = spawnSync(
+  npm,
+  ["exec", "playwright", "test", ...process.argv.slice(2)],
+  { cwd: root, env, stdio: "inherit" },
+);
+process.exit(result.status ?? 1);

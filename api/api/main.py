@@ -1,72 +1,80 @@
-"""Backfade Thesis Compiler API. No DB, no queue, five endpoints max."""
+"""Backfade API application: compiler, asset registry, and health only."""
 
-import os
+import time
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
+import httpx
+import structlog
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from api.assets import load_assets, symbol_to_feed
-from api.llm import compile_thesis, llm_enabled
-from api.models import CompileRequest, ErrorResponse, ThesisSpec
-from api.validator import ValidationError, validate_spec
+from api.core.config import get_settings
+from api.core.logging import configure_logging
+from api.models import ErrorBody, ErrorResponse
+from api.routers import assets, compiler, health
 
-# PHASE 8 §34: explicit origin allowlist, never "*". Comma-separated override via
-# BACKFADE_CORS_ORIGINS; the defaults cover local dev plus the production preview port.
-DEFAULT_CORS_ORIGINS = [
-    "http://127.0.0.1:4173",
-    "http://localhost:4173",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
-
-def cors_origins() -> list[str]:
-    raw = os.environ.get("BACKFADE_CORS_ORIGINS", "").strip()
-    if not raw:
-        return DEFAULT_CORS_ORIGINS
-    return [o.strip() for o in raw.split(",") if o.strip()]
+logger = structlog.get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    symbol_to_feed()  # warm the asset cache; fail fast if assets.json is broken
+    settings = get_settings()
+    settings.validate_runtime()
+    configure_logging(settings.log_level)
+    app.state.settings = settings
+    app.state.http_client = httpx.AsyncClient(timeout=settings.http_timeout)
     yield
+    await app.state.http_client.aclose()
 
 
-app = FastAPI(title="Backfade Thesis Compiler", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Backfade Thesis Compiler", version="0.2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins(),
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_origins=get_settings().cors_origin_list,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Request-ID"],
 )
 
 
-def error_response(code: str, message: str, status_code: int, retryable: bool = False) -> JSONResponse:
-    body = ErrorResponse(error={"code": code, "message": message, "retryable": retryable})
-    return JSONResponse(status_code=status_code, content=body.model_dump())
-
-
-@app.post("/v1/thesis/compile", response_model=None)
-async def compile(req: CompileRequest, request: Request) -> JSONResponse | dict:
-    universe = load_assets()
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid4())
+    start = time.perf_counter()
+    structlog.contextvars.bind_contextvars(request_id=request_id)
     try:
-        raw_spec = await compile_thesis(req.text, req.preferred_duration_days, universe)
-        spec = validate_spec(raw_spec, symbol_to_feed())
-    except ValidationError as e:
-        return error_response(e.code, e.message, 422)
-    except RuntimeError as e:
-        return error_response("COMPILE_FAILED", str(e), 503, retryable=True)
-    return spec.model_dump()
+        response = await call_next(request)
+    except Exception:
+        logger.exception("request.failed", method=request.method, path=request.url.path)
+        raise
+    finally:
+        logger.info(
+            "request.complete",
+            method=request.method,
+            path=request.url.path,
+            status=getattr(locals().get("response"), "status_code", 500),
+            latency_ms=round((time.perf_counter() - start) * 1000, 2),
+        )
+        structlog.contextvars.clear_contextvars()
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
-@app.get("/v1/assets")
-async def assets() -> dict:
-    return {"assets": [a for a in load_assets() if a.get("enabled")]}
+@app.exception_handler(RequestValidationError)
+async def validation_error(_: Request, error: RequestValidationError) -> JSONResponse:
+    fields = ", ".join(str(item.get("loc", ["request"])[-1]) for item in error.errors())
+    body = ErrorResponse(
+        error=ErrorBody(
+            code="INVALID_REQUEST",
+            message=f"Invalid request fields: {fields}",
+            retryable=False,
+        )
+    )
+    return JSONResponse(status_code=422, content=body.model_dump())
 
 
-@app.get("/health")
-async def health() -> dict:
-    return {"status": "ok", "llm": "enabled" if llm_enabled() else "mock"}
+app.include_router(health.router)
+app.include_router(assets.router)
+app.include_router(compiler.router)

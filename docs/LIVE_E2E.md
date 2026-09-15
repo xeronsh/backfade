@@ -9,7 +9,7 @@ Network
 |---|---|
 | Chain ID | `46630` |
 | RPC | `https://rpc.testnet.chain.robinhood.com` |
-| Explorer | `https://explorer.testnet.chain.robinhood.com` |
+| Explorer | https://explorer.testnet.chain.robinhood.com |
 
 Contracts
 
@@ -139,8 +139,8 @@ pro-rata payout had nobody to pay:
 | Market balance | 100 → **0** |
 
 Without this guard the creator's 100 MockUSDG would have been permanently unreachable: the
-winning side held no stake, and cancellation was already blocked by `AlreadyResolved`. The
-refund path returns every stake instead.
+winning side held no stake, and cancellation was already blocked by `AlreadyResolved`. The refund
+path returns every stake instead.
 
 ## Cancellation and refund
 
@@ -162,5 +162,14 @@ gets a legal oracle print refunds everyone rather than settling on a stale price
 collateral.
 
 The UI derives these states from the same inputs and is covered by
-`web/test/market-lifecycle.test.mjs`; all four branches (OPEN, CLOSED, READY, CANCELLABLE,
-CANCELLED, PROVEN/FAILED) were rendered against live markets during this run.
+`web/src/lib/market/state.test.ts`; all lifecycle branches are rendered by the React Market route.
+
+## Platform migration wallet E2E status
+
+The canonical contract E2E above is live and explorer-backed. The React migration's browser-wallet
+run is **blocked in this execution environment**: no browser wallet extension is installed and no
+WalletConnect project credential is available. No mock result is recorded as a live pass.
+
+Required manual run on the current deployment: Connect and switch to Robinhood Chain Testnet,
+Approve exact collateral, Create, BACK, FADE, Resolve or Cancel, then Claim or Refund. Record the
+resulting explorer transaction links here before treating the real-wallet gate as passed.
