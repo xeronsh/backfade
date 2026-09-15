@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requireContractResult } from "@/features/market/hooks";
+import { requireContractResult } from "@/features/market/chainReads";
 
 describe("requireContractResult", () => {
   it("returns successful chain reads", () => {

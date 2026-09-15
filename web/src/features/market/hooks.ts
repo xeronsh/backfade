@@ -2,6 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { type Address, type Hash, isAddress } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
+import {
+  readContractResult,
+  requireContractResult,
+  type ContractResult,
+} from "@/features/market/chainReads";
 import { formatAmount, formatBps, shortAddress } from "@/lib/format";
 import { deriveMarketState, type MarketState } from "@/lib/market/state";
 import { addresses } from "@/lib/web3/addresses";
@@ -11,11 +16,6 @@ import {
   MARKET_ABI,
   ORACLE_ABI,
 } from "@/lib/web3/contracts";
-
-interface ContractResult {
-  status: "success" | "failure";
-  result?: unknown;
-}
 
 type PublicClient = NonNullable<ReturnType<typeof usePublicClient>>;
 type OracleLatestRound = readonly [bigint, bigint, bigint, bigint, bigint];
@@ -85,21 +85,6 @@ export interface MarketDetail extends MarketSummary {
   oracle: OracleObservation[];
   activity: MarketActivity[];
   totalClaimed: bigint;
-}
-
-function readResult<T>(value: ContractResult | undefined): T | undefined {
-  return value?.status === "success" ? (value.result as T) : undefined;
-}
-
-export function requireContractResult<T>(
-  value: ContractResult | undefined,
-  label: string,
-): T {
-  const result = readResult<T>(value);
-  if (result === undefined) {
-    throw new Error(`Chain read incomplete: ${label}.`);
-  }
-  return result;
 }
 
 const feedSymbols: Record<string, string> = {
@@ -207,7 +192,7 @@ async function fetchMarkets(
     allowFailure: true,
   })) as ContractResult[];
   const marketAddresses = marketResults
-    .map((item) => readResult<string>(item))
+    .map((item) => readContractResult<string>(item))
     .filter((value): value is Address => Boolean(value && isAddress(value)));
   const detailCalls = marketAddresses.flatMap((address) =>
     summaryFunctions.map((functionName) => ({
@@ -522,10 +507,10 @@ export function useMarketPosition(market: Address | undefined) {
         allowFailure: true,
       })) as ContractResult[];
       return {
-        backStake: readResult<bigint>(results[0]) ?? 0n,
-        fadeStake: readResult<bigint>(results[1]) ?? 0n,
-        allowance: readResult<bigint>(results[2]) ?? 0n,
-        balance: readResult<bigint>(results[3]) ?? 0n,
+        backStake: readContractResult<bigint>(results[0]) ?? 0n,
+        fadeStake: readContractResult<bigint>(results[1]) ?? 0n,
+        allowance: readContractResult<bigint>(results[2]) ?? 0n,
+        balance: readContractResult<bigint>(results[3]) ?? 0n,
       };
     },
     enabled: Boolean(publicClient && market && user),
