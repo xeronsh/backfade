@@ -17,7 +17,11 @@ jobs:
         with:
           submodules: recursive
 
+      # Pinned: forge 1.8.x tallies invariant suites differently in its summary line, which
+      # would make CI report a different test count than the documented 71.
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
 
       - name: Format
         run: forge fmt --check
@@ -86,7 +90,11 @@ jobs:
         with:
           submodules: recursive
 
+      # Pinned: forge 1.8.x tallies invariant suites differently in its summary line, which
+      # would make CI report a different test count than the documented 71.
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
 
       - name: Build artifacts for the parity check
         run: forge build
