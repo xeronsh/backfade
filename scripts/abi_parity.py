@@ -46,12 +46,11 @@ def web_signatures(src: str, const_name: str):
             if depth == 0:
                 entries.append(buf)
     for e in entries:
-        nm = re.search(r'name: "(\w+)"', e)
-        if not nm:
+        nm = re.search(r'"?name"?\s*:\s*"(\w+)"', e)
+        entry_type = re.search(r'"?type"?\s*:\s*"(function|event)"', e)
+        if not nm or not entry_type:
             continue
         # only compare functions/events that carry explicit input lists
-        if "type: \"function\"" not in e and "type: \"event\"" not in e:
-            continue
         sigs.add(nm.group(1))
     return sigs
 
