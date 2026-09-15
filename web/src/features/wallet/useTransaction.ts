@@ -22,6 +22,12 @@ export interface ContractRequest {
   args?: readonly unknown[];
 }
 
+export function assertReceiptSuccess(status: "success" | "reverted") {
+  if (status !== "success") {
+    throw new Error("Transaction reverted onchain.");
+  }
+}
+
 export function useTransaction() {
   const { address: account } = useAccount();
   const publicClient = usePublicClient();
@@ -53,7 +59,10 @@ export function useTransaction() {
       );
       setHash(transactionHash);
       setPhase(approval ? "APPROVAL_PENDING" : "TRANSACTION_PENDING");
-      await publicClient.waitForTransactionReceipt({ hash: transactionHash });
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: transactionHash,
+      });
+      assertReceiptSuccess(receipt.status);
       setPhase("CONFIRMED");
       await queryClient.invalidateQueries();
       return transactionHash;

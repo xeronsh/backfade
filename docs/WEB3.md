@@ -27,21 +27,24 @@ ABIs are generated from Foundry artifacts by `scripts/codegen/contracts.mjs` int
 gate after regeneration.
 
 Factory market addresses and market fields are read with Viem multicall through the Wagmi public
-client. TanStack Query caches those reads ephemerally. Refreshing reconstructs state from the
-chain; browser storage is never canonical market storage.
+client. Market detail also reads the immutable basket/benchmark, start prices, latest oracle
+rounds, pool totals, and contract event activity. Required partial reads fail closed. TanStack
+Query caches those reads ephemerally and polls unresolved markets so deadline states transition
+without remounting. Refreshing reconstructs state from the chain; browser storage is never
+canonical market storage.
 
 ## Transaction lifecycle
 
 All writes use the shared transaction state machine:
 
 ```text
-IDLE → VALIDATING → SIMULATING → wallet signature → PENDING → receipt → CONFIRMED
-                                             └──────────────→ FAILED
+IDLE → VALIDATING → SIMULATING → wallet signature → PENDING → successful receipt → CONFIRMED
+                                                               └─ reverted receipt → FAILED
 ```
 
 Approval uses the exact required token amount. A successful receipt invalidates affected query
-keys; there is no timeout-based refresh and no page reload. Sonner reports action, wallet/network
-step, pending, confirmation, failure, and explorer link.
+keys; there is no timeout-based refresh and no page reload. The receipt status is checked before `CONFIRMED`; reverted receipts enter `FAILED`. Sonner reports
+action, wallet/network step, pending, confirmation, failure, and explorer link.
 
 ## Market actions
 

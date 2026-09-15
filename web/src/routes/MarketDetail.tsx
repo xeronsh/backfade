@@ -1,12 +1,13 @@
 import { CalendarClock, ExternalLink, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { type Address, isAddress } from "viem";
+import { type Address, formatUnits, isAddress } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { EmptyState } from "@/components/backfade/EmptyState";
 import { MarketStatus } from "@/components/backfade/MarketStatus";
 import { NarrativeAlpha } from "@/components/backfade/NarrativeAlpha";
 import { PositionPanel } from "@/components/backfade/PositionPanel";
+import { ThesisSpec } from "@/components/backfade/ThesisSpec";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,8 +15,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMarket } from "@/features/market/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
-import { formatDate, formatError, shortAddress } from "@/lib/format";
+import {
+  formatAmount,
+  formatDate,
+  formatError,
+  shortAddress,
+} from "@/lib/format";
 import { MARKET_ABI } from "@/lib/web3/contracts";
+
+function formatOraclePrice(value: bigint, decimals: number) {
+  return `${formatUnits(value, decimals)} USD`;
+}
 
 export default function MarketDetail() {
   const { address: rawAddress } = useParams();
@@ -25,6 +35,7 @@ export default function MarketDetail() {
   const transaction = useTransaction();
   const { address: account, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
+
   if (!address)
     return (
       <EmptyState
@@ -45,7 +56,7 @@ export default function MarketDetail() {
         title="Market unavailable"
         description={formatError(
           marketQuery.error,
-          "This market could not be read from chain.",
+          "This market could not be read completely from chain.",
         )}
         action={{ label: "Back to Feed", to: "/" }}
       />
@@ -109,29 +120,92 @@ export default function MarketDetail() {
               />
               <h2 className="font-semibold">ThesisSpec</h2>
             </div>
+            <ThesisSpec spec={market.thesisSpec} />
+          </section>
+          <section>
+            <h2 className="mb-3 font-semibold">Pool summary</h2>
             <Card>
-              <p className="text-sm text-text-2">
-                Basket and benchmark details are read from the compiler response
-                when created. The onchain market remains the settlement source.
-              </p>
-              <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+              <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
                 <div>
-                  <dt className="text-xs text-text-3">Hurdle</dt>
+                  <dt className="text-xs text-text-3">BACK pool</dt>
                   <dd className="mt-1 font-mono" data-financial>
-                    {market.hurdleBps / 100}%
+                    {formatAmount(market.backPool)} USDG
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-text-3">Creator</dt>
-                  <dd className="mt-1" data-mono>
-                    {shortAddress(market.creator)}
+                  <dt className="text-xs text-text-3">FADE pool</dt>
+                  <dd className="mt-1 font-mono" data-financial>
+                    {formatAmount(market.fadePool)} USDG
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-text-3">Total pooled</dt>
+                  <dd className="mt-1 font-mono" data-financial>
+                    {formatAmount(market.backPool + market.fadePool)} USDG
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-text-3">Claimed</dt>
+                  <dd className="mt-1 font-mono" data-financial>
+                    {formatAmount(market.totalClaimed)} USDG
                   </dd>
                 </div>
               </dl>
+              <p className="mt-4 border-t border-border pt-4 text-sm text-text-2">
+                Creator bond: {formatAmount(market.creatorBond)} USDG · Creator{" "}
+                <span data-mono>{shortAddress(market.creator)}</span>
+              </p>
+            </Card>
+          </section>
+          <section>
+            <h2 className="mb-3 font-semibold">Oracle observations</h2>
+            <Card className="space-y-4">
+              {market.oracle.map((observation) => (
+                <div
+                  key={observation.feed}
+                  className="border-b border-border pb-4 last:border-0 last:pb-0"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">{observation.symbol}</p>
+                      <p className="text-xs text-text-3" data-mono>
+                        {shortAddress(observation.feed)} · round{" "}
+                        {observation.roundId.toString()}
+                      </p>
+                    </div>
+                    <p className="font-mono" data-financial>
+                      {formatOraclePrice(
+                        observation.answer,
+                        observation.decimals,
+                      )}
+                    </p>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 gap-3 text-xs text-text-3 sm:grid-cols-3">
+                    <div>
+                      <dt>Start price</dt>
+                      <dd className="mt-1 font-mono text-text-1" data-financial>
+                        {formatOraclePrice(observation.startPrice, 18)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Updated</dt>
+                      <dd className="mt-1 text-text-1" data-financial>
+                        {formatDate(observation.updatedAt)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Answer round</dt>
+                      <dd className="mt-1 font-mono text-text-1" data-financial>
+                        {observation.answeredInRound.toString()}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
             </Card>
           </section>
           <section className="border-y border-border py-5">
-            <h2 className="mb-4 font-semibold">Timeline & oracle</h2>
+            <h2 className="mb-4 font-semibold">Timeline & settlement</h2>
             <div className="grid gap-4 text-sm sm:grid-cols-3">
               <div className="flex gap-3">
                 <CalendarClock
@@ -159,6 +233,39 @@ export default function MarketDetail() {
                 </p>
               </div>
             </div>
+          </section>
+          <section>
+            <h2 className="mb-3 font-semibold">Activity</h2>
+            <Card>
+              {market.activity.length === 0 ? (
+                <p className="text-sm text-text-3">No activity indexed yet.</p>
+              ) : (
+                <ol className="space-y-4">
+                  {market.activity.map((activity) => (
+                    <li
+                      key={`${activity.transactionHash}-${activity.kind}`}
+                      className="flex items-start justify-between gap-4 text-sm"
+                    >
+                      <div>
+                        <p className="font-medium">{activity.label}</p>
+                        <p className="mt-1 text-text-2">{activity.detail}</p>
+                        <p className="mt-1 text-xs text-text-3" data-financial>
+                          Block {activity.blockNumber.toString()}
+                        </p>
+                      </div>
+                      <a
+                        className="shrink-0 text-xs text-brand hover:underline"
+                        href={`${config.explorerUrl}/tx/${activity.transactionHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Explorer
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
           </section>
           <section>
             <h2 className="mb-3 font-semibold">Lifecycle action</h2>

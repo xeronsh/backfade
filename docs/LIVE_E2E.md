@@ -39,10 +39,10 @@ Contracts
 |---|---|
 | Approve collateral | [`0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754`](https://explorer.testnet.chain.robinhood.com/tx/0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754) |
 | Create market (factory) | [`0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c`](https://explorer.testnet.chain.robinhood.com/tx/0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c) |
-| BACK 300 (trader) | `0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b` |
-| FADE 200 (trader) | `0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb` |
-| Resolve | `0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858` |
-| Winner claim | `0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f` |
+| BACK 300 (trader) | [`0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b`](https://explorer.testnet.chain.robinhood.com/tx/0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b) |
+| FADE 200 (trader) | [`0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb`](https://explorer.testnet.chain.robinhood.com/tx/0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb) |
+| Resolve | [`0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858`](https://explorer.testnet.chain.robinhood.com/tx/0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858) |
+| Winner claim | [`0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f`](https://explorer.testnet.chain.robinhood.com/tx/0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f) |
 
 ## Oracle observations
 
@@ -134,9 +134,9 @@ pro-rata payout had nobody to pay:
 | `narrativeAlphaBps` | +16 |
 | `backPool` / `fadePool` | 100 / **0** |
 | `outcome` | `Cancelled` (3) |
-| `resolve()` tx | `0x16d9d21ce938731513381797402edd5dc106c5dc8e6c67ca966fe37eea445bef` |
+| `resolve()` tx | [`0x16d9d21ce938731513381797402edd5dc106c5dc8e6c67ca966fe37eea445bef`](https://explorer.testnet.chain.robinhood.com/tx/0x16d9d21ce938731513381797402edd5dc106c5dc8e6c67ca966fe37eea445bef) |
 | `claim()` | **reverted** — a cancelled market pays through `refund()` |
-| `refund()` tx | `0xe48731995c38b44403616f128517c9f4f5a87c58ba931af88fddc136b47f6588` |
+| `refund()` tx | [`0xe48731995c38b44403616f128517c9f4f5a87c58ba931af88fddc136b47f6588`](https://explorer.testnet.chain.robinhood.com/tx/0xe48731995c38b44403616f128517c9f4f5a87c58ba931af88fddc136b47f6588) |
 | Market balance | 100 → **0** |
 
 Without this guard the creator's 100 MockUSDG would have been permanently unreachable: the
@@ -151,9 +151,9 @@ settlement window and one FADE position of 200 MockUSDG, then left until the win
 | Step | Result |
 |---|---|
 | `resolve()` after the window | **reverted** `SettlementWindowPassed` |
-| `cancelAfterDeadline()` | `0x5e643655a3b9717ebd717897fd390999e6d78b799ecdf280ee0756c333a94eab` |
+| `cancelAfterDeadline()` | [`0x5e643655a3b9717ebd717897fd390999e6d78b799ecdf280ee0756c333a94eab`](https://explorer.testnet.chain.robinhood.com/tx/0x5e643655a3b9717ebd717897fd390999e6d78b799ecdf280ee0756c333a94eab) |
 | `claim()` on a cancelled market | **reverted** `NotCancelled` |
-| `refund()` (FADE holder) | `0x479594b28063dac7410722110b81134badc65a0327b97b323a3825d3e9e34d8d` |
+| `refund()` (FADE holder) | [`0x479594b28063dac7410722110b81134badc65a0327b97b323a3825d3e9e34d8d`](https://explorer.testnet.chain.robinhood.com/tx/0x479594b28063dac7410722110b81134badc65a0327b97b323a3825d3e9e34d8d) |
 | `refund()` a second time | **reverted** `NoPosition` |
 | Market balance | 200 → **0** |
 

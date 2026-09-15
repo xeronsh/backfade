@@ -51,6 +51,8 @@ jobs:
         working-directory: api
       - run: uv run python export_openapi.py
         working-directory: api
+      - run: uv run python selfcheck.py
+        working-directory: api
 
   codegen:
     name: Codegen and ABI parity
@@ -81,6 +83,9 @@ jobs:
         working-directory: web
       - run: git diff --exit-code -- api/openapi.json web/src/generated web/src/lib/api/generated
       - run: python3 scripts/abi_parity.py
+      - name: Secret scan
+        run: |
+          ! git grep -nE 'VITE_[A-Z_]*(KEY|SECRET|PRIVATE)|0x[a-fA-F0-9]{64}' -- web api scripts ':!web/abi-smoke.mjs'
 
   web:
     name: Web

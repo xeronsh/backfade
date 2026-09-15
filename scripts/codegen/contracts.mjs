@@ -9,6 +9,7 @@ const names = [
   ["ThesisFactory", "FACTORY_ABI"],
   ["ThesisMarket", "MARKET_ABI"],
   ["MockUSDG", "ERC20_ABI"],
+  ["AggregatorV3Interface", "ORACLE_ABI"],
 ];
 
 function inspect(contract) {
