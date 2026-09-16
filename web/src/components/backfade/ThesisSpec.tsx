@@ -3,17 +3,16 @@ import { Card, CardFooter } from "@/components/ui/card";
 import type { ChainThesisSpec } from "@/features/market/hooks";
 import type { ThesisSpec as GeneratedThesisSpec } from "@/lib/api/generated/model/thesisSpec";
 import { formatBps, shortAddress } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 
 type ThesisSpecData = GeneratedThesisSpec | ChainThesisSpec;
 
 function ChainThesisSpecView({ spec }: { spec: ChainThesisSpec }) {
+  // The page title already renders the narrative, so this card carries only the
+  // terms that title does not state.
   return (
     <Card>
-      <p className="mb-4 font-mono text-meta font-semibold uppercase tracking-eyebrow text-brand">
-        Onchain ThesisSpec
-      </p>
-      <p className="text-narrative font-semibold">{spec.narrative}</p>
-      <MetricGroup className="mt-5" columns={4} layout="rows">
+      <MetricGroup columns={4} layout="rows">
         <DataRow label="Basket">
           {spec.basket
             .map((asset) => `${asset.symbol} ${Number(asset.weightBps) / 100}%`)
@@ -45,20 +44,14 @@ function ChainThesisSpecView({ spec }: { spec: ChainThesisSpec }) {
           </span>
         </DataRow>
       </MetricGroup>
-      <CardFooter className="text-body text-text-2">
-        Basket, benchmark, weights, hurdle, and narrative are read from the
-        deployed market contract.
-      </CardFooter>
     </Card>
   );
 }
 
 function CompilerThesisSpecView({ spec }: { spec: GeneratedThesisSpec }) {
+  const { t } = useLocale();
   return (
     <Card>
-      <p className="mb-4 font-mono text-meta font-semibold uppercase tracking-eyebrow text-brand">
-        Machine financial claim
-      </p>
       <p className="text-narrative font-semibold">{spec.human_condition}</p>
       <MetricGroup className="mt-5" columns={4} layout="rows">
         <DataRow label="Basket">
@@ -78,10 +71,12 @@ function CompilerThesisSpecView({ spec }: { spec: GeneratedThesisSpec }) {
           </span>
         </DataRow>
       </MetricGroup>
-      <CardFooter className="text-body text-text-2">
-        Risk: <span className="text-text-1">{spec.risk.level}</span>.{" "}
-        {spec.risk.warnings.join(" ")}
-      </CardFooter>
+      {spec.risk.warnings.length > 0 ? (
+        <CardFooter className="text-body text-text-2">
+          {t("thesis.risk", { level: spec.risk.level })}{" "}
+          {spec.risk.warnings.join(" ")}
+        </CardFooter>
+      ) : null}
     </Card>
   );
 }

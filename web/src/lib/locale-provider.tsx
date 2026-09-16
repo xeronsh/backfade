@@ -22,8 +22,9 @@ function detectLocale(): Locale {
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored && (locales as readonly string[]).includes(stored))
     return stored as Locale;
-  // Fall back to the browser's preference: Chinese browsers get Chinese.
-  return navigator.language?.toLowerCase().startsWith("zh") ? "zh" : "en";
+  // English is the default regardless of browser language; the toggle is the
+  // only thing that switches it.
+  return "en";
 }
 
 interface LocaleContextValue {

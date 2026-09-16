@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ThesisSpec } from "@/components/backfade/ThesisSpec";
 import type { ThesisSpec as Spec } from "@/lib/api/generated/model/thesisSpec";
+import { LocaleProvider } from "@/lib/locale-provider";
 
 const spec: Spec = {
   version: 1,
@@ -25,7 +26,11 @@ const spec: Spec = {
 
 describe("ThesisSpec", () => {
   it("renders the machine claim fields", () => {
-    render(<ThesisSpec spec={spec} />);
+    render(
+      <LocaleProvider>
+        <ThesisSpec spec={spec} />
+      </LocaleProvider>,
+    );
     expect(screen.getByText(spec.human_condition)).toBeInTheDocument();
     expect(screen.getByText("AMD 60%")).toBeInTheDocument();
     expect(screen.getByText("TSLA")).toBeInTheDocument();

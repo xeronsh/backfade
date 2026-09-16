@@ -50,10 +50,7 @@ export default function Feed() {
       <div className="mt-8">
         <SplitLayout
           main={
-            <PageSection
-              title={t("feed.liveTheses")}
-              description={t("feed.liveThesesHint")}
-            >
+            <PageSection title={t("feed.liveTheses")}>
               {markets.isLoading ? (
                 <div
                   className="grid gap-4"
@@ -116,23 +113,12 @@ export default function Feed() {
                   </div>
                 </CardHeader>
                 <CardContent className="mt-4">
-                  <MetricGroup columns={2}>
-                    <Metric
-                      label={t("feed.pulseIndexed")}
-                      value={markets.isLoading ? "—" : data.length}
-                    />
-                    <Metric
-                      label={t("feed.pulseOpen")}
-                      value={markets.isLoading ? "—" : openMarkets}
-                      tone="back"
-                    />
-                  </MetricGroup>
                   {data.length ? (
-                    <ul className="mt-4 grid gap-3">
+                    <ul className="grid gap-3">
                       {data.slice(0, 3).map((market) => (
                         <li
                           key={market.address}
-                          className="border-t border-border pt-3"
+                          className="border-b border-border pb-3 last:border-b-0 last:pb-0"
                         >
                           <Link
                             to={`/market/${market.address}`}
@@ -142,17 +128,12 @@ export default function Feed() {
                             <strong className="truncate text-body font-semibold">
                               {market.narrative}
                             </strong>
-                            <MetaLabel>
-                              {market.state === "OPEN"
-                                ? t("feed.tradingOpen")
-                                : t("feed.readThesis")}
-                            </MetaLabel>
                           </Link>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-4 text-body text-text-2">
+                    <p className="text-body text-text-2">
                       {t("feed.pulseEmpty")}
                     </p>
                   )}

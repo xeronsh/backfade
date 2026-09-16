@@ -37,12 +37,10 @@ import { ERC20_ABI, FACTORY_ABI } from "@/lib/web3/contracts";
 const ENTRY_WINDOW_SECONDS = 1800n;
 const SECONDS_PER_DAY = 86_400n;
 
+// Length is enforced by the input's maxLength and the hint below; a single
+// generic message keeps the copy in one place instead of duplicating it.
 const schema = z.object({
-  narrative: z
-    .string()
-    .trim()
-    .min(12, "Write at least 12 characters.")
-    .max(280, "Keep the narrative under 280 characters."),
+  narrative: z.string().trim().min(12).max(280),
   conviction: z.string().optional(),
 });
 type FormValues = z.infer<typeof schema>;
@@ -71,7 +69,7 @@ export default function CreateThesis() {
       if (result.status !== 200)
         throw new Error("The compiler returned an invalid response.");
       setCompiled(result.data);
-      toast("Narrative compiled into a financial claim.");
+      toast(t("create.compiled"));
     } catch (error) {
       toast(formatError(error, locale));
     }
@@ -188,10 +186,7 @@ export default function CreateThesis() {
         <SplitLayout
           asideWidth="wide"
           main={
-            <PageSection
-              title={t("create.narrativeTitle")}
-              description={t("create.narrativeHint")}
-            >
+            <PageSection title={t("create.narrativeTitle")}>
               <Reveal>
                 <Card>
                   <form onSubmit={form.handleSubmit(compileNarrative)}>
@@ -199,7 +194,7 @@ export default function CreateThesis() {
                     <Textarea
                       id="narrative"
                       maxLength={280}
-                      placeholder={t("create.narrative")}
+                      placeholder={t("create.narrativePlaceholder")}
                       className="mt-2"
                       {...form.register("narrative")}
                     />

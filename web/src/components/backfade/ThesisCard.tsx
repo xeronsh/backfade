@@ -56,8 +56,7 @@ export function ThesisCard({ market }: { market: MarketSummary }) {
       <Collapsible className="mt-4 border-t border-border pt-2">
         <CollapsibleTrigger>{t("thesis.machineClaim")}</CollapsibleTrigger>
         <CollapsiblePanel>
-          <p>{t("thesis.bondLine", { bps: formatBps(market.hurdleBps) })}</p>
-          <MetricGroup className="mt-3" columns={3}>
+          <MetricGroup columns={3}>
             <DataRow label={t("thesis.bond")}>
               {formatAmount(market.creatorBond)} USDG
             </DataRow>
