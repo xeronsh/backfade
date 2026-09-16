@@ -6,6 +6,7 @@ import { TransactionFlow } from "@/components/backfade/TransactionFlow";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { MarketSummary } from "@/features/market/hooks";
 import { useMarketPosition } from "@/features/market/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
@@ -57,7 +58,7 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
   }
 
   return (
-    <Card className="lg:sticky lg:top-24">
+    <Card className="position-panel lg:sticky lg:top-24">
       <div className="flex items-center gap-2">
         <ShieldCheck size={18} className="text-brand" aria-hidden="true" />
         <h2 className="font-semibold">Position</h2>
@@ -76,12 +77,9 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
           </p>
         </div>
       </div>
-      <label
-        className="mt-6 block text-sm font-medium"
-        htmlFor="position-amount"
-      >
+      <Label className="mt-6" htmlFor="position-amount">
         Amount <span className="text-text-3">(USDG)</span>
-      </label>
+      </Label>
       <Input
         id="position-amount"
         inputMode="decimal"

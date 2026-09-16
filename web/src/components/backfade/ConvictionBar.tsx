@@ -1,26 +1,38 @@
 export function ConvictionBar({ back, fade }: { back: bigint; fade: bigint }) {
   const total = back + fade;
   const backBps = total === 0n ? 5000 : Number((back * 10000n) / total);
+  const backPercent = backBps / 100;
+  const fadePercent = 100 - backPercent;
+
   return (
-    <div className="space-y-2">
+    <div className="conviction-bar space-y-2">
       <meter
         className="sr-only"
         min={0}
         max={100}
-        value={backBps / 100}
-        aria-label={`BACK ${backBps / 100}% and FADE ${(10000 - backBps) / 100}%`}
+        value={backPercent}
+        aria-label={`BACK ${backPercent}% and FADE ${fadePercent}%`}
       />
       <div className="flex justify-between text-sm font-medium">
-        <span className="text-back">BACK {backBps / 100}%</span>
-        <span className="text-fade">FADE {(10000 - backBps) / 100}%</span>
+        <span className="text-fade">FADE {fadePercent}%</span>
+        <span className="text-back">BACK {backPercent}%</span>
       </div>
       <div
-        className="flex h-2 overflow-hidden rounded-full bg-fade-soft"
-        aria-hidden="true"
+        className="conviction-bar__track"
+        aria-label={`Conviction split: ${fadePercent}% FADE, ${backPercent}% BACK`}
+        role="img"
       >
         <div
-          className="bg-back transition-[width] duration-220 ease-standard"
-          style={{ width: `${backBps / 100}%` }}
+          className="conviction-bar__fade"
+          style={{ width: `${fadePercent}%` }}
+        />
+        <div
+          className="conviction-bar__back"
+          style={{ width: `${backPercent}%` }}
+        />
+        <span
+          className="conviction-bar__marker"
+          style={{ left: `${fadePercent}%` }}
         />
       </div>
     </div>

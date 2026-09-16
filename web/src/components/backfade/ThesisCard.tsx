@@ -1,4 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ConvictionBar } from "@/components/backfade/ConvictionBar";
 import { MarketStatus } from "@/components/backfade/MarketStatus";
@@ -13,15 +13,15 @@ import {
 
 export function ThesisCard({ market }: { market: MarketSummary }) {
   return (
-    <Card className="group transition-colors hover:border-border-strong">
-      <div className="mb-3 flex items-center justify-between gap-3 text-xs text-text-3">
+    <Card className="thesis-card group ui-card--interactive">
+      <div className="thesis-card__meta mb-4">
         <Link to={`/profile/${market.creator}`} className="hover:text-text-1">
           {shortAddress(market.creator)}
         </Link>
         <MarketStatus state={market.state} />
       </div>
       <Link to={`/market/${market.address}`} className="block">
-        <h2 className="line-clamp-2 text-lg font-semibold leading-7 group-hover:text-brand">
+        <h2 className="thesis-card__title line-clamp-2 text-lg font-semibold leading-7">
           {market.narrative}
         </h2>
         <p className="mt-2 line-clamp-2 text-sm text-text-2">
@@ -46,7 +46,33 @@ export function ThesisCard({ market }: { market: MarketSummary }) {
           </div>
         </dl>
       </Link>
-      <div className="mt-4 flex items-center justify-end text-xs text-text-3">
+      <details className="thesis-disclosure">
+        <summary>
+          <span>View machine claim</span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </summary>
+        <div className="thesis-disclosure__body">
+          <p>
+            Basket must outperform its benchmark by{" "}
+            {formatBps(market.hurdleBps)} before oracle settlement.
+          </p>
+          <dl>
+            <div>
+              <dt>Bond</dt>
+              <dd data-financial>{formatAmount(market.creatorBond)} USDG</dd>
+            </div>
+            <div>
+              <dt>Resolves</dt>
+              <dd data-financial>{formatDate(market.resolvesAt)}</dd>
+            </div>
+            <div>
+              <dt>Contract</dt>
+              <dd data-mono>{shortAddress(market.address)}</dd>
+            </div>
+          </dl>
+        </div>
+      </details>
+      <div className="thesis-card__address mt-4 flex items-center justify-end text-xs">
         <span data-mono>{shortAddress(market.address)}</span>
         <ArrowUpRight size={14} className="ml-1" aria-hidden="true" />
       </div>

@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -7,11 +8,13 @@ import { toast } from "sonner";
 import { type Address, decodeEventLog, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { z } from "zod";
+import { Reveal } from "@/components/backfade/Reveal";
 import { ThesisSpec } from "@/components/backfade/ThesisSpec";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTransaction } from "@/features/wallet/useTransaction";
 import { useCompileThesis } from "@/lib/api/generated";
@@ -33,6 +36,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function CreateThesis() {
   const [compiled, setCompiled] = useState<GeneratedThesisSpec | null>(null);
+  const reducedMotion = useReducedMotion();
   const compile = useCompileThesis();
   const transaction = useTransaction();
   const { address: account, chainId } = useAccount();
@@ -154,67 +158,85 @@ export default function CreateThesis() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand">
-          Human narrative → financial claim
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">
-          Create thesis
-        </h1>
-        <p className="mt-2 text-text-2">
-          Write the narrative. The compiler makes the claim explicit before you
-          bond it.
-        </p>
-      </div>
-      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-        <Card>
-          <form onSubmit={form.handleSubmit(compileNarrative)}>
-            <label className="text-sm font-medium" htmlFor="narrative">
-              Narrative
-            </label>
-            <Textarea
-              id="narrative"
-              maxLength={280}
-              placeholder="AI infrastructure keeps outperforming…"
-              className="mt-2"
-              {...form.register("narrative")}
-            />
-            <div className="mt-2 flex justify-between text-xs text-text-3">
-              <span>
-                {form.formState.errors.narrative?.message ??
-                  "Be precise. The market will measure this."}
-              </span>
-              <span>{form.watch("narrative").length}/280</span>
-            </div>
-            <Button
-              variant="primary"
-              type="submit"
-              className="mt-5"
-              disabled={compile.isPending}
-            >
-              {compile.isPending ? "Compiling…" : "Compile thesis"}
-            </Button>
-          </form>
-        </Card>
-        <div className="space-y-4">
-          {compiled ? (
-            <ThesisSpec spec={compiled} />
-          ) : (
-            <Card className="min-h-64 border-dashed">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">
-                Compiled claim
-              </p>
-              <p className="mt-3 text-text-2">
-                Your ThesisSpec will appear here before any wallet action.
-              </p>
-            </Card>
-          )}
+    <div className="page-shell create-page">
+      <Reveal className="page-hero page-hero--compact">
+        <div>
+          <p className="eyebrow">Human narrative → financial claim</p>
+          <h1 className="page-title">Create thesis</h1>
+          <p className="page-lede">
+            Write the narrative. The compiler makes the claim explicit before
+            you bond it.
+          </p>
+        </div>
+        <ol className="step-rail" aria-label="Thesis launch steps">
+          <li data-step="01">Frame the narrative</li>
+          <li data-step="02">Compile the claim</li>
+          <li data-step="03">Bond the conviction</li>
+        </ol>
+      </Reveal>
+      <div className="create-grid">
+        <Reveal>
+          <Card className="form-card">
+            <form onSubmit={form.handleSubmit(compileNarrative)}>
+              <Label htmlFor="narrative">Narrative</Label>
+              <Textarea
+                id="narrative"
+                maxLength={280}
+                placeholder="AI infrastructure keeps outperforming…"
+                className="mt-2"
+                {...form.register("narrative")}
+              />
+              <div className="mt-2 flex justify-between text-xs text-text-3">
+                <span>
+                  {form.formState.errors.narrative?.message ??
+                    "Be precise. The market will measure this."}
+                </span>
+                <span>{form.watch("narrative").length}/280</span>
+              </div>
+              <Button
+                variant="primary"
+                type="submit"
+                className="mt-5"
+                disabled={compile.isPending}
+              >
+                {compile.isPending ? "Compiling…" : "Compile thesis"}
+              </Button>
+            </form>
+          </Card>
+        </Reveal>
+        <Reveal className="create-stack" delay={0.08}>
+          <AnimatePresence mode="wait" initial={false}>
+            {compiled ? (
+              <motion.div
+                key="compiled-claim"
+                initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+              >
+                <ThesisSpec spec={compiled} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty-claim"
+                initial={reducedMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={reducedMotion ? undefined : { opacity: 0 }}
+              >
+                <Card className="preview-card min-h-64">
+                  <p className="eyebrow text-text-3">Compiled claim</p>
+                  <p className="mt-3 text-text-2">
+                    Your ThesisSpec will appear here before any wallet action.
+                  </p>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {compiled ? (
             <Card>
-              <label className="text-sm font-medium" htmlFor="conviction">
+              <Label htmlFor="conviction">
                 Creator conviction <span className="text-text-3">(USDG)</span>
-              </label>
+              </Label>
               <Input
                 id="conviction"
                 inputMode="decimal"
@@ -241,7 +263,7 @@ export default function CreateThesis() {
               />
             </Card>
           ) : null}
-        </div>
+        </Reveal>
       </div>
     </div>
   );

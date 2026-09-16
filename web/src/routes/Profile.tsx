@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { type Address, isAddress } from "viem";
 import { EmptyState } from "@/components/backfade/EmptyState";
+import { Reveal } from "@/components/backfade/Reveal";
 import { ThesisCard } from "@/components/backfade/ThesisCard";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +23,7 @@ export default function Profile() {
     );
   if (query.isLoading)
     return (
-      <div className="mx-auto max-w-5xl px-5 py-12">
+      <div className="page-shell">
         <Skeleton className="h-64" />
       </div>
     );
@@ -35,58 +36,64 @@ export default function Profile() {
     0n,
   );
   return (
-    <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand">
-          Creator profile
-        </p>
-        <h1 className="mt-2 font-mono text-3xl font-semibold" data-mono>
+    <div className="page-shell profile-page">
+      <Reveal className="profile-hero">
+        <p className="eyebrow">Creator profile</p>
+        <h1 className="page-title profile-address font-mono" data-mono>
           {shortAddress(address)}
         </h1>
-        <p className="mt-2 text-text-2">
+        <p className="page-lede">
           A chain-derived track record. No offchain reputation formula.
         </p>
-      </div>
-      <Card className="mb-8">
-        <dl className="grid grid-cols-2 gap-5 sm:grid-cols-5">
-          <div>
-            <dt className="text-xs text-text-3">Created</dt>
-            <dd className="mt-1 text-xl font-semibold" data-financial>
-              {markets.length}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-text-3">Resolved</dt>
-            <dd className="mt-1 text-xl font-semibold" data-financial>
-              {resolved}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-text-3">Proven</dt>
-            <dd className="mt-1 text-xl font-semibold text-back" data-financial>
-              {proven}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-text-3">Failed</dt>
-            <dd className="mt-1 text-xl font-semibold text-fade" data-financial>
-              {failed}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-text-3">Proof rate</dt>
-            <dd className="mt-1 text-xl font-semibold" data-financial>
-              {resolved ? `${Math.round((proven / resolved) * 100)}%` : "—"}
-            </dd>
-          </div>
-        </dl>
-        <p className="mt-5 border-t border-border pt-4 text-sm text-text-2">
-          Capital bonded{" "}
-          <span className="font-mono text-text-1" data-financial>
-            {formatAmount(capitalBonded)} USDG
-          </span>
-        </p>
-      </Card>
+      </Reveal>
+      <Reveal delay={0.06}>
+        <Card className="profile-stats mb-8">
+          <dl className="profile-stats__grid">
+            <div>
+              <dt className="text-xs text-text-3">Created</dt>
+              <dd className="mt-1 text-xl font-semibold" data-financial>
+                {markets.length}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-text-3">Resolved</dt>
+              <dd className="mt-1 text-xl font-semibold" data-financial>
+                {resolved}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-text-3">Proven</dt>
+              <dd
+                className="mt-1 text-xl font-semibold text-back"
+                data-financial
+              >
+                {proven}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-text-3">Failed</dt>
+              <dd
+                className="mt-1 text-xl font-semibold text-fade"
+                data-financial
+              >
+                {failed}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-text-3">Proof rate</dt>
+              <dd className="mt-1 text-xl font-semibold" data-financial>
+                {resolved ? `${Math.round((proven / resolved) * 100)}%` : "—"}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-5 border-t border-border pt-4 text-sm text-text-2">
+            Capital bonded{" "}
+            <span className="font-mono text-text-1" data-financial>
+              {formatAmount(capitalBonded)} USDG
+            </span>
+          </p>
+        </Card>
+      </Reveal>
       {query.error ? (
         <p className="border-y border-fade bg-fade-soft px-5 py-5 text-sm text-fade">
           Creator data could not be read from chain.
@@ -97,9 +104,11 @@ export default function Profile() {
           description="This creator has not published a thesis on the current factory."
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {markets.map((market) => (
-            <ThesisCard key={market.address} market={market} />
+        <div className="market-grid">
+          {markets.map((market, index) => (
+            <Reveal key={market.address} delay={Math.min(index * 0.06, 0.24)}>
+              <ThesisCard market={market} />
+            </Reveal>
           ))}
         </div>
       )}

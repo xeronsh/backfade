@@ -1,6 +1,7 @@
 import { Check, CircleAlert, LoaderCircle } from "lucide-react";
 import type { TransactionPhase } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
+import { cn } from "@/lib/utils";
 
 const labels: Record<TransactionPhase, string> = {
   IDLE: "Ready",
@@ -14,6 +15,20 @@ const labels: Record<TransactionPhase, string> = {
   FAILED: "Failed",
 };
 
+const steps = ["Prepare", "Sign", "Submit", "Confirm"];
+
+function activeStep(phase: TransactionPhase) {
+  if (phase === "CONFIRMED") return 3;
+  if (phase === "TRANSACTION_PENDING") return 2;
+  if (
+    phase === "AWAITING_APPROVAL_SIGNATURE" ||
+    phase === "APPROVAL_PENDING" ||
+    phase === "AWAITING_TRANSACTION_SIGNATURE"
+  )
+    return 1;
+  return 0;
+}
+
 export function TransactionFlow({
   phase,
   hash,
@@ -22,27 +37,62 @@ export function TransactionFlow({
   hash?: `0x${string}` | null;
 }) {
   if (phase === "IDLE") return null;
-  const icon =
-    phase === "CONFIRMED" ? (
-      <Check size={16} aria-hidden="true" />
-    ) : phase === "FAILED" ? (
-      <CircleAlert size={16} aria-hidden="true" />
-    ) : (
-      <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
-    );
+  const current = activeStep(phase);
+  const failed = phase === "FAILED";
   return (
-    <div className="mt-4 flex items-center gap-2 rounded-field border border-border bg-surface-2 px-3 py-2 text-sm text-text-2">
-      {icon}
-      <span>{labels[phase]}</span>
-      {hash ? (
-        <a
-          className="ml-auto text-brand hover:underline"
-          href={`${config.explorerUrl}/tx/${hash}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Explorer
-        </a>
+    <div className="transaction-rail" aria-live="polite">
+      <ol className="transaction-steps" aria-label="Transaction progress">
+        {steps.map((step, index) => {
+          const complete = !failed && index < current;
+          const currentStep = index === current;
+          return (
+            <li
+              className={cn(
+                "transaction-step",
+                complete && "transaction-step--complete",
+                currentStep && "transaction-step--current",
+                failed && currentStep && "transaction-step--failed",
+              )}
+              key={step}
+            >
+              <span className="transaction-step__node">
+                {complete ? (
+                  <Check size={12} aria-hidden="true" />
+                ) : failed && currentStep ? (
+                  <CircleAlert size={12} aria-hidden="true" />
+                ) : currentStep ? (
+                  <LoaderCircle
+                    size={12}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span>{step}</span>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="transaction-rail__status">
+        <span>{labels[phase]}</span>
+        {hash ? (
+          <a
+            className="text-brand hover:underline"
+            href={`${config.explorerUrl}/tx/${hash}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Explorer
+          </a>
+        ) : null}
+      </div>
+      {failed ? (
+        <p className="transaction-rail__error">
+          Transaction did not confirm. Review the wallet request and amount,
+          then retry.
+        </p>
       ) : null}
     </div>
   );

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
@@ -10,7 +11,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <section className="border-y border-border px-6 py-16 text-center">
+    <Card className="empty-state border-border px-6 py-16 text-center">
       <h2 className="text-lg font-semibold text-text-2">{title}</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-text-3">{description}</p>
       {action ? (
@@ -21,6 +22,6 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
           {action.label}
         </Link>
       ) : null}
-    </section>
+    </Card>
   );
 }

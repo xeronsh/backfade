@@ -3,8 +3,8 @@ import { formatBps } from "@/lib/format";
 export function NarrativeAlpha({ value }: { value: bigint }) {
   const positive = value >= 0n;
   return (
-    <div className="border-y border-border py-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-3">
+    <div className="alpha-readout border-y border-border py-4">
+      <p className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-text-3">
         Narrative Alpha
       </p>
       <p

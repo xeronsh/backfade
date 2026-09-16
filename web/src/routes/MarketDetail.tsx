@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/backfade/EmptyState";
 import { MarketStatus } from "@/components/backfade/MarketStatus";
 import { NarrativeAlpha } from "@/components/backfade/NarrativeAlpha";
 import { PositionPanel } from "@/components/backfade/PositionPanel";
+import { Reveal } from "@/components/backfade/Reveal";
 import { ThesisSpec } from "@/components/backfade/ThesisSpec";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export default function MarketDetail() {
     );
   if (marketQuery.isLoading)
     return (
-      <div className="mx-auto max-w-6xl px-5 py-12">
+      <div className="page-shell">
         <Skeleton className="h-96" />
       </div>
     );
@@ -87,30 +88,30 @@ export default function MarketDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
-      <div className="mb-6 flex flex-wrap items-center gap-3 text-xs text-text-3">
-        <Link to="/" className="hover:text-text-1">
+    <div className="page-shell market-page">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <Link to="/" className="detail-breadcrumb">
           Feed
         </Link>
-        <span>/</span>
+        <span className="text-text-3">/</span>
         <span data-mono>{shortAddress(market.address)}</span>
         <MarketStatus state={market.state} />
       </div>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-7">
-          <section>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand">
-              Narrative
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.03em] sm:text-4xl">
-              {market.narrative}
-            </h1>
-            <p className="mt-4 text-text-2">
-              A bonded thesis measured against oracle prices. BACK and FADE
-              remain explicit at every step.
-            </p>
-          </section>
-          <NarrativeAlpha value={market.narrativeAlphaBps} />
+      <div className="market-layout">
+        <div className="detail-stack">
+          <Reveal className="market-detail-hero">
+            <div>
+              <p className="eyebrow">Narrative / bonded claim</p>
+              <h1>{market.narrative}</h1>
+              <p className="page-lede">
+                A bonded thesis measured against oracle prices. BACK and FADE
+                remain explicit at every step.
+              </p>
+            </div>
+            <div className="market-detail-hero__signal">
+              <NarrativeAlpha value={market.narrativeAlphaBps} />
+            </div>
+          </Reveal>
           <section>
             <div className="mb-3 flex items-center gap-2">
               <ShieldCheck
