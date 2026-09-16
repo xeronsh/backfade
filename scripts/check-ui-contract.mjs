@@ -9,6 +9,8 @@
  *  E3 no raw color literals anywhere in src (tokens live in globals.css).
  *  E4 no inline motion magic numbers — import from lib/motion.ts.
  *  E5 no raw color literals outside globals.css (tokens own colour).
+ *  E6 no off-scale type sizes — only the four documented roles.
+ *  E7 no hardcoded CSS durations outside globals.css / motion.ts.
  *  W1 routes arbitrary Tailwind values are reported for review.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -27,6 +29,21 @@ const BASE_UI_IMPORT = /from\s+["']@base-ui\/react/;
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/;
 const INLINE_MOTION =
   /duration:\s*0?\.\d+|\bease:\s*\[\s*[-\d.]+\s*,|\bdelay[=:]\s*\{?\s*0?\.\d+/;
+
+// The Design System documents exactly four type roles. Any other Tailwind
+// size utility (or an arbitrary text-[...]) is drift.
+const ALLOWED_TEXT_UTILITIES = new Set([
+  "text-page-title",
+  "text-narrative",
+  "text-body",
+  "text-meta",
+]);
+const TEXT_UTILITY = /\btext-(xs|sm|base|lg|xl|[2-9]xl|\[[^\]]+\])(?![\w-])/g;
+
+// Durations belong to the token table, so a literal inside a className or a
+// CSS declaration is a second source of truth.
+const HARDCODED_DURATION =
+  /duration-\[[^\]]+\]|transition-duration:\s*[0-9.]+m?s\b|(?:^|[\s"'])duration-\d{2,}/;
 const ARBITRARY_TAILWIND = /\[[^\]"\s]+\]/;
 
 function walk(dir) {
@@ -90,6 +107,26 @@ for (const file of files) {
         line,
         "E4",
         "inline motion value; import from lib/motion.ts",
+      );
+
+    for (const match of text.matchAll(TEXT_UTILITY)) {
+      if (!ALLOWED_TEXT_UTILITIES.has(`text-${match[1]}`))
+        report(
+          errors,
+          file,
+          line,
+          "E6",
+          `off-scale type size ${match[0]}; use text-page-title|narrative|body|meta`,
+        );
+    }
+
+    if (!isTokenFile && !isMotionFile && HARDCODED_DURATION.test(text))
+      report(
+        errors,
+        file,
+        line,
+        "E7",
+        "hardcoded duration; use a duration token or lib/motion.ts",
       );
 
     if (isRoute && ARBITRARY_TAILWIND.test(text))
