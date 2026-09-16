@@ -41,9 +41,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --frozen
         working-directory: api
-      - run: uv run ruff format --check api
+      - run: uv run ruff format --check api tests
         working-directory: api
-      - run: uv run ruff check api
+      - run: uv run ruff check api tests
         working-directory: api
       - run: uv run mypy api
         working-directory: api
