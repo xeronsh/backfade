@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { MarketDetail as MarketDetailData } from "@/features/market/hooks";
+import { LocaleProvider } from "@/lib/locale-provider";
 
 const market: MarketDetailData = {
   address: "0x9Db674834F4C060114Cb53f21e179fc54F905342",
@@ -74,11 +75,13 @@ beforeAll(async () => {
 
 function renderRoute(node: React.ReactElement) {
   return render(
-    <MemoryRouter initialEntries={[`/market/${market.address}`]}>
-      <Routes>
-        <Route path="market/:address" element={node} />
-      </Routes>
-    </MemoryRouter>,
+    <LocaleProvider>
+      <MemoryRouter initialEntries={[`/market/${market.address}`]}>
+        <Routes>
+          <Route path="market/:address" element={node} />
+        </Routes>
+      </MemoryRouter>
+    </LocaleProvider>,
   );
 }
 

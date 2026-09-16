@@ -16,9 +16,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMarkets } from "@/features/market/hooks";
 import { formatError } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { stagger, staggerDelay } from "@/lib/motion";
 
 export default function Feed() {
+  const { t, locale } = useLocale();
   const markets = useMarkets();
   const data = markets.data ?? [];
   const openMarkets = data.filter((market) => market.state === "OPEN").length;
@@ -26,18 +28,18 @@ export default function Feed() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow={<Status dot>Narrative market</Status>}
-        title="Feed"
-        lede="Bond a thesis. Let the market decide. Every outcome resolves against the chain."
-        actions={<ButtonLink to="/create">Create thesis</ButtonLink>}
+        eyebrow={<Status dot>{t("feed.eyebrow")}</Status>}
+        title={t("feed.title")}
+        lede={t("feed.lede")}
+        actions={<ButtonLink to="/create">{t("feed.create")}</ButtonLink>}
         aside={
           <MetricGroup columns={2}>
             <Metric
-              label="Markets indexed"
+              label={t("feed.indexed")}
               value={markets.isLoading ? "—" : data.length}
             />
             <Metric
-              label="Open now"
+              label={t("feed.openNow")}
               value={markets.isLoading ? "—" : openMarkets}
               tone="back"
             />
@@ -49,14 +51,14 @@ export default function Feed() {
         <SplitLayout
           main={
             <PageSection
-              title="Live theses"
-              description="Read the claim. Choose a side."
+              title={t("feed.liveTheses")}
+              description={t("feed.liveThesesHint")}
             >
               {markets.isLoading ? (
                 <div
                   className="grid gap-4"
                   role="status"
-                  aria-label="Loading feed"
+                  aria-label={t("feed.loading")}
                 >
                   <Skeleton className="h-64" />
                   <Skeleton className="h-64" />
@@ -66,14 +68,15 @@ export default function Feed() {
               {markets.error ? (
                 <Reveal>
                   <Alert
-                    title="Read failure"
+                    title={t("feed.readFailure")}
                     description={formatError(
                       markets.error,
-                      "Chain reads failed.",
+                      locale,
+                      t("feed.chainReadsFailed"),
                     )}
                     action={
                       <Button size="sm" onClick={() => void markets.refetch()}>
-                        Retry
+                        {t("feed.retry")}
                       </Button>
                     }
                   />
@@ -83,9 +86,9 @@ export default function Feed() {
               {!markets.isLoading && !markets.error && data.length === 0 ? (
                 <Reveal>
                   <EmptyState
-                    title="No theses yet"
-                    description="Be the first creator to publish a bonded narrative."
-                    action={{ label: "Create thesis", to: "/create" }}
+                    title={t("feed.emptyTitle")}
+                    description={t("feed.emptyBody")}
+                    action={{ label: t("feed.create"), to: "/create" }}
                   />
                 </Reveal>
               ) : null}
@@ -106,20 +109,20 @@ export default function Feed() {
               <Card>
                 <CardHeader>
                   <div className="min-w-0 flex-1">
-                    <MetaLabel>Chain-derived</MetaLabel>
+                    <MetaLabel>{t("feed.pulseEyebrow")}</MetaLabel>
                     <h2 className="mt-1 text-narrative font-semibold">
-                      Market pulse
+                      {t("feed.pulseTitle")}
                     </h2>
                   </div>
                 </CardHeader>
                 <CardContent className="mt-4">
                   <MetricGroup columns={2}>
                     <Metric
-                      label="Indexed"
+                      label={t("feed.pulseIndexed")}
                       value={markets.isLoading ? "—" : data.length}
                     />
                     <Metric
-                      label="Open"
+                      label={t("feed.pulseOpen")}
                       value={markets.isLoading ? "—" : openMarkets}
                       tone="back"
                     />
@@ -141,8 +144,8 @@ export default function Feed() {
                             </strong>
                             <MetaLabel>
                               {market.state === "OPEN"
-                                ? "Trading open"
-                                : "Read thesis"}
+                                ? t("feed.tradingOpen")
+                                : t("feed.readThesis")}
                             </MetaLabel>
                           </Link>
                         </li>
@@ -150,7 +153,7 @@ export default function Feed() {
                     </ul>
                   ) : (
                     <p className="mt-4 text-body text-text-2">
-                      Chain markets will appear here when indexed.
+                      {t("feed.pulseEmpty")}
                     </p>
                   )}
                 </CardContent>

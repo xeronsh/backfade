@@ -11,10 +11,12 @@ import type { MarketSummary } from "@/features/market/hooks";
 import { useMarketPosition } from "@/features/market/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
 import { formatAmount, formatError } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, MARKET_ABI } from "@/lib/web3/contracts";
 
 export function PositionPanel({ market }: { market: MarketSummary }) {
+  const { t, locale } = useLocale();
   const [amount, setAmount] = useState("");
   const position = useMarketPosition(market.address);
   const transaction = useTransaction();
@@ -51,7 +53,7 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
       toast(`${side.toUpperCase()} confirmed.`);
       setAmount("");
     } catch (error) {
-      toast(formatError(error), {
+      toast(formatError(error, locale), {
         description: "No page reload was used; chain state will refresh.",
       });
     }
@@ -59,21 +61,21 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
 
   return (
     <Card className="h-full">
-      <h2 className="text-narrative font-semibold">Position</h2>
+      <h2 className="text-narrative font-semibold">{t("position.title")}</h2>
       <MetricGroup className="mt-5" columns={2}>
         <Metric
-          label="Your BACK"
+          label={t("position.yourBack")}
           value={formatAmount(position.data?.backStake)}
           accent="back"
         />
         <Metric
-          label="Your FADE"
+          label={t("position.yourFade")}
           value={formatAmount(position.data?.fadeStake)}
           accent="fade"
         />
       </MetricGroup>
       <Label className="mt-6" htmlFor="position-amount">
-        Amount <span className="text-text-3">(USDG)</span>
+        {t("position.amount")} <span className="text-text-3">(USDG)</span>
       </Label>
       <Input
         id="position-amount"
@@ -101,12 +103,13 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
       </div>
       {market.state === "OPEN" ? (
         <p className="mt-3 text-meta text-text-3">
-          Exact approval only. Balance: {formatAmount(position.data?.balance)}{" "}
-          USDG.
+          {t("position.exactApproval", {
+            amount: formatAmount(position.data?.balance),
+          })}
         </p>
       ) : (
         <p className="mt-3 text-meta text-warning">
-          Positions are closed because this market is {market.state}.
+          {t("position.closed", { state: market.state })}
         </p>
       )}
       <TransactionFlow phase={transaction.phase} hash={transaction.hash} />

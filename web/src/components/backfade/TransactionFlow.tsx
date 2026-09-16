@@ -1,21 +1,10 @@
 import { Figure } from "@/components/data";
 import type { TransactionPhase } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
+import { useLocale } from "@/lib/locale-provider";
 import { cn } from "@/lib/utils";
 
-const labels: Record<TransactionPhase, string> = {
-  IDLE: "Ready",
-  VALIDATING: "Validating action",
-  SIMULATING: "Simulating transaction",
-  AWAITING_APPROVAL_SIGNATURE: "Approve in wallet",
-  APPROVAL_PENDING: "Approval pending",
-  AWAITING_TRANSACTION_SIGNATURE: "Confirm in wallet",
-  TRANSACTION_PENDING: "Transaction pending",
-  CONFIRMED: "Confirmed",
-  FAILED: "Failed",
-};
-
-const steps = ["Prepare", "Sign", "Submit", "Confirm"];
+const STEP_KEYS = ["tx.prepare", "tx.sign", "tx.submit", "tx.confirm"] as const;
 
 function activeStep(phase: TransactionPhase) {
   if (phase === "CONFIRMED") return 3;
@@ -36,6 +25,8 @@ export function TransactionFlow({
   phase: TransactionPhase;
   hash?: `0x${string}` | null;
 }) {
+  const { t, phaseLabel } = useLocale();
+  // Hook order must be stable: bail out only after every hook has run.
   if (phase === "IDLE") return null;
   const current = activeStep(phase);
   const failed = phase === "FAILED";
@@ -45,13 +36,13 @@ export function TransactionFlow({
       className="mt-4 rounded-card border border-border bg-surface-2 p-4"
       aria-live="polite"
     >
-      <ol className="grid grid-cols-4 gap-1" aria-label="Transaction progress">
-        {steps.map((step, index) => {
+      <ol className="grid grid-cols-4 gap-1" aria-label={t("tx.progress")}>
+        {STEP_KEYS.map((stepKey, index) => {
           const complete = !failed && index < current;
           const currentStep = index === current;
           return (
             <li
-              key={step}
+              key={stepKey}
               className={cn(
                 "relative grid justify-items-center gap-1 font-mono text-meta uppercase tracking-label",
                 "not-last:after:absolute not-last:after:top-2.75 not-last:after:left-[calc(50%+13px)] not-last:after:h-px not-last:after:w-[calc(100%-26px)] not-last:after:bg-border not-last:after:transition-colors not-last:after:duration-slow not-last:after:content-['']",
@@ -83,13 +74,13 @@ export function TransactionFlow({
                   <Figure>{index + 1}</Figure>
                 )}
               </span>
-              <span>{step}</span>
+              <span>{t(stepKey)}</span>
             </li>
           );
         })}
       </ol>
       <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3 text-body text-text-2">
-        <span>{labels[phase]}</span>
+        <span>{phaseLabel(phase)}</span>
         {hash ? (
           <a
             className="text-brand hover:underline"
@@ -97,15 +88,12 @@ export function TransactionFlow({
             target="_blank"
             rel="noreferrer"
           >
-            Explorer
+            {t("market.explorer")}
           </a>
         ) : null}
       </div>
       {failed ? (
-        <p className="mt-2 text-meta text-fade">
-          Transaction did not confirm. Review the wallet request and amount,
-          then retry.
-        </p>
+        <p className="mt-2 text-meta text-fade">{t("tx.failedBody")}</p>
       ) : null}
     </div>
   );

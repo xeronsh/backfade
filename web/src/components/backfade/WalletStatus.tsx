@@ -1,7 +1,10 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/lib/locale-provider";
 
 export function WalletStatus() {
+  const { t } = useLocale();
+
   return (
     <ConnectButton.Custom>
       {({
@@ -12,31 +15,30 @@ export function WalletStatus() {
         openChainModal,
         openConnectModal,
       }) => {
-        const ready = mounted;
-        if (!ready)
+        if (!mounted)
           return (
             <Button variant="ghost" size="sm" className="invisible">
-              Connect wallet
+              {t("wallet.connect")}
             </Button>
           );
         if (chain?.unsupported)
           return (
             <Button variant="danger" size="sm" onClick={openChainModal}>
-              Wrong network
+              {t("wallet.wrongNetwork")}
             </Button>
           );
         if (!account || !chain)
           return (
             <Button size="sm" variant="primary" onClick={openConnectModal}>
-              Connect wallet
+              {t("wallet.connect")}
             </Button>
           );
         return (
           <Button
             size="sm"
-            variant="ghost"
+            variant="default"
             onClick={openAccountModal}
-            aria-label={`Wallet ${account.displayName}`}
+            aria-label={t("wallet.account", { name: account.displayName })}
           >
             {account.displayName}
           </Button>

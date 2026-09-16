@@ -16,8 +16,11 @@ import {
 } from "@/components/ui/collapsible";
 import type { MarketSummary } from "@/features/market/hooks";
 import { formatAmount, formatBps } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 
 export function ThesisCard({ market }: { market: MarketSummary }) {
+  const { t } = useLocale();
+
   return (
     <Card className="h-full transition-colors duration-emphasis hover:border-brand/35">
       <div className="flex items-center justify-between gap-4 font-mono text-meta text-text-3">
@@ -34,38 +37,34 @@ export function ThesisCard({ market }: { market: MarketSummary }) {
           {market.narrative}
         </h2>
         <p className="mt-2 line-clamp-2 text-body text-text-2">
-          Basket must outperform its benchmark by {formatBps(market.hurdleBps)}{" "}
-          before oracle settlement.
+          {t("thesis.bondLine", { bps: formatBps(market.hurdleBps) })}
         </p>
         <div className="mt-5">
           <ConvictionBar back={market.backPool} fade={market.fadePool} />
         </div>
         <MetricGroup className="mt-5 border-t border-border pt-4" columns={2}>
           <Metric
-            label="Creator conviction"
+            label={t("thesis.creatorConviction")}
             value={`${formatAmount(market.creatorBond)} USDG`}
           />
           <Metric
-            label="Resolves"
+            label={t("thesis.resolves")}
             value={<Timestamp value={market.resolvesAt} />}
           />
         </MetricGroup>
       </Link>
       <Collapsible className="mt-4 border-t border-border pt-2">
-        <CollapsibleTrigger>View machine claim</CollapsibleTrigger>
+        <CollapsibleTrigger>{t("thesis.machineClaim")}</CollapsibleTrigger>
         <CollapsiblePanel>
-          <p>
-            Basket must outperform its benchmark by{" "}
-            {formatBps(market.hurdleBps)} before oracle settlement.
-          </p>
+          <p>{t("thesis.bondLine", { bps: formatBps(market.hurdleBps) })}</p>
           <MetricGroup className="mt-3" columns={3}>
-            <DataRow label="Bond">
+            <DataRow label={t("thesis.bond")}>
               {formatAmount(market.creatorBond)} USDG
             </DataRow>
-            <DataRow label="Resolves">
+            <DataRow label={t("thesis.resolves")}>
               <Timestamp value={market.resolvesAt} />
             </DataRow>
-            <DataRow label="Contract">
+            <DataRow label={t("thesis.contract")}>
               <Address value={market.address} />
             </DataRow>
           </MetricGroup>

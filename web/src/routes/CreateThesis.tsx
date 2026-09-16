@@ -29,6 +29,7 @@ import { useCompileThesis } from "@/lib/api/generated";
 import type { ThesisSpec as GeneratedThesisSpec } from "@/lib/api/generated/model/thesisSpec";
 import { config } from "@/lib/config";
 import { formatBps, formatError } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { reveal, revealTransition, stagger } from "@/lib/motion";
 import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, FACTORY_ABI } from "@/lib/web3/contracts";
@@ -47,6 +48,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function CreateThesis() {
+  const { t, locale } = useLocale();
   const [compiled, setCompiled] = useState<GeneratedThesisSpec | null>(null);
   const reducedMotion = useReducedMotion();
   const compile = useCompileThesis();
@@ -71,7 +73,7 @@ export default function CreateThesis() {
       setCompiled(result.data);
       toast("Narrative compiled into a financial claim.");
     } catch (error) {
-      toast(formatError(error, "Compiler unavailable. Try again."));
+      toast(formatError(error, locale));
     }
   }
 
@@ -165,24 +167,20 @@ export default function CreateThesis() {
         "Thesis confirmed, but the market address was not found in the receipt.",
       );
     } catch (error) {
-      toast(formatError(error));
+      toast(formatError(error, locale));
     }
   }
 
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Human narrative → financial claim"
-        title="Create thesis"
-        lede="Write the narrative. The compiler makes the claim explicit before you bond it."
+        eyebrow={t("create.eyebrow")}
+        title={t("create.title")}
+        lede={t("create.lede")}
         aside={
           <Stepper
-            label="Thesis launch steps"
-            steps={[
-              "Frame the narrative",
-              "Compile the claim",
-              "Bond the conviction",
-            ]}
+            label={t("create.stepsLabel")}
+            steps={[t("create.step1"), t("create.step2"), t("create.step3")]}
           />
         }
       />
@@ -191,24 +189,24 @@ export default function CreateThesis() {
           asideWidth="wide"
           main={
             <PageSection
-              title="Human narrative"
-              description="Write the thesis in plain language."
+              title={t("create.narrativeTitle")}
+              description={t("create.narrativeHint")}
             >
               <Reveal>
                 <Card>
                   <form onSubmit={form.handleSubmit(compileNarrative)}>
-                    <Label htmlFor="narrative">Narrative</Label>
+                    <Label htmlFor="narrative">{t("create.narrative")}</Label>
                     <Textarea
                       id="narrative"
                       maxLength={280}
-                      placeholder="AI infrastructure keeps outperforming…"
+                      placeholder={t("create.narrative")}
                       className="mt-2"
                       {...form.register("narrative")}
                     />
                     <div className="mt-2 flex justify-between text-meta text-text-3">
                       <span>
                         {form.formState.errors.narrative?.message ??
-                          "Be precise. The market will measure this."}
+                          t("create.narrativeHint2")}
                       </span>
                       <span>{form.watch("narrative").length}/280</span>
                     </div>
@@ -218,7 +216,9 @@ export default function CreateThesis() {
                       className="mt-5"
                       disabled={compile.isPending}
                     >
-                      {compile.isPending ? "Compiling…" : "Compile thesis"}
+                      {compile.isPending
+                        ? t("create.compile")
+                        : t("create.compileIdle")}
                     </Button>
                   </form>
                 </Card>
@@ -226,7 +226,7 @@ export default function CreateThesis() {
             </PageSection>
           }
           aside={
-            <PageSection title="Machine financial claim">
+            <PageSection title={t("create.claimTitle")}>
               <Reveal className="grid gap-4" delay={stagger.panel}>
                 <AnimatePresence mode="wait" initial={false}>
                   {compiled ? (
@@ -249,7 +249,7 @@ export default function CreateThesis() {
                       transition={revealTransition}
                     >
                       <Card className="min-h-64 border-dashed bg-surface-2">
-                        <MetaLabel>Compiled claim</MetaLabel>
+                        <MetaLabel>{t("create.compiledClaim")}</MetaLabel>
                         <p className="mt-3 text-text-2">
                           Your ThesisSpec will appear here before any wallet
                           action.
@@ -260,25 +260,29 @@ export default function CreateThesis() {
                 </AnimatePresence>
                 {compiled ? (
                   <Card>
-                    <MetaLabel>Bond terms</MetaLabel>
+                    <MetaLabel>{t("create.bondTerms")}</MetaLabel>
                     <MetricGroup className="mt-4" columns={2} layout="rows">
-                      <DataRow label="Entry closes">
-                        {Number(ENTRY_WINDOW_SECONDS) / 60} minutes after launch
+                      <DataRow label={t("market.entryCloses")}>
+                        {t("create.entryWindow", {
+                          minutes: Number(ENTRY_WINDOW_SECONDS) / 60,
+                        })}
                       </DataRow>
-                      <DataRow label="Resolves">
-                        {compiled.duration_days} days after launch
+                      <DataRow label={t("thesis.resolves")}>
+                        {t("create.resolvesAfter", {
+                          days: compiled.duration_days,
+                        })}
                       </DataRow>
-                      <DataRow label="Hurdle">
+                      <DataRow label={t("create.hurdle")}>
                         <span className="font-mono" data-financial>
                           {formatBps(compiled.hurdle_bps)}
                         </span>
                       </DataRow>
-                      <DataRow label="Benchmark">
+                      <DataRow label={t("create.benchmark")}>
                         {compiled.benchmark.symbol}
                       </DataRow>
                     </MetricGroup>
                     <Label className="mt-6" htmlFor="conviction">
-                      Creator conviction{" "}
+                      {t("create.conviction")}{" "}
                       <span className="text-text-3">(USDG)</span>
                     </Label>
                     <Input
@@ -289,7 +293,7 @@ export default function CreateThesis() {
                       {...form.register("conviction")}
                     />
                     <p className="mt-2 text-meta text-text-3">
-                      Exact approval only. No infinite allowance.
+                      {t("create.exactApproval")}
                     </p>
                     <Button
                       variant="primary"
@@ -298,8 +302,8 @@ export default function CreateThesis() {
                       disabled={transaction.isPending}
                     >
                       {transaction.isPending
-                        ? "Waiting for wallet…"
-                        : "Launch thesis"}
+                        ? t("create.launching")
+                        : t("create.launch")}
                     </Button>
                     <TransactionFlow
                       phase={transaction.phase}

@@ -29,6 +29,7 @@ import { useMarket } from "@/features/market/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
 import { formatAmount, formatError, shortAddress } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { MARKET_ABI } from "@/lib/web3/contracts";
 
 function formatOraclePrice(value: bigint, decimals: number) {
@@ -36,6 +37,7 @@ function formatOraclePrice(value: bigint, decimals: number) {
 }
 
 export default function MarketDetail() {
+  const { t, locale } = useLocale();
   const { address: rawAddress } = useParams<{ address: string }>();
   const address =
     rawAddress && isAddress(rawAddress) ? (rawAddress as Address) : undefined;
@@ -47,16 +49,16 @@ export default function MarketDetail() {
   if (!address)
     return (
       <EmptyState
-        title="Invalid market address"
-        description="Use a 20-byte contract address from the Feed."
-        action={{ label: "Back to Feed", to: "/" }}
+        title={t("market.invalidTitle")}
+        description={t("market.invalidBody")}
+        action={{ label: t("market.backToFeed"), to: "/" }}
       />
     );
   if (marketQuery.isLoading)
     return (
       <PageContainer>
         <PageHeader
-          eyebrow="Narrative / bonded claim"
+          eyebrow={t("market.eyebrow")}
           title={<Skeleton className="h-8 w-3/5" />}
           lede={<Skeleton className="h-5 w-2/3" />}
           aside={<Skeleton className="h-16 w-full" />}
@@ -67,10 +69,10 @@ export default function MarketDetail() {
             aside={<Skeleton className="h-80" />}
             main={
               <>
-                <PageSection title="ThesisSpec">
+                <PageSection title={t("market.thesisSpec")}>
                   <Skeleton className="h-64" />
                 </PageSection>
-                <PageSection title="Pool summary">
+                <PageSection title={t("market.poolSummary")}>
                   <Skeleton className="h-40" />
                 </PageSection>
               </>
@@ -82,12 +84,13 @@ export default function MarketDetail() {
   if (marketQuery.error || !marketQuery.data)
     return (
       <EmptyState
-        title="Market unavailable"
+        title={t("market.unavailableTitle")}
         description={formatError(
           marketQuery.error,
-          "This market could not be read completely from chain.",
+          locale,
+          t("market.unavailableBody"),
         )}
-        action={{ label: "Back to Feed", to: "/" }}
+        action={{ label: t("market.backToFeed"), to: "/" }}
       />
     );
 
@@ -97,7 +100,7 @@ export default function MarketDetail() {
     functionName: "resolve" | "cancelAfterDeadline" | "claim" | "refund",
   ) {
     if (!account) {
-      toast("Connect a wallet before signing.");
+      toast(t("tx.connectFirst"));
       return;
     }
     if (chainId !== config.chainId) {
@@ -110,9 +113,9 @@ export default function MarketDetail() {
         abi: MARKET_ABI,
         functionName,
       });
-      toast(`${functionName} confirmed.`);
+      toast(t("tx.notConfirmed", { fn: functionName }));
     } catch (error) {
-      toast(formatError(error));
+      toast(formatError(error, locale));
     }
   }
 
@@ -123,7 +126,7 @@ export default function MarketDetail() {
           to="/"
           className="transition-colors duration-standard hover:text-brand"
         >
-          Feed
+          {t("market.breadcrumb")}
         </Link>
         <span aria-hidden="true">/</span>
         <AddressValue value={market.address} />
@@ -131,9 +134,9 @@ export default function MarketDetail() {
       </div>
 
       <PageHeader
-        eyebrow="Narrative / bonded claim"
+        eyebrow={t("market.eyebrow")}
         title={market.narrative}
-        lede="A bonded thesis measured against oracle prices. BACK and FADE remain explicit at every step."
+        lede={t("market.lede")}
         aside={<NarrativeAlpha value={market.narrativeAlphaBps} />}
       />
 
@@ -144,40 +147,41 @@ export default function MarketDetail() {
           main={
             <>
               <PageSection
-                title="ThesisSpec"
-                description="Machine claim read from the deployed contract."
+                title={t("market.thesisSpec")}
+                description={t("market.thesisSpecHint")}
               >
                 <ThesisSpec spec={market.thesisSpec} />
               </PageSection>
 
-              <PageSection title="Pool summary">
+              <PageSection title={t("market.poolSummary")}>
                 <Card>
                   <MetricGroup columns={4}>
                     <Metric
-                      label="BACK pool"
+                      label={t("market.backPool")}
                       value={`${formatAmount(market.backPool)} USDG`}
                     />
                     <Metric
-                      label="FADE pool"
+                      label={t("market.fadePool")}
                       value={`${formatAmount(market.fadePool)} USDG`}
                     />
                     <Metric
-                      label="Total pooled"
+                      label={t("market.totalPooled")}
                       value={`${formatAmount(market.backPool + market.fadePool)} USDG`}
                     />
                     <Metric
-                      label="Claimed"
+                      label={t("market.claimed")}
                       value={`${formatAmount(market.totalClaimed)} USDG`}
                     />
                   </MetricGroup>
                   <CardFooter className="text-body text-text-2">
-                    Creator bond: {formatAmount(market.creatorBond)} USDG ·
-                    Creator <AddressValue value={market.creator} />
+                    {t("market.creatorBond")} {formatAmount(market.creatorBond)}{" "}
+                    USDG · {t("market.creator")}{" "}
+                    <AddressValue value={market.creator} />
                   </CardFooter>
                 </Card>
               </PageSection>
 
-              <PageSection title="Oracle observations">
+              <PageSection title={t("market.oracle")}>
                 <Card className="grid gap-4">
                   {market.oracle.map((observation) => (
                     <div
@@ -188,8 +192,8 @@ export default function MarketDetail() {
                         <div>
                           <p className="font-semibold">{observation.symbol}</p>
                           <p className="text-meta text-text-3" data-mono>
-                            {shortAddress(observation.feed)} · round{" "}
-                            {observation.roundId.toString()}
+                            {shortAddress(observation.feed)} ·{" "}
+                            {t("market.round")} {observation.roundId.toString()}
                           </p>
                         </div>
                         <Figure>
@@ -200,15 +204,15 @@ export default function MarketDetail() {
                         </Figure>
                       </div>
                       <MetricGroup className="mt-3" columns={3} layout="rows">
-                        <DataRow label="Start price">
+                        <DataRow label={t("market.startPrice")}>
                           <Figure>
                             {formatOraclePrice(observation.startPrice, 18)}
                           </Figure>
                         </DataRow>
-                        <DataRow label="Updated">
+                        <DataRow label={t("market.updated")}>
                           <Timestamp value={observation.updatedAt} />
                         </DataRow>
-                        <DataRow label="Answer round">
+                        <DataRow label={t("market.answerRound")}>
                           <Figure>
                             {observation.answeredInRound.toString()}
                           </Figure>
@@ -219,28 +223,28 @@ export default function MarketDetail() {
                 </Card>
               </PageSection>
 
-              <PageSection title="Timeline & settlement" divided>
+              <PageSection title={t("market.timeline")} divided>
                 <MetricGroup columns={3}>
                   <Metric
-                    label="Entry closes"
+                    label={t("market.entryCloses")}
                     value={<Timestamp value={market.bettingEndsAt} />}
                   />
                   <Metric
-                    label="Resolves"
+                    label={t("thesis.resolves")}
                     value={<Timestamp value={market.resolvesAt} />}
                   />
                   <Metric
-                    label="Settlement window"
-                    value={<>{market.settlementWindow.toString()} seconds</>}
+                    label={t("market.settlementWindow")}
+                    value={`${market.settlementWindow} ${t("market.seconds")}`}
                   />
                 </MetricGroup>
               </PageSection>
 
-              <PageSection title="Activity">
+              <PageSection title={t("market.activity")}>
                 <Card>
                   {market.activity.length === 0 ? (
                     <p className="text-body text-text-3">
-                      No activity indexed yet.
+                      {t("market.noActivity")}
                     </p>
                   ) : (
                     <ol className="grid gap-4">
@@ -255,7 +259,7 @@ export default function MarketDetail() {
                               {activity.detail}
                             </p>
                             <p className="mt-1 text-meta text-text-3">
-                              Block{" "}
+                              {t("market.block")}{" "}
                               <Figure>{activity.blockNumber.toString()}</Figure>
                             </p>
                           </div>
@@ -265,7 +269,7 @@ export default function MarketDetail() {
                             target="_blank"
                             rel="noreferrer"
                           >
-                            Explorer
+                            {t("market.explorer")}
                           </a>
                         </li>
                       ))}
@@ -274,14 +278,14 @@ export default function MarketDetail() {
                 </Card>
               </PageSection>
 
-              <PageSection title="Lifecycle action">
+              <PageSection title={t("market.lifecycle")}>
                 {market.state === "READY" ? (
                   <Button
                     variant="primary"
                     disabled={transaction.isPending}
                     onClick={() => void action("resolve")}
                   >
-                    Resolve thesis
+                    {t("market.resolve")}
                   </Button>
                 ) : null}
                 {market.state === "CANCELLABLE" ? (
@@ -290,7 +294,7 @@ export default function MarketDetail() {
                     disabled={transaction.isPending}
                     onClick={() => void action("cancelAfterDeadline")}
                   >
-                    Cancel and refund
+                    {t("market.cancelRefund")}
                   </Button>
                 ) : null}
                 {market.state === "PROVEN" || market.state === "FAILED" ? (
@@ -299,7 +303,7 @@ export default function MarketDetail() {
                     disabled={transaction.isPending}
                     onClick={() => void action("claim")}
                   >
-                    Claim position
+                    {t("market.claim")}
                   </Button>
                 ) : null}
                 {market.state === "CANCELLED" ? (
@@ -308,13 +312,12 @@ export default function MarketDetail() {
                     disabled={transaction.isPending}
                     onClick={() => void action("refund")}
                   >
-                    Refund position
+                    {t("market.refund")}
                   </Button>
                 ) : null}
                 {["OPEN", "CLOSED"].includes(market.state) ? (
                   <p className="text-body text-text-3">
-                    This market is still accepting conviction through the
-                    Position panel.
+                    {t("market.stillOpen")}
                   </p>
                 ) : null}
                 <TransactionFlow
@@ -333,7 +336,7 @@ export default function MarketDetail() {
         target="_blank"
         rel="noreferrer"
       >
-        View contract on explorer
+        {t("market.viewContract")}
       </a>
     </PageContainer>
   );

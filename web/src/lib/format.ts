@@ -1,4 +1,5 @@
 import { formatUnits } from "viem";
+import { type Locale, translate } from "./i18n";
 
 export function shortAddress(value: string) {
   return `${value.slice(0, 6)}…${value.slice(-4)}`;
@@ -32,18 +33,20 @@ export function formatDate(value: bigint | number | undefined) {
 
 export function formatError(
   error: unknown,
-  fallback = "Something went wrong. Try again.",
+  locale: Locale = "en",
+  fallback?: string,
 ) {
-  if (!(error instanceof Error)) return fallback;
+  const generic = fallback ?? translate(locale, "error.generic");
+  if (!(error instanceof Error)) return generic;
   const message = error.message.toLowerCase();
   if (
     message.includes("user rejected") ||
     message.includes("rejected the request")
   )
-    return "Wallet signature rejected. Nothing was submitted.";
+    return translate(locale, "error.rejected");
   if (message.includes("insufficient funds"))
-    return "Your wallet does not have enough balance for this action.";
+    return translate(locale, "error.insufficient");
   if (message.includes("chain") || message.includes("network"))
-    return "Switch to Robinhood Chain Testnet and try again.";
-  return error.message.slice(0, 180) || fallback;
+    return translate(locale, "error.wrongChain");
+  return error.message.slice(0, 180) || generic;
 }

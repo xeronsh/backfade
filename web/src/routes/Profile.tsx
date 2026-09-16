@@ -14,9 +14,11 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreatorMarkets } from "@/features/market/hooks";
 import { formatAmount } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { stagger, staggerDelay } from "@/lib/motion";
 
 export default function Profile() {
+  const { t } = useLocale();
   const { address: rawAddress } = useParams();
   const address =
     rawAddress && isAddress(rawAddress) ? (rawAddress as Address) : undefined;
@@ -25,21 +27,21 @@ export default function Profile() {
   if (!address)
     return (
       <EmptyState
-        title="Invalid profile address"
-        description="Use a 20-byte wallet address from a thesis card."
-        action={{ label: "Back to Feed", to: "/" }}
+        title={t("profile.invalidTitle")}
+        description={t("profile.invalidBody")}
+        action={{ label: t("empty.backToFeed"), to: "/" }}
       />
     );
   if (query.isLoading)
     return (
       <PageContainer>
         <PageHeader
-          eyebrow="Creator profile"
+          eyebrow={t("profile.eyebrow")}
           title={<Skeleton className="h-8 w-56" />}
-          lede="A chain-derived track record. No offchain reputation formula."
+          lede={t("profile.lede")}
         />
         <div className="mt-8">
-          <PageSection title="Published theses">
+          <PageSection title={t("profile.theses")}>
             <Skeleton className="h-64" />
           </PageSection>
         </div>
@@ -58,27 +60,27 @@ export default function Profile() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Creator profile"
+        eyebrow={t("profile.eyebrow")}
         title={<AddressValue value={address} />}
-        lede="A chain-derived track record. No offchain reputation formula."
+        lede={t("profile.lede")}
       />
 
       <Reveal delay={stagger.lead}>
         <Card className="mt-8">
           <MetricGroup columns={5}>
-            <Metric label="Created" value={markets.length} />
-            <Metric label="Resolved" value={resolved} />
-            <Metric label="Proven" value={proven} tone="back" />
-            <Metric label="Failed" value={failed} tone="fade" />
+            <Metric label={t("profile.created")} value={markets.length} />
+            <Metric label={t("profile.resolved")} value={resolved} />
+            <Metric label={t("profile.proven")} value={proven} tone="back" />
+            <Metric label={t("profile.failed")} value={failed} tone="fade" />
             <Metric
-              label="Proof rate"
+              label={t("profile.proofRate")}
               value={
                 resolved ? `${Math.round((proven / resolved) * 100)}%` : "—"
               }
             />
           </MetricGroup>
           <CardFooter className="text-body text-text-2">
-            Capital bonded{" "}
+            {t("profile.capitalBonded")}{" "}
             <span className="font-mono text-text-1" data-financial>
               {formatAmount(capitalBonded)} USDG
             </span>
@@ -88,18 +90,18 @@ export default function Profile() {
 
       <div className="mt-8">
         <PageSection
-          title="Published theses"
-          description="Read from the current factory contract."
+          title={t("profile.theses")}
+          description={t("profile.thesesHint")}
         >
           {query.error ? (
             <Alert
-              title="Read failure"
-              description="Creator data could not be read from chain."
+              title={t("profile.readFailure")}
+              description={t("profile.readFailureBody")}
             />
           ) : markets.length === 0 ? (
             <EmptyState
-              title="No theses yet"
-              description="This creator has not published a thesis on the current factory."
+              title={t("profile.emptyTitle")}
+              description={t("profile.emptyBody")}
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">

@@ -239,3 +239,37 @@ test("Wrong configuration fails visibly", async ({ browser }, testInfo) => {
     }
   }
 });
+
+test("Language toggle switches the interface and persists", async ({
+  page,
+}) => {
+  await page.route(RPC_URL_PATTERN, fulfillRpc);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+
+  // English is the default for an en-US browser.
+  await expect(page.getByRole("link", { name: "Backfade home" })).toBeVisible();
+
+  await page.getByRole("button", { name: "zh", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "观点流" })).toBeVisible();
+  const zhNav = page.getByRole("navigation", { name: "主导航" });
+  await expect(
+    zhNav.getByRole("link", { name: "创建", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Backfade 首页" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.lang)).toBe(
+    "zh-CN",
+  );
+
+  // The choice survives a navigation and a reload.
+  await zhNav.getByRole("link", { name: "创建", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "创建观点" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "创建观点" })).toBeVisible();
+
+  await page.getByRole("button", { name: "en", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Create thesis" }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.lang)).toBe("en");
+});
