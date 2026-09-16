@@ -34,11 +34,31 @@ focus, and active navigation. BACK and FADE colors never replace their words.
 ## Component hierarchy
 
 Generic primitives in `web/src/components/ui/` use Base UI behavior and Backfade-neutral styling:
-Button, Input, Textarea, Badge, Card, Skeleton, Separator, Dialog, Popover, and Tooltip.
+Button, ButtonLink, Input, Textarea, Badge, Card, Alert, Collapsible, Skeleton, Separator,
+Dialog, Popover, and Tooltip.
+
+Layout primitives in `web/src/components/layout/` own page geometry: PageContainer,
+PageHeader, PageSection, SplitLayout.
+
+Data primitives in `web/src/components/data/` own information patterns: Metric, MetricGroup,
+DataRow, Amount, Address, Timestamp, Figure, Status.
 
 Domain components in `web/src/components/backfade/` own product semantics:
 ThesisCard, ThesisSpec, ConvictionBar, NarrativeAlpha, PositionPanel, MarketStatus,
 TransactionFlow, and WalletStatus.
+
+## Enforcement
+
+The rules above are checked, not merely documented. `scripts/check-ui-contract.mjs` runs first
+in `make web-check` and fails the build when a route bypasses the component system:
+
+- routes may not use raw `<button>`, `<input>`, `<textarea>`, `<select>`, `<details>`,
+  `<summary>`, or `<svg>`;
+- `@base-ui/react` may only be imported from `components/ui/`;
+- no raw color literals outside `styles/globals.css`;
+- no inline motion durations or easings outside `lib/motion.ts`.
+
+Motion values live only in `lib/motion.ts` and the `--transition-duration-*` tokens.
 
 ## Page rules
 

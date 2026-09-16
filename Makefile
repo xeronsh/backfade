@@ -31,6 +31,7 @@ api-check:
 	cd api && uv run mypy api && uv run pytest && uv run python export_openapi.py && uv run python selfcheck.py
 
 web-check:
+	node scripts/check-ui-contract.mjs
 	$(CHAIN_ENV) npm run lint --prefix web
 	$(CHAIN_ENV) npm run typecheck --prefix web
 	$(CHAIN_ENV) npm test --prefix web
