@@ -1,5 +1,6 @@
-from api.main import app
 from fastapi.testclient import TestClient
+
+from api.main import app
 
 
 def test_assets_only_returns_enabled_registry_entries() -> None:

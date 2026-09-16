@@ -26,8 +26,8 @@ codegen-check: codegen
 	git diff --exit-code -- api/openapi.json web/src/generated web/src/lib/api/generated
 
 api-check:
-	uv run --project api ruff format --check api
-	uv run --project api ruff check api
+	uv run --project api ruff format --check api api/tests
+	uv run --project api ruff check api api/tests
 	cd api && uv run mypy api && uv run pytest && uv run python export_openapi.py && uv run python selfcheck.py
 
 web-check:
