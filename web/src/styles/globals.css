@@ -87,12 +87,13 @@
 
   /* Geometry */
   --container-page: 1180px;
-  --radius-micro: 4px;
-  --radius-chip: 6px;
-  --radius-field: 8px;
-  --radius-button: 10px;
-  --radius-card: 12px;
-  --radius-panel: 14px;
+  /* Square by design: the interface has no rounded corners. */
+  --radius-micro: 0px;
+  --radius-chip: 0px;
+  --radius-field: 0px;
+  --radius-button: 0px;
+  --radius-card: 0px;
+  --radius-panel: 0px;
 
   /* Shadows are limited to overlays. Cards use borders. */
   --shadow-popover: 0 16px 48px rgb(0 0 0 / 35%);
@@ -172,7 +173,6 @@ a {
   bottom: 4px;
   left: 0.85rem;
   height: 2px;
-  border-radius: 999px;
   background: var(--brand);
   content: "";
 }
@@ -183,7 +183,6 @@ a {
   display: flex;
   height: 9px;
   border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 999px;
   background: var(--fade-soft);
 }
 
@@ -194,12 +193,10 @@ a {
 }
 
 .conviction-bar__fade {
-  border-radius: 999px 0 0 999px;
   background: linear-gradient(90deg, rgb(255 117 109 / 0.75), var(--fade));
 }
 
 .conviction-bar__back {
-  border-radius: 0 999px 999px 0;
   background: linear-gradient(90deg, var(--back), rgb(212 255 104 / 0.85));
 }
 
@@ -209,7 +206,6 @@ a {
   width: 15px;
   height: 15px;
   border: 3px solid var(--canvas);
-  border-radius: 50%;
   background: var(--brand);
   transform: translate(-50%, -50%);
   transition: left var(--transition-duration-emphasis) var(--ease-standard);

@@ -22,7 +22,7 @@ export function Stepper({
         >
           <span
             aria-hidden="true"
-            className="grid size-7 place-items-center rounded-full border border-border-strong text-brand"
+            className="grid size-7 place-items-center border border-border-strong text-brand"
           >
             {`0${index + 1}`}
           </span>

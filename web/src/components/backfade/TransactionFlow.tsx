@@ -54,7 +54,7 @@ export function TransactionFlow({
             >
               <span
                 className={cn(
-                  "relative z-1 grid size-6 place-items-center rounded-full border border-border-strong bg-surface-2",
+                  "relative z-1 grid size-6 place-items-center border border-border-strong bg-surface-2",
                   "transition-colors duration-slow",
                   complete && "border-back bg-back-soft",
                   currentStep && !failed && "border-brand bg-brand/12",
@@ -68,7 +68,7 @@ export function TransactionFlow({
                 ) : currentStep ? (
                   <span
                     aria-hidden="true"
-                    className="size-2 animate-pulse rounded-full bg-current"
+                    className="size-2 animate-pulse bg-current"
                   />
                 ) : (
                   <Figure>{index + 1}</Figure>

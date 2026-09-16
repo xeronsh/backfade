@@ -273,3 +273,42 @@ test("Language toggle switches the interface and persists", async ({
   ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.lang)).toBe("en");
 });
+
+test("Switching language leaves the header geometry unchanged", async ({
+  page,
+}) => {
+  await page.route(RPC_URL_PATTERN, fulfillRpc);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+
+  // The wallet control and the language toggle sit next to each other, so a
+  // width change in either would slide its neighbour. English and Chinese copy
+  // differ in length, so both must be pinned to a fixed slot.
+  const header = () =>
+    page.evaluate(() => {
+      const slot = (element: Element | undefined) => {
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        return { x: Math.round(rect.x), width: Math.round(rect.width) };
+      };
+      return {
+        toggle: slot(
+          document.querySelector("header button[aria-pressed]") ?? undefined,
+        ),
+        wallet: slot(
+          [...document.querySelectorAll("header button")].pop() ?? undefined,
+        ),
+      };
+    });
+
+  const before = await header();
+  expect(before.toggle).not.toBeNull();
+  expect(before.wallet).not.toBeNull();
+
+  await page.getByRole("button", { name: "zh", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "观点流" })).toBeVisible();
+
+  const after = await header();
+  expect(after.wallet).toEqual(before.wallet);
+  expect(after.toggle).toEqual(before.toggle);
+});
