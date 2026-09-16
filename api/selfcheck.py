@@ -5,6 +5,7 @@ import sys
 import time
 
 import httpx
+
 from api.assets import load_assets, symbol_to_feed
 from api.llm import mock_compile
 from api.validator import ValidationError, validate_spec
