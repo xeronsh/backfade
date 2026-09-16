@@ -102,12 +102,21 @@ test("Position aside is sticky on desktop and static on mobile", async ({
     });
     await page.goto(`/market/${MARKET_ADDRESS}`);
 
+    // Wait for the loaded state: while the chain read is pending the route
+    // renders its own SplitLayout skeleton, so asserting early can catch a node
+    // that React is about to replace.
+    await expect(
+      page.getByRole("region", { name: "Pool summary" }),
+    ).toBeVisible();
+
     const aside = page.locator('[data-slot="split-aside"]');
     await expect(aside).toHaveCount(1);
     await expect(aside).toHaveAttribute("data-aside-position", "sticky");
-    expect(
-      await aside.evaluate((node) => getComputedStyle(node).position),
-    ).toBe(viewport.expected);
+    await expect
+      .poll(() => aside.evaluate((node) => getComputedStyle(node).position), {
+        message: `aside position at ${viewport.width}px`,
+      })
+      .toBe(viewport.expected);
   }
 });
 
@@ -206,20 +215,19 @@ test("Wrong configuration fails visibly", async ({ browser }, testInfo) => {
   );
   const page = await browser.newPage();
   try {
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      try {
-        await page.goto(`http://127.0.0.1:${port}`, {
-          waitUntil: "domcontentloaded",
-          timeout: 500,
-        });
-        break;
-      } catch {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-    }
-    await expect(
-      page.getByText("Configuration Error", { exact: true }),
-    ).toBeVisible();
+    // Vite can serve index.html before it has finished compiling the module
+    // graph, in which case the app never boots and nothing renders. Retry the
+    // whole load until the error surface actually appears instead of breaking
+    // on the first successful document load.
+    await expect(async () => {
+      await page.goto(`http://127.0.0.1:${port}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 5_000,
+      });
+      await expect(
+        page.getByText("Configuration error", { exact: true }),
+      ).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 60_000, intervals: [500, 1_000, 2_000] });
   } finally {
     await page.close();
     if (server.pid) {
