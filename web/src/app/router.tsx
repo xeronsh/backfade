@@ -1,31 +1,30 @@
-import { motion, useReducedMotion } from "motion/react";
-import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AppShell } from "@/components/backfade/AppShell";
-import { Skeleton } from "@/components/ui/skeleton";
-import { duration, ease } from "@/lib/motion";
+import CreateThesis from "@/routes/CreateThesis";
+import Feed from "@/routes/Feed";
+import MarketDetail from "@/routes/MarketDetail";
+import Profile from "@/routes/Profile";
 
-const Feed = lazy(() => import("@/routes/Feed"));
-const CreateThesis = lazy(() => import("@/routes/CreateThesis"));
-const MarketDetail = lazy(() => import("@/routes/MarketDetail"));
-const Profile = lazy(() => import("@/routes/Profile"));
-
-function RouteFallback() {
-  const reducedMotion = useReducedMotion();
-  return (
-    <motion.div
-      initial={reducedMotion ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: duration.fast, ease: ease.standard }}
-    >
-      <Skeleton className="mx-auto mt-12 h-72 max-w-page" />
-    </motion.div>
-  );
+/**
+ * A client-side navigation should not look like a page load. The routes are
+ * imported eagerly: together they are a fraction of the wallet SDK the shell
+ * already ships, and splitting them out meant every first visit to a route
+ * swapped the page for a skeleton while its chunk downloaded.
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    // `pathname` is read here so the effect genuinely depends on the route.
+    if (pathname) window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }
 
 export function AppRouter() {
   return (
-    <Suspense fallback={<RouteFallback />}>
+    <>
+      <ScrollToTop />
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Feed />} />
@@ -35,6 +34,6 @@ export function AppRouter() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </Suspense>
+    </>
   );
 }

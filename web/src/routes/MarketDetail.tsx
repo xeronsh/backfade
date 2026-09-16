@@ -55,7 +55,28 @@ export default function MarketDetail() {
   if (marketQuery.isLoading)
     return (
       <PageContainer>
-        <Skeleton className="h-96" />
+        <PageHeader
+          eyebrow="Narrative / bonded claim"
+          title={<Skeleton className="h-8 w-3/5" />}
+          lede={<Skeleton className="h-5 w-2/3" />}
+          aside={<Skeleton className="h-16 w-full" />}
+        />
+        <div className="mt-8">
+          <SplitLayout
+            asidePosition="sticky"
+            aside={<Skeleton className="h-80" />}
+            main={
+              <>
+                <PageSection title="ThesisSpec">
+                  <Skeleton className="h-64" />
+                </PageSection>
+                <PageSection title="Pool summary">
+                  <Skeleton className="h-40" />
+                </PageSection>
+              </>
+            }
+          />
+        </div>
       </PageContainer>
     );
   if (marketQuery.error || !marketQuery.data)

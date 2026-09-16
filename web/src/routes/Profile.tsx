@@ -33,7 +33,16 @@ export default function Profile() {
   if (query.isLoading)
     return (
       <PageContainer>
-        <Skeleton className="h-64" />
+        <PageHeader
+          eyebrow="Creator profile"
+          title={<Skeleton className="h-8 w-56" />}
+          lede="A chain-derived track record. No offchain reputation formula."
+        />
+        <div className="mt-8">
+          <PageSection title="Published theses">
+            <Skeleton className="h-64" />
+          </PageSection>
+        </div>
       </PageContainer>
     );
 

@@ -51,6 +51,11 @@ const ARBITRARY_TAILWIND = /\[[^\]"\s]+\]/;
 // brand mark is a wordmark rather than a glyph, so no page ships an icon set.
 const ICON_IMPORT = /from\s+["'](lucide-react|@radix-ui\/react-icons|react-icons)["']/;
 
+// Client-side navigation only. A full page load or a hard redirect makes the
+// shell flash and discards in-memory state, so pages route through react-router.
+const HARD_NAVIGATION =
+  /window\.location\.(href|assign|replace)|location\.reload\(|<a\s+href="\/(?!https?:)/;
+
 function walk(dir) {
   const out = [];
   for (const entry of readdirSync(dir)) {
@@ -141,6 +146,15 @@ for (const file of files) {
         line,
         "E8",
         "icon library import; this interface is typographic",
+      );
+
+    if (HARD_NAVIGATION.test(text))
+      report(
+        errors,
+        file,
+        line,
+        "E9",
+        "hard navigation; use a react-router Link or navigate()",
       );
 
     if (isRoute && ARBITRARY_TAILWIND.test(text))

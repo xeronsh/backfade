@@ -133,6 +133,52 @@ test("Market route renders every section once chain data resolves", async ({
   await expect(page.getByText("100.00 USDG")).toBeVisible();
 });
 
+test("Primary navigation is client-side and keeps the chrome", async ({
+  page,
+}) => {
+  await page.route(RPC_URL_PATTERN, fulfillRpc);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+
+  // A document reload would wipe this marker.
+  await page.evaluate(() => {
+    (window as unknown as { __navMarker?: boolean }).__navMarker = true;
+  });
+
+  const nav = page.getByRole("navigation", { name: "Primary navigation" });
+  for (const label of ["Create", "Feed", "Create", "Feed"]) {
+    await nav.getByRole("link", { name: label }).click();
+    // The header must still be there straight away: no blank skeleton swap.
+    await expect(
+      page.getByRole("link", { name: "Backfade home" }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { __navMarker?: boolean }).__navMarker === true,
+      ),
+      "navigation must not reload the document",
+    ).toBe(true);
+  }
+
+  // Moving between routes with different content keeps the shell mounted too.
+  await page.goto(`/market/${MARKET_ADDRESS}`);
+  await expect(
+    page.getByRole("region", { name: "Pool summary" }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    (window as unknown as { __navMarker?: boolean }).__navMarker = true;
+  });
+  await nav.getByRole("link", { name: "Feed" }).click();
+  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __navMarker?: boolean }).__navMarker === true,
+    ),
+  ).toBe(true);
+});
+
 test("Market route validates address", async ({ page }) => {
   await page.goto("/market/not-an-address");
   await expect(
