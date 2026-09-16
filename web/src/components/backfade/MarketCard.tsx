@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { OutcomeRow, OutcomeSplit } from "@/components/data/outcome";
+import { ButtonLink } from "@/components/ui/button-link";
 import type { MarketSummary } from "@/features/market/hooks";
 import { useLocale } from "@/lib/locale-provider";
 
@@ -77,12 +78,13 @@ export function FeaturedMarket({ market }: { market: MarketSummary }) {
             {t("feed.volume")} {formatPool(total)} · {t("feed.endsIn")}{" "}
             {formatEnd(market.bettingEndsAt)}
           </p>
-          <Link
+          <ButtonLink
             to={`/market/${market.address}`}
-            className="mt-6 inline-flex min-h-11 items-center border border-brand bg-brand px-5 font-medium text-brand-on transition-colors duration-standard hover:bg-brand-hover"
+            variant="primary"
+            className="mt-6"
           >
             {t("feed.readThesisLong")}
-          </Link>
+          </ButtonLink>
         </div>
         <OutcomeSplit
           back={market.backPool}

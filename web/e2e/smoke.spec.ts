@@ -105,9 +105,7 @@ test("Position aside is sticky on desktop and static on mobile", async ({
     // Wait for the loaded state: while the chain read is pending the route
     // renders its own SplitLayout skeleton, so asserting early can catch a node
     // that React is about to replace.
-    await expect(
-      page.getByRole("region", { name: "Pool summary" }),
-    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Pool summary" })).toBeVisible();
 
     const aside = page.locator('[data-slot="split-aside"]');
     await expect(aside).toHaveCount(1);
@@ -128,18 +126,27 @@ test("Market route renders every section once chain data resolves", async ({
   await page.goto(`/market/${MARKET_ADDRESS}`);
 
   for (const name of [
+    "Market conviction",
     "ThesisSpec",
-    "Pool summary",
-    "Oracle observations",
+    "Evidence",
     "Timeline & settlement",
     "Activity",
     "Lifecycle action",
   ]) {
     await expect(page.getByRole("region", { name })).toHaveCount(1);
   }
+  await expect(page.getByRole("tab", { name: "Pool summary" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(
+    page.getByRole("tab", { name: "Oracle observations" }),
+  ).toHaveAttribute("aria-selected", "false");
   // Pool figures come from MetricGroup/DataRow, not hand-rolled markup.
   await expect(page.getByText("BACK pool")).toBeVisible();
   await expect(page.getByText("100.00 USDG")).toBeVisible();
+  await page.getByRole("tab", { name: "Oracle observations" }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("TSLA");
 });
 
 test("Primary navigation is client-side and keeps the chrome", async ({
@@ -172,9 +179,7 @@ test("Primary navigation is client-side and keeps the chrome", async ({
 
   // Moving between routes with different content keeps the shell mounted too.
   await page.goto(`/market/${MARKET_ADDRESS}`);
-  await expect(
-    page.getByRole("region", { name: "Pool summary" }),
-  ).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Pool summary" })).toBeVisible();
   await page.evaluate(() => {
     (window as unknown as { __navMarker?: boolean }).__navMarker = true;
   });
@@ -263,9 +268,13 @@ test("Language toggle switches the interface and persists", async ({
 
   // The choice survives a navigation and a reload.
   await zhNav.getByRole("link", { name: "创建", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "创建观点" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "创建 thesis" }),
+  ).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "创建观点" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "创建 thesis" }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "en", exact: true }).click();
   await expect(

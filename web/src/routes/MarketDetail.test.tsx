@@ -100,18 +100,26 @@ describe("MarketDetail layout", () => {
     expect(container.querySelector('[data-slot="split-main"]')).not.toBeNull();
   });
 
-  it("renders every section through PageSection and the facts through data primitives", () => {
+  it("renders the conviction chart and keyboard-ready evidence tabs", () => {
     renderRoute(<MarketDetail />);
     for (const name of [
+      "Market conviction",
       "ThesisSpec",
-      "Pool summary",
-      "Oracle observations",
+      "Evidence",
       "Timeline & settlement",
       "Activity",
       "Lifecycle action",
     ]) {
       expect(screen.getByRole("region", { name })).toBeInTheDocument();
     }
+    expect(screen.getByRole("tab", { name: "Pool summary" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("tab", { name: "Oracle observations" }),
+    ).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tabpanel")).toBeInTheDocument();
     // Pool summary figures come from MetricGroup/DataRow, not hand-rolled markup.
     expect(screen.getByText("BACK pool")).toBeInTheDocument();
     expect(screen.getByText("100.00 USDG")).toBeInTheDocument();
