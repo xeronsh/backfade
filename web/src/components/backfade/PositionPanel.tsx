@@ -1,4 +1,3 @@
-import { ArrowDown, ArrowUp, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { parseUnits } from "viem";
@@ -60,10 +59,7 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
 
   return (
     <Card className="h-full">
-      <div className="flex items-center gap-2">
-        <ShieldCheck size={18} className="text-brand" aria-hidden="true" />
-        <h2 className="text-narrative font-semibold">Position</h2>
-      </div>
+      <h2 className="text-narrative font-semibold">Position</h2>
       <MetricGroup className="mt-5" columns={2}>
         <Metric
           label="Your BACK"
@@ -93,14 +89,14 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
           disabled={!canTrade || transaction.isPending}
           onClick={() => void act("back")}
         >
-          <ArrowUp size={16} aria-hidden="true" /> BACK
+          BACK
         </Button>
         <Button
           variant="fade"
           disabled={!canTrade || transaction.isPending}
           onClick={() => void act("fade")}
         >
-          <ArrowDown size={16} aria-hidden="true" /> FADE
+          FADE
         </Button>
       </div>
       {market.state === "OPEN" ? (

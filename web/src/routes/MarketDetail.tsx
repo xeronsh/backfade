@@ -1,4 +1,3 @@
-import { ExternalLink } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { type Address, formatUnits, isAddress } from "viem";
@@ -313,7 +312,7 @@ export default function MarketDetail() {
         target="_blank"
         rel="noreferrer"
       >
-        View contract on explorer <ExternalLink size={14} aria-hidden="true" />
+        View contract on explorer
       </a>
     </PageContainer>
   );

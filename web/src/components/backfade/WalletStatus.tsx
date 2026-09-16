@@ -1,5 +1,4 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function WalletStatus() {
@@ -29,7 +28,7 @@ export function WalletStatus() {
         if (!account || !chain)
           return (
             <Button size="sm" variant="primary" onClick={openConnectModal}>
-              <Wallet size={16} aria-hidden="true" /> Connect wallet
+              Connect wallet
             </Button>
           );
         return (

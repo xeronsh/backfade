@@ -1,4 +1,3 @@
-import { Check, CircleAlert, LoaderCircle } from "lucide-react";
 import { Figure } from "@/components/data";
 import type { TransactionPhase } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
@@ -72,14 +71,13 @@ export function TransactionFlow({
                 )}
               >
                 {complete ? (
-                  <Check size={12} aria-hidden="true" />
+                  <span aria-hidden="true">✓</span>
                 ) : failed && currentStep ? (
-                  <CircleAlert size={12} aria-hidden="true" />
+                  <span aria-hidden="true">!</span>
                 ) : currentStep ? (
-                  <LoaderCircle
-                    size={12}
-                    className="animate-spin"
+                  <span
                     aria-hidden="true"
+                    className="size-2 animate-pulse rounded-full bg-current"
                   />
                 ) : (
                   <Figure>{index + 1}</Figure>

@@ -11,6 +11,7 @@
  *  E5 no raw color literals outside globals.css (tokens own colour).
  *  E6 no off-scale type sizes — only the four documented roles.
  *  E7 no hardcoded CSS durations outside globals.css / motion.ts.
+ *  E8 no icon libraries in pages — the product is typographic, not icon-led.
  *  W1 routes arbitrary Tailwind values are reported for review.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -45,6 +46,10 @@ const TEXT_UTILITY = /\btext-(xs|sm|base|lg|xl|[2-9]xl|\[[^\]]+\])(?![\w-])/g;
 const HARDCODED_DURATION =
   /duration-\[[^\]]+\]|transition-duration:\s*[0-9.]+m?s\b|(?:^|[\s"'])duration-\d{2,}/;
 const ARBITRARY_TAILWIND = /\[[^\]"\s]+\]/;
+
+// The interface is typographic. Icons are not a substitute for words, and a
+// brand mark is a wordmark rather than a glyph, so no page ships an icon set.
+const ICON_IMPORT = /from\s+["'](lucide-react|@radix-ui\/react-icons|react-icons)["']/;
 
 function walk(dir) {
   const out = [];
@@ -127,6 +132,15 @@ for (const file of files) {
         line,
         "E7",
         "hardcoded duration; use a duration token or lib/motion.ts",
+      );
+
+    if (ICON_IMPORT.test(text))
+      report(
+        errors,
+        file,
+        line,
+        "E8",
+        "icon library import; this interface is typographic",
       );
 
     if (isRoute && ARBITRARY_TAILWIND.test(text))

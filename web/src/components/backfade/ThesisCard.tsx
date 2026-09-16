@@ -1,4 +1,3 @@
-import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ConvictionBar } from "@/components/backfade/ConvictionBar";
 import { MarketStatus } from "@/components/backfade/MarketStatus";
@@ -72,9 +71,8 @@ export function ThesisCard({ market }: { market: MarketSummary }) {
           </MetricGroup>
         </CollapsiblePanel>
       </Collapsible>
-      <div className="mt-4 flex items-center justify-end gap-1 font-mono text-meta text-text-3">
+      <div className="mt-4 text-right font-mono text-meta text-text-3">
         <Address value={market.address} />
-        <ArrowUpRight size={14} aria-hidden="true" />
       </div>
     </Card>
   );

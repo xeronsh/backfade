@@ -1,28 +1,11 @@
-import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const tones = {
-  error: {
-    container: "border-fade bg-fade-soft",
-    label: "text-fade",
-    icon: CircleAlert,
-  },
-  warning: {
-    container: "border-warning bg-surface-2",
-    label: "text-warning",
-    icon: TriangleAlert,
-  },
-  info: {
-    container: "border-info bg-surface-2",
-    label: "text-info",
-    icon: Info,
-  },
-  success: {
-    container: "border-back bg-back-soft",
-    label: "text-back",
-    icon: CircleCheck,
-  },
+  error: { container: "border-fade bg-fade-soft", label: "text-fade" },
+  warning: { container: "border-warning bg-surface-2", label: "text-warning" },
+  info: { container: "border-info bg-surface-2", label: "text-info" },
+  success: { container: "border-back bg-back-soft", label: "text-back" },
 } as const;
 
 export interface AlertProps extends HTMLAttributes<HTMLDivElement> {
@@ -34,7 +17,8 @@ export interface AlertProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * The single way to report a read, compiler, wallet, or transaction failure.
- * Answers both "what happened?" and "what can I do?".
+ * Answers both "what happened?" and "what can I do?". State is carried by the
+ * tone colour and the title text, not by a leading glyph.
  */
 export function Alert({
   tone = "error",
@@ -46,7 +30,6 @@ export function Alert({
   ...props
 }: AlertProps) {
   const style = tones[tone];
-  const Icon = style.icon;
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
@@ -59,17 +42,14 @@ export function Alert({
     >
       <p
         className={cn(
-          "flex items-center gap-2 font-mono text-meta uppercase tracking-eyebrow",
+          "font-mono text-meta uppercase tracking-eyebrow",
           style.label,
         )}
       >
-        <Icon size={15} aria-hidden="true" />
         {title}
       </p>
       {description ? (
-        <p className="mt-3 max-w-xl text-body leading-5 text-text-2">
-          {description}
-        </p>
+        <p className="mt-3 max-w-xl text-body text-text-2">{description}</p>
       ) : null}
       {children}
       {action ? (

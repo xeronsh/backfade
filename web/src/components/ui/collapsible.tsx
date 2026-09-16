@@ -1,15 +1,11 @@
 import { Collapsible as BaseCollapsible } from "@base-ui/react/collapsible";
-import { ChevronDown } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
  * One disclosure primitive for the whole product: Base UI focus management,
- * Escape handling, and a chevron that rotates through the shared 160ms token.
- * Replaces ad-hoc `<details>/<summary>` markup.
- *
- * The panel opens and closes through the `collapse` variants in
- * `lib/motion.ts`, so no call site animates it by hand.
+ * Escape handling, and a chevron drawn in CSS rather than shipped as an icon
+ * glyph. Replaces ad-hoc `<details>/<summary>` markup.
  */
 export function Collapsible({
   className,
@@ -32,10 +28,9 @@ export function CollapsibleTrigger({
       {...props}
     >
       <span>{children}</span>
-      <ChevronDown
-        size={14}
+      <span
         aria-hidden="true"
-        className="transition-transform duration-standard group-data-[panel-open]:rotate-180"
+        className="size-2 rotate-45 border-r border-b border-current transition-transform duration-standard group-data-[panel-open]:-rotate-135"
       />
     </BaseCollapsible.Trigger>
   );

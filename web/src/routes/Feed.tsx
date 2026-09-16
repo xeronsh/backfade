@@ -1,4 +1,3 @@
-import { Activity, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/backfade/EmptyState";
 import { Reveal } from "@/components/backfade/Reveal";
@@ -74,7 +73,7 @@ export default function Feed() {
                     )}
                     action={
                       <Button size="sm" onClick={() => void markets.refetch()}>
-                        <RefreshCw size={15} aria-hidden="true" /> Retry
+                        Retry
                       </Button>
                     }
                   />
@@ -112,11 +111,6 @@ export default function Feed() {
                       Market pulse
                     </h2>
                   </div>
-                  <Activity
-                    size={18}
-                    className="text-brand"
-                    aria-hidden="true"
-                  />
                 </CardHeader>
                 <CardContent className="mt-4">
                   <MetricGroup columns={2}>
