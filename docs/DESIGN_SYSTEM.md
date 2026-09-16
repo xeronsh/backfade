@@ -29,8 +29,8 @@ focus, and active navigation. BACK and FADE colors never replace their words.
   only sizes in the product: `text-page-title`, `text-narrative`, `text-body`, `text-meta`.
   The contract gate rejects any other Tailwind size utility.
 - Four-pixel spacing grid; standard values are 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80.
-- Radius: 4px data, 6px chip, 8px field, 10px button, 12px card, 14px panel, pill only when
-  semantic.
+- Radius: square by design. The current `--radius-*` tokens are all `0`; do not add rounded
+  corners in route-level classes.
 - Surface cards use borders, not shadows. Shadows are limited to popovers, dialogs, and toasts.
 
 ## Component hierarchy
@@ -46,7 +46,7 @@ Data primitives in `web/src/components/data/` own information patterns: Metric, 
 DataRow, Amount, Address, Timestamp, Figure, Status.
 
 Domain components in `web/src/components/backfade/` own product semantics:
-ThesisCard, ThesisSpec, ConvictionBar, NarrativeAlpha, PositionPanel, MarketStatus,
+ThesisCard, ThesisSpec, ConvictionBar/OutcomeSplit, NarrativeAlpha, PositionPanel, MarketStatus,
 TransactionFlow, and WalletStatus.
 
 ## Enforcement

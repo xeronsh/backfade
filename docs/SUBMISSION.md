@@ -167,5 +167,4 @@ See `SECURITY.md` for the full security posture.
 | Live E2E evidence | [`LIVE_E2E.md`](LIVE_E2E.md) |
 | Verified feeds + cadence | [`TESTNET_ASSETS.md`](TESTNET_ASSETS.md) |
 | Cancellation + refund evidence | [`LIVE_E2E.md`](LIVE_E2E.md#cancellation-and-refund) |
-| Pitch notes | [`PITCH.md`](PITCH.md) |
 | Demo video | linked in the submission form |
