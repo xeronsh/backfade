@@ -1,6 +1,7 @@
 import { Activity, Plus, Radio } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { WalletStatus } from "@/components/backfade/WalletStatus";
+import { Status } from "@/components/data";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,25 +11,37 @@ const links = [
 
 export function AppShell() {
   return (
-    <div className="app-shell min-h-screen bg-canvas">
-      <header className="site-header">
-        <div className="site-header__inner">
-          <NavLink to="/" className="brand-lockup" aria-label="Backfade home">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-20 border-b border-border bg-canvas/80 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-19 w-full max-w-page flex-wrap items-center gap-3 px-5 py-2 sm:px-6 md:flex-nowrap md:gap-5 md:py-0">
+          <NavLink
+            to="/"
+            className="flex items-center gap-3 text-base font-bold"
+            aria-label="Backfade home"
+          >
             <span className="brand-mark" aria-hidden="true">
               <Activity size={15} strokeWidth={2} />
             </span>
-            <span className="brand-wordmark">
-              back<span>fade</span>
+            <span className="hidden sm:inline">
+              back<span className="text-brand">fade</span>
             </span>
           </NavLink>
-          <nav className="nav-pill" aria-label="Primary navigation">
+          <nav
+            className="order-3 flex w-full gap-1 rounded-panel border border-border bg-surface-1 p-1 md:order-none md:w-auto"
+            aria-label="Primary navigation"
+          >
             {links.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  cn("nav-link", isActive && "nav-link--active")
+                  cn(
+                    "relative flex min-h-11 flex-1 items-center justify-center gap-2 rounded-button px-3 text-meta font-semibold transition-colors duration-standard md:flex-none",
+                    isActive
+                      ? "nav-link--active bg-brand/10 text-text-1"
+                      : "text-text-3 hover:bg-surface-2 hover:text-text-1",
+                  )
                 }
               >
                 <Icon size={15} strokeWidth={1.8} aria-hidden="true" />
@@ -36,14 +49,15 @@ export function AppShell() {
               </NavLink>
             ))}
           </nav>
-          <div className="network-chip">
-            <Activity size={13} aria-hidden="true" />
-            Robinhood Testnet
+          <div className="ml-auto flex items-center gap-3">
+            <Status className="hidden lg:inline-flex" dot>
+              Robinhood Testnet
+            </Status>
+            <WalletStatus />
           </div>
-          <WalletStatus />
         </div>
       </header>
-      <main className="relative z-10">
+      <main>
         <Outlet />
       </main>
     </div>

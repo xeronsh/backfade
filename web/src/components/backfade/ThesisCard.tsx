@@ -1,80 +1,80 @@
-import { ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ConvictionBar } from "@/components/backfade/ConvictionBar";
 import { MarketStatus } from "@/components/backfade/MarketStatus";
-import { Card } from "@/components/ui/card";
-import type { MarketSummary } from "@/features/market/hooks";
 import {
-  formatAmount,
-  formatBps,
-  formatDate,
-  shortAddress,
-} from "@/lib/format";
+  Address,
+  DataRow,
+  Metric,
+  MetricGroup,
+  Timestamp,
+} from "@/components/data";
+import { Card } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import type { MarketSummary } from "@/features/market/hooks";
+import { formatAmount, formatBps } from "@/lib/format";
 
 export function ThesisCard({ market }: { market: MarketSummary }) {
   return (
-    <Card className="thesis-card group ui-card--interactive">
-      <div className="thesis-card__meta mb-4">
-        <Link to={`/profile/${market.creator}`} className="hover:text-text-1">
-          {shortAddress(market.creator)}
+    <Card className="h-full transition-colors duration-emphasis hover:border-brand/35">
+      <div className="flex items-center justify-between gap-4 font-mono text-meta text-text-3">
+        <Link
+          to={`/profile/${market.creator}`}
+          className="transition-colors duration-standard hover:text-text-1"
+        >
+          {market.creator.slice(0, 6)}…{market.creator.slice(-4)}
         </Link>
         <MarketStatus state={market.state} />
       </div>
-      <Link to={`/market/${market.address}`} className="block">
-        <h2 className="thesis-card__title line-clamp-2 text-lg font-semibold leading-7">
+      <Link to={`/market/${market.address}`} className="mt-4 block">
+        <h2 className="line-clamp-2 text-narrative font-semibold transition-colors duration-standard hover:text-brand">
           {market.narrative}
         </h2>
-        <p className="mt-2 line-clamp-2 text-sm text-text-2">
+        <p className="mt-2 line-clamp-2 text-body text-text-2">
           Basket must outperform its benchmark by {formatBps(market.hurdleBps)}{" "}
           before oracle settlement.
         </p>
         <div className="mt-5">
           <ConvictionBar back={market.backPool} fade={market.fadePool} />
         </div>
-        <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 text-xs">
-          <div>
-            <dt className="text-text-3">Creator conviction</dt>
-            <dd className="mt-1 font-mono text-text-1" data-financial>
-              {formatAmount(market.creatorBond)} USDG
-            </dd>
-          </div>
-          <div>
-            <dt className="text-text-3">Resolves</dt>
-            <dd className="mt-1 text-text-1" data-financial>
-              {formatDate(market.resolvesAt)}
-            </dd>
-          </div>
-        </dl>
+        <MetricGroup className="mt-5 border-t border-border pt-4" columns={2}>
+          <Metric
+            label="Creator conviction"
+            value={`${formatAmount(market.creatorBond)} USDG`}
+          />
+          <Metric
+            label="Resolves"
+            value={<Timestamp value={market.resolvesAt} />}
+          />
+        </MetricGroup>
       </Link>
-      <details className="thesis-disclosure">
-        <summary>
-          <span>View machine claim</span>
-          <ChevronDown size={14} aria-hidden="true" />
-        </summary>
-        <div className="thesis-disclosure__body">
+      <Collapsible className="mt-4 border-t border-border pt-2">
+        <CollapsibleTrigger>View machine claim</CollapsibleTrigger>
+        <CollapsiblePanel>
           <p>
             Basket must outperform its benchmark by{" "}
             {formatBps(market.hurdleBps)} before oracle settlement.
           </p>
-          <dl>
-            <div>
-              <dt>Bond</dt>
-              <dd data-financial>{formatAmount(market.creatorBond)} USDG</dd>
-            </div>
-            <div>
-              <dt>Resolves</dt>
-              <dd data-financial>{formatDate(market.resolvesAt)}</dd>
-            </div>
-            <div>
-              <dt>Contract</dt>
-              <dd data-mono>{shortAddress(market.address)}</dd>
-            </div>
-          </dl>
-        </div>
-      </details>
-      <div className="thesis-card__address mt-4 flex items-center justify-end text-xs">
-        <span data-mono>{shortAddress(market.address)}</span>
-        <ArrowUpRight size={14} className="ml-1" aria-hidden="true" />
+          <MetricGroup className="mt-3" columns={3}>
+            <DataRow label="Bond">
+              {formatAmount(market.creatorBond)} USDG
+            </DataRow>
+            <DataRow label="Resolves">
+              <Timestamp value={market.resolvesAt} />
+            </DataRow>
+            <DataRow label="Contract">
+              <Address value={market.address} />
+            </DataRow>
+          </MetricGroup>
+        </CollapsiblePanel>
+      </Collapsible>
+      <div className="mt-4 flex items-center justify-end gap-1 font-mono text-meta text-text-3">
+        <Address value={market.address} />
+        <ArrowUpRight size={14} aria-hidden="true" />
       </div>
     </Card>
   );

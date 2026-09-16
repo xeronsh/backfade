@@ -3,16 +3,25 @@ import { type Address, isAddress } from "viem";
 import { EmptyState } from "@/components/backfade/EmptyState";
 import { Reveal } from "@/components/backfade/Reveal";
 import { ThesisCard } from "@/components/backfade/ThesisCard";
-import { Card } from "@/components/ui/card";
+import {
+  Address as AddressValue,
+  Metric,
+  MetricGroup,
+} from "@/components/data";
+import { PageContainer, PageHeader, PageSection } from "@/components/layout";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreatorMarkets } from "@/features/market/hooks";
-import { formatAmount, shortAddress } from "@/lib/format";
+import { formatAmount } from "@/lib/format";
+import { stagger, staggerDelay } from "@/lib/motion";
 
 export default function Profile() {
   const { address: rawAddress } = useParams();
   const address =
     rawAddress && isAddress(rawAddress) ? (rawAddress as Address) : undefined;
   const query = useCreatorMarkets(address);
+
   if (!address)
     return (
       <EmptyState
@@ -23,10 +32,11 @@ export default function Profile() {
     );
   if (query.isLoading)
     return (
-      <div className="page-shell">
+      <PageContainer>
         <Skeleton className="h-64" />
-      </div>
+      </PageContainer>
     );
+
   const markets = query.data ?? [];
   const proven = markets.filter((market) => market.state === "PROVEN").length;
   const failed = markets.filter((market) => market.state === "FAILED").length;
@@ -35,83 +45,64 @@ export default function Profile() {
     (total, market) => total + market.creatorBond,
     0n,
   );
+
   return (
-    <div className="page-shell profile-page">
-      <Reveal className="profile-hero">
-        <p className="eyebrow">Creator profile</p>
-        <h1 className="page-title profile-address font-mono" data-mono>
-          {shortAddress(address)}
-        </h1>
-        <p className="page-lede">
-          A chain-derived track record. No offchain reputation formula.
-        </p>
-      </Reveal>
-      <Reveal delay={0.06}>
-        <Card className="profile-stats mb-8">
-          <dl className="profile-stats__grid">
-            <div>
-              <dt className="text-xs text-text-3">Created</dt>
-              <dd className="mt-1 text-xl font-semibold" data-financial>
-                {markets.length}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-text-3">Resolved</dt>
-              <dd className="mt-1 text-xl font-semibold" data-financial>
-                {resolved}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-text-3">Proven</dt>
-              <dd
-                className="mt-1 text-xl font-semibold text-back"
-                data-financial
-              >
-                {proven}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-text-3">Failed</dt>
-              <dd
-                className="mt-1 text-xl font-semibold text-fade"
-                data-financial
-              >
-                {failed}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-text-3">Proof rate</dt>
-              <dd className="mt-1 text-xl font-semibold" data-financial>
-                {resolved ? `${Math.round((proven / resolved) * 100)}%` : "—"}
-              </dd>
-            </div>
-          </dl>
-          <p className="mt-5 border-t border-border pt-4 text-sm text-text-2">
+    <PageContainer>
+      <PageHeader
+        eyebrow="Creator profile"
+        title={<AddressValue value={address} />}
+        lede="A chain-derived track record. No offchain reputation formula."
+      />
+
+      <Reveal delay={stagger.lead}>
+        <Card className="mt-8">
+          <MetricGroup columns={5}>
+            <Metric label="Created" value={markets.length} />
+            <Metric label="Resolved" value={resolved} />
+            <Metric label="Proven" value={proven} tone="back" />
+            <Metric label="Failed" value={failed} tone="fade" />
+            <Metric
+              label="Proof rate"
+              value={
+                resolved ? `${Math.round((proven / resolved) * 100)}%` : "—"
+              }
+            />
+          </MetricGroup>
+          <CardFooter className="text-sm text-text-2">
             Capital bonded{" "}
             <span className="font-mono text-text-1" data-financial>
               {formatAmount(capitalBonded)} USDG
             </span>
-          </p>
+          </CardFooter>
         </Card>
       </Reveal>
-      {query.error ? (
-        <p className="border-y border-fade bg-fade-soft px-5 py-5 text-sm text-fade">
-          Creator data could not be read from chain.
-        </p>
-      ) : markets.length === 0 ? (
-        <EmptyState
-          title="No theses yet"
-          description="This creator has not published a thesis on the current factory."
-        />
-      ) : (
-        <div className="market-grid">
-          {markets.map((market, index) => (
-            <Reveal key={market.address} delay={Math.min(index * 0.06, 0.24)}>
-              <ThesisCard market={market} />
-            </Reveal>
-          ))}
-        </div>
-      )}
-    </div>
+
+      <div className="mt-8">
+        <PageSection
+          title="Published theses"
+          description="Read from the current factory contract."
+        >
+          {query.error ? (
+            <Alert
+              title="Read failure"
+              description="Creator data could not be read from chain."
+            />
+          ) : markets.length === 0 ? (
+            <EmptyState
+              title="No theses yet"
+              description="This creator has not published a thesis on the current factory."
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {markets.map((market, index) => (
+                <Reveal key={market.address} delay={staggerDelay(index)}>
+                  <ThesisCard market={market} />
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </PageSection>
+      </div>
+    </PageContainer>
   );
 }

@@ -11,6 +11,14 @@ import { z } from "zod";
 import { Reveal } from "@/components/backfade/Reveal";
 import { ThesisSpec } from "@/components/backfade/ThesisSpec";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
+import { DataRow, MetaLabel, MetricGroup } from "@/components/data";
+import {
+  PageContainer,
+  PageHeader,
+  PageSection,
+  SplitLayout,
+  Stepper,
+} from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,9 +28,13 @@ import { useTransaction } from "@/features/wallet/useTransaction";
 import { useCompileThesis } from "@/lib/api/generated";
 import type { ThesisSpec as GeneratedThesisSpec } from "@/lib/api/generated/model/thesisSpec";
 import { config } from "@/lib/config";
-import { formatError } from "@/lib/format";
+import { formatBps, formatError } from "@/lib/format";
+import { reveal, revealTransition, stagger } from "@/lib/motion";
 import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, FACTORY_ABI } from "@/lib/web3/contracts";
+
+const ENTRY_WINDOW_SECONDS = 1800n;
+const SECONDS_PER_DAY = 86_400n;
 
 const schema = z.object({
   narrative: z
@@ -102,8 +114,8 @@ export default function CreateThesis() {
       basket,
       benchmarkFeed: compiled.benchmark.feed as Address,
       hurdleBps: compiled.hurdle_bps,
-      bettingEndsAt: now + 1800n,
-      resolvesAt: now + BigInt(compiled.duration_days) * 86400n,
+      bettingEndsAt: now + ENTRY_WINDOW_SECONDS,
+      resolvesAt: now + BigInt(compiled.duration_days) * SECONDS_PER_DAY,
       collateral: addresses.collateral,
     };
     try {
@@ -158,113 +170,148 @@ export default function CreateThesis() {
   }
 
   return (
-    <div className="page-shell create-page">
-      <Reveal className="page-hero page-hero--compact">
-        <div>
-          <p className="eyebrow">Human narrative → financial claim</p>
-          <h1 className="page-title">Create thesis</h1>
-          <p className="page-lede">
-            Write the narrative. The compiler makes the claim explicit before
-            you bond it.
-          </p>
-        </div>
-        <ol className="step-rail" aria-label="Thesis launch steps">
-          <li data-step="01">Frame the narrative</li>
-          <li data-step="02">Compile the claim</li>
-          <li data-step="03">Bond the conviction</li>
-        </ol>
-      </Reveal>
-      <div className="create-grid">
-        <Reveal>
-          <Card className="form-card">
-            <form onSubmit={form.handleSubmit(compileNarrative)}>
-              <Label htmlFor="narrative">Narrative</Label>
-              <Textarea
-                id="narrative"
-                maxLength={280}
-                placeholder="AI infrastructure keeps outperforming…"
-                className="mt-2"
-                {...form.register("narrative")}
-              />
-              <div className="mt-2 flex justify-between text-xs text-text-3">
-                <span>
-                  {form.formState.errors.narrative?.message ??
-                    "Be precise. The market will measure this."}
-                </span>
-                <span>{form.watch("narrative").length}/280</span>
-              </div>
-              <Button
-                variant="primary"
-                type="submit"
-                className="mt-5"
-                disabled={compile.isPending}
-              >
-                {compile.isPending ? "Compiling…" : "Compile thesis"}
-              </Button>
-            </form>
-          </Card>
-        </Reveal>
-        <Reveal className="create-stack" delay={0.08}>
-          <AnimatePresence mode="wait" initial={false}>
-            {compiled ? (
-              <motion.div
-                key="compiled-claim"
-                initial={reducedMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
-                transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-              >
-                <ThesisSpec spec={compiled} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty-claim"
-                initial={reducedMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={reducedMotion ? undefined : { opacity: 0 }}
-              >
-                <Card className="preview-card min-h-64">
-                  <p className="eyebrow text-text-3">Compiled claim</p>
-                  <p className="mt-3 text-text-2">
-                    Your ThesisSpec will appear here before any wallet action.
-                  </p>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Human narrative → financial claim"
+        title="Create thesis"
+        lede="Write the narrative. The compiler makes the claim explicit before you bond it."
+        aside={
+          <Stepper
+            label="Thesis launch steps"
+            steps={[
+              "Frame the narrative",
+              "Compile the claim",
+              "Bond the conviction",
+            ]}
+          />
+        }
+      />
+      <div className="mt-8">
+        <SplitLayout
+          asideWidth="wide"
+          main={
+            <PageSection
+              title="Human narrative"
+              description="Write the thesis in plain language."
+            >
+              <Reveal>
+                <Card>
+                  <form onSubmit={form.handleSubmit(compileNarrative)}>
+                    <Label htmlFor="narrative">Narrative</Label>
+                    <Textarea
+                      id="narrative"
+                      maxLength={280}
+                      placeholder="AI infrastructure keeps outperforming…"
+                      className="mt-2"
+                      {...form.register("narrative")}
+                    />
+                    <div className="mt-2 flex justify-between text-meta text-text-3">
+                      <span>
+                        {form.formState.errors.narrative?.message ??
+                          "Be precise. The market will measure this."}
+                      </span>
+                      <span>{form.watch("narrative").length}/280</span>
+                    </div>
+                    <Button
+                      variant="primary"
+                      type="submit"
+                      className="mt-5"
+                      disabled={compile.isPending}
+                    >
+                      {compile.isPending ? "Compiling…" : "Compile thesis"}
+                    </Button>
+                  </form>
                 </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {compiled ? (
-            <Card>
-              <Label htmlFor="conviction">
-                Creator conviction <span className="text-text-3">(USDG)</span>
-              </Label>
-              <Input
-                id="conviction"
-                inputMode="decimal"
-                placeholder="500"
-                className="mt-2 font-mono"
-                {...form.register("conviction")}
-              />
-              <p className="mt-2 text-xs text-text-3">
-                Exact approval only. No infinite allowance.
-              </p>
-              <Button
-                variant="primary"
-                className="mt-5 w-full"
-                onClick={() => void launch()}
-                disabled={transaction.isPending}
-              >
-                {transaction.isPending
-                  ? "Waiting for wallet…"
-                  : "Launch thesis"}
-              </Button>
-              <TransactionFlow
-                phase={transaction.phase}
-                hash={transaction.hash}
-              />
-            </Card>
-          ) : null}
-        </Reveal>
+              </Reveal>
+            </PageSection>
+          }
+          aside={
+            <PageSection title="Machine financial claim">
+              <Reveal className="grid gap-4" delay={stagger.panel}>
+                <AnimatePresence mode="wait" initial={false}>
+                  {compiled ? (
+                    <motion.div
+                      key="compiled-claim"
+                      variants={reveal}
+                      initial={reducedMotion ? false : "hidden"}
+                      animate="visible"
+                      exit={reducedMotion ? undefined : "hidden"}
+                      transition={revealTransition}
+                    >
+                      <ThesisSpec spec={compiled} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="empty-claim"
+                      initial={reducedMotion ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={reducedMotion ? undefined : { opacity: 0 }}
+                      transition={revealTransition}
+                    >
+                      <Card className="min-h-64 border-dashed bg-surface-2">
+                        <MetaLabel>Compiled claim</MetaLabel>
+                        <p className="mt-3 text-text-2">
+                          Your ThesisSpec will appear here before any wallet
+                          action.
+                        </p>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {compiled ? (
+                  <Card>
+                    <MetaLabel>Bond terms</MetaLabel>
+                    <MetricGroup className="mt-4" columns={2} layout="rows">
+                      <DataRow label="Entry closes">
+                        {Number(ENTRY_WINDOW_SECONDS) / 60} minutes after launch
+                      </DataRow>
+                      <DataRow label="Resolves">
+                        {compiled.duration_days} days after launch
+                      </DataRow>
+                      <DataRow label="Hurdle">
+                        <span className="font-mono" data-financial>
+                          {formatBps(compiled.hurdle_bps)}
+                        </span>
+                      </DataRow>
+                      <DataRow label="Benchmark">
+                        {compiled.benchmark.symbol}
+                      </DataRow>
+                    </MetricGroup>
+                    <Label className="mt-6" htmlFor="conviction">
+                      Creator conviction{" "}
+                      <span className="text-text-3">(USDG)</span>
+                    </Label>
+                    <Input
+                      id="conviction"
+                      inputMode="decimal"
+                      placeholder="500"
+                      className="mt-2 font-mono"
+                      {...form.register("conviction")}
+                    />
+                    <p className="mt-2 text-meta text-text-3">
+                      Exact approval only. No infinite allowance.
+                    </p>
+                    <Button
+                      variant="primary"
+                      className="mt-5 w-full"
+                      onClick={() => void launch()}
+                      disabled={transaction.isPending}
+                    >
+                      {transaction.isPending
+                        ? "Waiting for wallet…"
+                        : "Launch thesis"}
+                    </Button>
+                    <TransactionFlow
+                      phase={transaction.phase}
+                      hash={transaction.hash}
+                    />
+                  </Card>
+                ) : null}
+              </Reveal>
+            </PageSection>
+          }
+        />
       </div>
-    </div>
+    </PageContainer>
   );
 }

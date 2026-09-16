@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import type { MarketState } from "@/lib/market/state";
 import { cn } from "@/lib/utils";
 
-const styles: Record<MarketState, string> = {
+const tones: Record<MarketState, string> = {
   OPEN: "border-back text-back",
   CLOSED: "border-warning text-warning",
   READY: "border-info text-info",
@@ -13,5 +13,5 @@ const styles: Record<MarketState, string> = {
 };
 
 export function MarketStatus({ state }: { state: MarketState }) {
-  return <Badge className={cn(styles[state])}>{state}</Badge>;
+  return <Badge className={cn(tones[state])}>{state}</Badge>;
 }

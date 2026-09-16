@@ -1,4 +1,5 @@
 import { Check, CircleAlert, LoaderCircle } from "lucide-react";
+import { Figure } from "@/components/data";
 import type { TransactionPhase } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
 import { cn } from "@/lib/utils";
@@ -39,23 +40,37 @@ export function TransactionFlow({
   if (phase === "IDLE") return null;
   const current = activeStep(phase);
   const failed = phase === "FAILED";
+
   return (
-    <div className="transaction-rail" aria-live="polite">
-      <ol className="transaction-steps" aria-label="Transaction progress">
+    <div
+      className="mt-4 rounded-card border border-border bg-surface-2 p-4"
+      aria-live="polite"
+    >
+      <ol className="grid grid-cols-4 gap-1" aria-label="Transaction progress">
         {steps.map((step, index) => {
           const complete = !failed && index < current;
           const currentStep = index === current;
           return (
             <li
-              className={cn(
-                "transaction-step",
-                complete && "transaction-step--complete",
-                currentStep && "transaction-step--current",
-                failed && currentStep && "transaction-step--failed",
-              )}
               key={step}
+              className={cn(
+                "relative grid justify-items-center gap-1 font-mono text-meta uppercase tracking-label",
+                "not-last:after:absolute not-last:after:top-2.75 not-last:after:left-[calc(50%+13px)] not-last:after:h-px not-last:after:w-[calc(100%-26px)] not-last:after:bg-border not-last:after:transition-colors not-last:after:duration-slow not-last:after:content-['']",
+                complete && "text-back not-last:after:bg-back",
+                currentStep && !failed && "text-text-1",
+                failed && currentStep && "text-fade",
+                !complete && !currentStep && "text-text-3",
+              )}
             >
-              <span className="transaction-step__node">
+              <span
+                className={cn(
+                  "relative z-1 grid size-6 place-items-center rounded-full border border-border-strong bg-surface-2",
+                  "transition-colors duration-slow",
+                  complete && "border-back bg-back-soft",
+                  currentStep && !failed && "border-brand bg-brand/12",
+                  failed && currentStep && "border-fade bg-fade-soft",
+                )}
+              >
                 {complete ? (
                   <Check size={12} aria-hidden="true" />
                 ) : failed && currentStep ? (
@@ -67,7 +82,7 @@ export function TransactionFlow({
                     aria-hidden="true"
                   />
                 ) : (
-                  index + 1
+                  <Figure>{index + 1}</Figure>
                 )}
               </span>
               <span>{step}</span>
@@ -75,7 +90,7 @@ export function TransactionFlow({
           );
         })}
       </ol>
-      <div className="transaction-rail__status">
+      <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3 text-body text-text-2">
         <span>{labels[phase]}</span>
         {hash ? (
           <a
@@ -89,7 +104,7 @@ export function TransactionFlow({
         ) : null}
       </div>
       {failed ? (
-        <p className="transaction-rail__error">
+        <p className="mt-2 text-meta text-fade">
           Transaction did not confirm. Review the wallet request and amount,
           then retry.
         </p>

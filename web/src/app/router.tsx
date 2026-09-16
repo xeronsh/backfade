@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/components/backfade/AppShell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { duration, ease } from "@/lib/motion";
 
 const Feed = lazy(() => import("@/routes/Feed"));
 const CreateThesis = lazy(() => import("@/routes/CreateThesis"));
@@ -15,9 +16,9 @@ function RouteFallback() {
     <motion.div
       initial={reducedMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.16 }}
+      transition={{ duration: duration.fast, ease: ease.standard }}
     >
-      <Skeleton className="mx-auto mt-12 h-72 max-w-5xl" />
+      <Skeleton className="mx-auto mt-12 h-72 max-w-page" />
     </motion.div>
   );
 }

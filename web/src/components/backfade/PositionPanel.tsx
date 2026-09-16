@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { parseUnits } from "viem";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
+import { Metric, MetricGroup } from "@/components/data";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,25 +59,23 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
   }
 
   return (
-    <Card className="position-panel lg:sticky lg:top-24">
+    <Card className="h-full">
       <div className="flex items-center gap-2">
         <ShieldCheck size={18} className="text-brand" aria-hidden="true" />
-        <h2 className="font-semibold">Position</h2>
+        <h2 className="text-narrative font-semibold">Position</h2>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <div className="border-l-2 border-back pl-3">
-          <p className="text-text-3">Your BACK</p>
-          <p className="mt-1 font-mono text-text-1" data-financial>
-            {formatAmount(position.data?.backStake)} USDG
-          </p>
-        </div>
-        <div className="border-l-2 border-fade pl-3">
-          <p className="text-text-3">Your FADE</p>
-          <p className="mt-1 font-mono text-text-1" data-financial>
-            {formatAmount(position.data?.fadeStake)} USDG
-          </p>
-        </div>
-      </div>
+      <MetricGroup className="mt-5" columns={2}>
+        <Metric
+          label="Your BACK"
+          value={formatAmount(position.data?.backStake)}
+          accent="back"
+        />
+        <Metric
+          label="Your FADE"
+          value={formatAmount(position.data?.fadeStake)}
+          accent="fade"
+        />
+      </MetricGroup>
       <Label className="mt-6" htmlFor="position-amount">
         Amount <span className="text-text-3">(USDG)</span>
       </Label>
@@ -105,12 +104,12 @@ export function PositionPanel({ market }: { market: MarketSummary }) {
         </Button>
       </div>
       {market.state === "OPEN" ? (
-        <p className="mt-3 text-xs text-text-3">
+        <p className="mt-3 text-meta text-text-3">
           Exact approval only. Balance: {formatAmount(position.data?.balance)}{" "}
           USDG.
         </p>
       ) : (
-        <p className="mt-3 text-xs text-warning">
+        <p className="mt-3 text-meta text-warning">
           Positions are closed because this market is {market.state}.
         </p>
       )}
