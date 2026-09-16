@@ -18,6 +18,16 @@ export function formatAmount(
     : `${whole}.${fraction.slice(0, fractionDigits).padEnd(fractionDigits, "0")}`;
 }
 
+export function formatSignedAmount(
+  value: bigint | undefined,
+  decimals = 18,
+  fractionDigits = 2,
+) {
+  if (value === undefined) return "—";
+  const sign = value > 0n ? "+" : value < 0n ? "−" : "";
+  return `${sign}${formatAmount(value < 0n ? -value : value, decimals, fractionDigits)}`;
+}
+
 export function formatBps(value: number | bigint | undefined) {
   if (value === undefined) return "—";
   return `${(Number(value) / 100).toFixed(2)}%`;

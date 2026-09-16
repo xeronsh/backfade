@@ -1,15 +1,11 @@
-"""Fail-closed deterministic validator. Never trust LLM output."""
+"""Fail-closed deterministic validator. Never trust LLM feeds or weights."""
 
-from api.models import ThesisAsset, ThesisBenchmark, ThesisRisk, ThesisSpec
+from api.models import ThesisAsset, ThesisReference, ThesisSpecV2
 
 WEIGHTS_TOTAL_BPS = 10_000
 BASKET_MIN = 1
 BASKET_MAX = 5
-HURDLE_MIN_BPS = 100
-HURDLE_MAX_BPS = 5_000
-DURATION_MIN_DAYS = 7
-DURATION_MAX_DAYS = 90
-NARRATIVE_MAX_CHARS = 280
+NARRATIVE_MAX_BYTES = 280
 
 
 class ValidationError(Exception):
@@ -20,78 +16,67 @@ class ValidationError(Exception):
 
 
 def validate_spec(
-    spec: ThesisSpec,
+    spec: ThesisSpecV2,
     symbol_to_feed: dict[str, str],
-) -> ThesisSpec:
-    """Validate a compiled ThesisSpec against the trusted asset universe.
-
-    Re-anchors all feed addresses from the backend mapping — feeds never come
-    from the LLM. Raises ValidationError (fail closed) on any violation.
-    """
+) -> ThesisSpecV2:
+    """Validate a compiled spec and re-anchor every feed to the trusted registry."""
     if not (BASKET_MIN <= len(spec.basket) <= BASKET_MAX):
         raise ValidationError(
             "THESIS_INVALID", f"Basket must have {BASKET_MIN}-{BASKET_MAX} assets."
         )
 
-    symbols = [a.symbol.upper() for a in spec.basket]
+    trusted = {symbol.upper(): feed for symbol, feed in symbol_to_feed.items()}
+    symbols = [asset.symbol.upper() for asset in spec.basket]
     if len(set(symbols)) != len(symbols):
         raise ValidationError("THESIS_INVALID", "Basket contains duplicate symbols.")
-    benchmark_symbol = spec.benchmark.symbol.upper()
-    if benchmark_symbol in symbols:
+    reference_symbol = spec.reference.symbol.upper()
+    if reference_symbol in symbols:
         raise ValidationError(
-            "THESIS_INVALID", "Benchmark must not appear in the basket."
+            "THESIS_INVALID", "Reference must not appear in the basket."
         )
 
-    weight_sum = sum(a.weight_bps for a in spec.basket)
+    weight_sum = sum(asset.weight_bps for asset in spec.basket)
+    if any(
+        asset.weight_bps < 1 or asset.weight_bps > WEIGHTS_TOTAL_BPS
+        for asset in spec.basket
+    ):
+        raise ValidationError(
+            "THESIS_INVALID", "Every basket weight must be between 1 and 10000 bps."
+        )
     if weight_sum != WEIGHTS_TOTAL_BPS:
         raise ValidationError(
             "THESIS_INVALID",
-            f"The basket weights do not sum to 100% (got {weight_sum} bps).",
-        )
-
-    # re-anchor feeds from trusted mapping
-    basket: list[ThesisAsset] = []
-    for a in spec.basket:
-        sym = a.symbol.upper()
-        if sym not in symbol_to_feed:
-            raise ValidationError("ASSET_UNSUPPORTED", f"Asset {sym} is not supported.")
-        basket.append(
-            ThesisAsset(symbol=sym, feed=symbol_to_feed[sym], weight_bps=a.weight_bps)
-        )
-
-    bench_sym = spec.benchmark.symbol.upper()
-    if bench_sym not in symbol_to_feed:
-        raise ValidationError(
-            "ASSET_UNSUPPORTED", f"Benchmark {bench_sym} is not supported."
-        )
-    benchmark = ThesisBenchmark(symbol=bench_sym, feed=symbol_to_feed[bench_sym])
-
-    if not (HURDLE_MIN_BPS <= spec.hurdle_bps <= HURDLE_MAX_BPS):
-        raise ValidationError(
-            "THESIS_INVALID",
-            f"Hurdle must be between {HURDLE_MIN_BPS / 100:.0f}% and {HURDLE_MAX_BPS / 100:.0f}%.",
-        )
-    if not (DURATION_MIN_DAYS <= spec.duration_days <= DURATION_MAX_DAYS):
-        raise ValidationError(
-            "THESIS_INVALID",
-            f"Duration must be {DURATION_MIN_DAYS}-{DURATION_MAX_DAYS} days.",
+            f"The basket weights do not sum to 10000 bps (got {weight_sum}).",
         )
     if not spec.narrative.strip():
         raise ValidationError("THESIS_INVALID", "Narrative is empty.")
-    if len(spec.narrative) > NARRATIVE_MAX_CHARS:
+    if len(spec.narrative.encode("utf-8")) > NARRATIVE_MAX_BYTES:
         raise ValidationError(
-            "THESIS_INVALID", f"Narrative exceeds {NARRATIVE_MAX_CHARS} characters."
+            "THESIS_INVALID", f"Narrative exceeds {NARRATIVE_MAX_BYTES} UTF-8 bytes."
         )
-    if not spec.human_condition.strip():
-        raise ValidationError("THESIS_INVALID", "Human-readable condition is missing.")
-    spec.risk.level = ThesisRisk.model_validate(
-        spec.risk.model_dump()
-    ).level  # literal enforced
 
+    basket: list[ThesisAsset] = []
+    for asset in spec.basket:
+        symbol = asset.symbol.upper()
+        if symbol not in trusted:
+            raise ValidationError(
+                "ASSET_UNSUPPORTED", f"Asset {symbol} is not supported."
+            )
+        basket.append(
+            ThesisAsset(
+                symbol=symbol, feed=trusted[symbol], weight_bps=asset.weight_bps
+            )
+        )
+
+    if reference_symbol not in trusted:
+        raise ValidationError(
+            "ASSET_UNSUPPORTED", f"Reference {reference_symbol} is not supported."
+        )
+    reference = ThesisReference(symbol=reference_symbol, feed=trusted[reference_symbol])
     return spec.model_copy(
         update={
             "basket": basket,
-            "benchmark": benchmark,
+            "reference": reference,
             "narrative": spec.narrative.strip(),
         }
     )

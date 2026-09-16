@@ -4,9 +4,8 @@ from api.schemas.thesis import (
     ErrorResponse,
     HealthResponse,
     ThesisAsset,
-    ThesisBenchmark,
-    ThesisRisk,
-    ThesisSpec,
+    ThesisReference,
+    ThesisSpecV2,
 )
 
 __all__ = [
@@ -15,7 +14,6 @@ __all__ = [
     "ErrorResponse",
     "HealthResponse",
     "ThesisAsset",
-    "ThesisBenchmark",
-    "ThesisRisk",
-    "ThesisSpec",
+    "ThesisReference",
+    "ThesisSpecV2",
 ]

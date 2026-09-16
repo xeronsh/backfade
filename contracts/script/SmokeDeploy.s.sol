@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Script} from "forge-std/Script.sol";
+import {Script, console2} from "forge-std/Script.sol";
 import {ThesisFactory} from "../src/ThesisFactory.sol";
 import {MockUSDG} from "../src/MockUSDG.sol";
 import {MockV3Aggregator} from "../test/MockV3Aggregator.sol";
@@ -9,13 +9,17 @@ import {MockV3Aggregator} from "../test/MockV3Aggregator.sol";
 /// @notice Anvil-only local stack used by the ABI smoke test.
 contract SmokeDeploy is Script {
     function run() external {
-        uint256 pk = vm.envOr("SMOKE_PK", uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80));
+        uint256 pk = vm.envUint("SMOKE_PK");
         vm.startBroadcast(pk);
         MockUSDG usdg = new MockUSDG();
         MockV3Aggregator amd = new MockV3Aggregator(8, 490e8);
         MockV3Aggregator pltr = new MockV3Aggregator(8, 172e8);
         MockV3Aggregator tsla = new MockV3Aggregator(8, 359e8);
-        ThesisFactory factory = new ThesisFactory();
+        address[] memory feeds = new address[](3);
+        feeds[0] = address(amd);
+        feeds[1] = address(pltr);
+        feeds[2] = address(tsla);
+        ThesisFactory factory = new ThesisFactory(address(usdg), feeds, 30 minutes, 7 days, 30 minutes, 30 minutes);
         vm.stopBroadcast();
 
         string memory j = "smoke";
@@ -25,5 +29,6 @@ contract SmokeDeploy is Script {
         vm.serializeAddress(j, "tsla", address(tsla));
         string memory out = vm.serializeAddress(j, "factory", address(factory));
         vm.writeFile("smoke-state.json", out);
+        console2.log("v0.2 factory:", address(factory));
     }
 }

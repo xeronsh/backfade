@@ -183,7 +183,7 @@
   content: "";
 }
 
-/* ConvictionBar: the split rail and its marker. */
+/* Capital-backed conviction uses the same token rails as financial values. */
 .conviction-bar__track {
   position: relative;
   display: flex;

@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/", key: "nav.feed" as const, end: true },
-  { to: "/create", key: "nav.create" as const, end: false },
+  { to: "/post", key: "nav.create" as const, end: false },
+  { to: "/leaderboard", key: "nav.leaderboard" as const, end: false },
 ];
 
 export function AppShell() {

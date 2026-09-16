@@ -2,14 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {ThesisMarket} from "../src/ThesisMarket.sol";
-import {ThesisFactory} from "../src/ThesisFactory.sol";
+import {ThesisMarket} from "../src/legacy/ThesisMarket.sol";
+import {LegacyThesisFactory} from "../src/legacy/LegacyThesisFactory.sol";
 import {MockUSDG} from "../src/MockUSDG.sol";
 import {MockV3Aggregator} from "./MockV3Aggregator.sol";
 
 abstract contract BaseTest is Test {
     MockUSDG usdg;
-    ThesisFactory factory;
+    LegacyThesisFactory factory;
 
     // basket: CEG 40% / VST 35% / GEV 25%, benchmark NVDA
     MockV3Aggregator cegFeed;
@@ -31,7 +31,7 @@ abstract contract BaseTest is Test {
 
     function setUp() public virtual {
         usdg = new MockUSDG();
-        factory = new ThesisFactory();
+        factory = new LegacyThesisFactory();
 
         cegFeed = new MockV3Aggregator(8, 200e8); // $200
         vstFeed = new MockV3Aggregator(8, 100e8); // $100

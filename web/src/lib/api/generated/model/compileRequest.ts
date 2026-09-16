@@ -11,5 +11,4 @@ export interface CompileRequest {
      * @maxLength 2000
      */
   text: string;
-  preferred_duration_days?: number | null;
 }

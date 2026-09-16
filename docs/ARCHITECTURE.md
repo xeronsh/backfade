@@ -1,65 +1,62 @@
 # Architecture
 
-Backfade is a static React application with a small compiler API. Generic complexity belongs to
-mature infrastructure; Backfade-specific meaning stays in domain components and contract flows.
+Backfade keeps financial truth onchain and keeps social presentation in the client. The product is a social feed for capital-backed crypto opinions; the protocol is an immutable Thesis/Challenge lifecycle.
 
 ## Runtime
 
 ```text
 Browser
-  ├── React/Vite static app
-  ├── Robinhood Chain Testnet RPC → contracts (canonical financial state)
+  ├── React/Vite app
+  ├── Robinhood Chain Testnet RPC → ThesisFactory → ThesisChallenge
   └── same-origin /v1 → FastAPI compiler
 
-Cloudflare Tunnel → Vite preview → /v1 proxy → FastAPI
+Wallet → RainbowKit → Wagmi/Viem → simulate → sign → receipt → invalidate
 ```
 
-The API compiles narratives and serves the enabled asset registry. It does not sign transactions,
-hold keys, settle markets, or store canonical market data.
+The API structures narrative input and serves the enabled asset registry. It never signs, settles, holds collateral, authenticates users, or stores canonical social/financial state.
 
-## Frontend boundaries
+## Frontend ownership
 
-- React Router owns route state: Feed, Create Thesis, Market Detail, and Creator Profile.
-- RainbowKit owns wallet discovery and connection UX.
-- Wagmi + Viem own wallet/chain reads and writes.
-- TanStack Query owns API and blockchain read caching.
-- React Hook Form + Zod own complex form state and client validation.
-- `components/ui` stays generic. `components/backfade` owns Thesis, Conviction, Narrative Alpha,
-  Position, and market lifecycle semantics.
-- All writes follow simulate → wallet signature → receipt → query invalidation.
+- React Router owns `/`, `/post`, `/thesis/:address`, `/leaderboard`, and `/profile/:address`; legacy `/create` and `/market/:address` redirect.
+- Wagmi + Viem own wallet state, chain reads, simulations, writes, receipts, and event reads.
+- TanStack Query caches Factory/Thesis reads and invalidates after every successful receipt.
+- React Hook Form + Zod own post validation; local React state owns Reference confirmation and local UI state.
+- `web/src/features/thesis/` owns chain reads, domain types, bigint stats, and leaderboard aggregation.
+- `web/src/components/backfade/` owns Thesis posts, compiler preview, Challenge composer, activity, and settlement presentation.
+- No Redux, Zustand, Jotai, database, indexer, queue, or Follow graph is introduced.
 
-## Backend boundaries
+The client derives the social activity tape from `ThesisCreated`, `ConvictionRaised`, `ChallengePosted`, `ThesisSettled`, `ThesisCancelled`, and `Claimed` events. Factory Thesis addresses and contract fields are read with multicall. A read failure is surfaced rather than filled with guessed financial data.
 
-FastAPI has routers, services, schemas, and core configuration only. `pydantic-settings` owns
-runtime configuration. A lifespan-owned `httpx.AsyncClient` provides connection pooling for the
-single structured compiler call. Development can use the deterministic mock compiler; production
-requires an LLM key.
+## Contract boundary
 
-Stable endpoints:
+`ThesisFactory` is deployment-configured once through its constructor with canonical collateral, approved feeds, challenge window, horizon, settlement window, and start-price age. It has no owner, setter, proxy, governance, or upgrade path. It validates basket weights and deploys `ThesisChallenge` instances.
 
-- `POST /v1/thesis/compile`
-- `GET /v1/assets`
-- `GET /health`
+`ThesisChallenge` owns immutable narrative/reference/basket/start prices, creator bond, Challenge Pool, Open Bounty, Matched Conviction, Alpha, payout pools, pull claims, and lifecycle state. It does not store profiles, likes, followers, ranking, or free comments.
 
-## Source of truth
+The v0.1 `ThesisMarket` and legacy factory source remain under the historical artifact path for reproducibility only. They are not used by v0.2 Factory, routes, or generated primary ABI.
 
-The chain is the canonical financial state. Query cache is ephemeral and may be discarded at any
-time. There is no database, indexer, queue, authentication layer, or backend wallet.
-Deployment values are canonical in [`DEPLOYMENTS.md`](DEPLOYMENTS.md); contract source is frozen.
+## Backend boundary
+
+`POST /v1/thesis/compile` returns `ThesisSpecV2`:
+
+```text
+narrative
+basket[{symbol, feed, weight_bps}]
+reference{symbol, feed}
+reference_origin: explicit | suggested
+```
+
+Feeds are always re-anchored from `api/data/assets.json`. When text explicitly names a comparison, the compiler marks `explicit`; otherwise it marks `suggested`. The UI must confirm the Reference before calling the Factory.
 
 ## Code generation
 
 ```text
-Foundry artifacts ──forge inspect──▶ web/src/generated/contracts.ts
+Foundry source ──forge inspect──▶ web/src/generated/contracts.ts
 FastAPI app ──OpenAPI export──▶ api/openapi.json ──Orval──▶ web/src/lib/api/generated/
 ```
 
-Generated output is marked `AUTO-GENERATED — DO NOT EDIT` or Orval's equivalent. CI regenerates
-both surfaces and fails when the committed output drifts.
+Generated files are not hand-edited. `make codegen` regenerates both surfaces and `make check` verifies parity.
 
-## Performance and accessibility
+## Deployment data
 
-Routes are lazy loaded. Factory market addresses and market fields are read through multicall.
-Delayed reads show skeletons; failed reads explain the problem and the available action. BACK and
-FADE always have text labels, financial values use tabular numerals, and reduced motion removes
-nonessential animation.
+Current v0.2 addresses and configuration are recorded in [`DEPLOYMENTS.md`](DEPLOYMENTS.md). The previous v0.1 addresses are retained there as historical records and are never overwritten by v0.2 configuration.

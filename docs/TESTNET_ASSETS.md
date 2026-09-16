@@ -61,6 +61,10 @@ Resulting constants (5-8x the p99 gap, ~2% of the observed outage):
 6.17min, worst gap in sample 20.1min. The deeper 4000-update probe additionally found a 21.1h
 outage on TSLA and GME — that outlier is what rules out a long settlement window.
 
+## v0.2 deployment note
+
+The v0.2 live deployment used the active verified allowlist `AMD`, `PLTR`, `NVDA`, `TSLA`, and `COIN` and set `maxStartAge` to 24 hours because the registry was already stale at deployment time. `AAPL` and `GME` remain measured registry entries but are disabled in the API until a Factory is deployed with them. The contract still requires every settlement observation to be newly stamped at or after expiry. During the live demonstration window, no post-expiry print arrived; the Thesis was cancelled and all principal was claimed instead of using stale data.
+
 ## Rejected
 
 | Address | Reason |

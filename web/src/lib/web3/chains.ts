@@ -5,7 +5,7 @@ import { config } from "../config";
  * Multicall3 is deployed at the canonical address on Robinhood Chain Testnet.
  * viem needs it declared: `publicClient.multicall` resolves the address from
  * `chain.contracts` and throws `ChainDoesNotSupportContract` when it is absent,
- * which would break every batched chain read in `features/market/hooks.ts`
+ * which would break every batched chain read in `features/thesis/hooks.ts`
  * before a single RPC request is made.
  */
 const MULTICALL3_ADDRESS =

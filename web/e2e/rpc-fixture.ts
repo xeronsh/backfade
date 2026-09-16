@@ -8,55 +8,43 @@ import {
   toFunctionSelector,
 } from "viem";
 
-/**
- * A minimal multicall3-aware JSON-RPC stub.
- *
- * `Feed` and `MarketDetail` read every value through `publicClient.multicall`,
- * so against a chain that cannot answer `aggregate3` the routes stay in their
- * empty state and no layout assertion can be made. This fixture answers exactly
- * the calls those routes issue, with real ABI encoding, so the loaded state is
- * deterministic and offline.
- */
-
-export const MARKET_ADDRESS =
+export const THESIS_ADDRESS =
   "0xBf496Ef435C814C81864b5F337F23b63D4b26BB3" as const;
-export const NARRATIVE = "AI infrastructure outperforms the benchmark.";
-
-/**
- * Matches the app's configured RPC endpoint (whatever `VITE_RPC_URL` holds)
- * plus the local stub, so the fixture is hermetic without changing the build
- * environment. Playwright intercepts before the network here.
- */
+export const NARRATIVE = "AMD will outperform TSLA.";
 export const RPC_URL_PATTERN =
   /rpc\.testnet\.chain\.robinhood\.com|127\.0\.0\.1:8599/;
 
 const CREATOR = "0x1111111111111111111111111111111111111111" as const;
 const BASKET_FEED = "0x5406fc983e7f84b544ff6fc855e06c22cf36a795" as const;
-const BENCHMARK_FEED = "0x81b48ec24970aa75ae940e2492fda006071ac31b" as const;
-
+const REFERENCE_FEED = "0x81b48ec24970aa75ae940e2492fda006071ac31b" as const;
 const NOW = BigInt(Math.floor(Date.now() / 1000));
 
 const factoryAbi = parseAbi([
-  "function marketsLength() view returns (uint256)",
-  "function marketAt(uint256) view returns (address)",
+  "function thesesLength() view returns (uint256)",
+  "function thesisAt(uint256) view returns (address)",
 ]);
-const marketAbi = parseAbi([
+const thesisAbi = parseAbi([
   "function narrative() view returns (string)",
-  "function hurdleBps() view returns (uint256)",
-  "function bettingEndsAt() view returns (uint256)",
-  "function resolvesAt() view returns (uint256)",
-  "function settlementWindow() view returns (uint256)",
   "function creator() view returns (address)",
   "function creatorBond() view returns (uint256)",
-  "function backPool() view returns (uint256)",
-  "function fadePool() view returns (uint256)",
-  "function outcome() view returns (uint256)",
-  "function narrativeAlphaBps() view returns (int256)",
+  "function challengePool() view returns (uint256)",
+  "function openBounty() view returns (uint256)",
+  "function matchedConviction() view returns (uint256)",
+  "function challengeEndsAt() view returns (uint256)",
+  "function resolvesAt() view returns (uint256)",
+  "function settlementWindow() view returns (uint256)",
+  "function state() view returns (uint8)",
+  "function realizedAlphaBps() view returns (int256)",
+  "function settledAt() view returns (uint256)",
+  "function creatorPayout() view returns (uint256)",
+  "function challengePayoutPool() view returns (uint256)",
   "function basketLength() view returns (uint256)",
-  "function benchmarkFeed() view returns (address)",
+  "function referenceFeed() view returns (address)",
   "function totalClaimed() view returns (uint256)",
-  "function basketAsset(uint256) view returns (address,uint256)",
+  "function basketAsset(uint256) view returns (address,uint16)",
   "function startPrices(uint256) view returns (uint256)",
+  "function challengerStake(address) view returns (uint256)",
+  "function challengerPayout(address) view returns (uint256)",
 ]);
 const oracleAbi = parseAbi([
   "function decimals() view returns (uint8)",
@@ -66,7 +54,6 @@ const multicall3Abi = parseAbi([
   "function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])",
 ]);
 
-/** selector -> the value that function returns in the fixture world. */
 function buildAnswers(): Map<string, string> {
   const answers = new Map<string, string>();
   const add = (abi: readonly unknown[], name: string, result: unknown) => {
@@ -81,35 +68,37 @@ function buildAnswers(): Map<string, string> {
     );
   };
 
-  add(factoryAbi, "marketsLength", 1n);
-  add(factoryAbi, "marketAt", MARKET_ADDRESS);
-
-  add(marketAbi, "narrative", NARRATIVE);
-  add(marketAbi, "hurdleBps", 1000n);
-  add(marketAbi, "bettingEndsAt", NOW + 1800n);
-  add(marketAbi, "resolvesAt", NOW + 2_592_000n);
-  add(marketAbi, "settlementWindow", 3600n);
-  add(marketAbi, "creator", CREATOR);
-  add(marketAbi, "creatorBond", 5n * 10n ** 17n);
-  add(marketAbi, "backPool", 100n * 10n ** 18n);
-  add(marketAbi, "fadePool", 50n * 10n ** 18n);
-  add(marketAbi, "outcome", 0n);
-  add(marketAbi, "narrativeAlphaBps", 250n);
-  add(marketAbi, "basketLength", 1n);
-  add(marketAbi, "benchmarkFeed", BENCHMARK_FEED);
-  add(marketAbi, "totalClaimed", 0n);
-  add(marketAbi, "basketAsset", [BASKET_FEED, 6000n]);
-  add(marketAbi, "startPrices", 10n ** 18n);
-
+  add(factoryAbi, "thesesLength", 1n);
+  add(factoryAbi, "thesisAt", THESIS_ADDRESS);
+  add(thesisAbi, "narrative", NARRATIVE);
+  add(thesisAbi, "creator", CREATOR);
+  add(thesisAbi, "creatorBond", 500n * 10n ** 18n);
+  add(thesisAbi, "challengePool", 150n * 10n ** 18n);
+  add(thesisAbi, "openBounty", 350n * 10n ** 18n);
+  add(thesisAbi, "matchedConviction", 150n * 10n ** 18n);
+  add(thesisAbi, "challengeEndsAt", NOW + 1800n);
+  add(thesisAbi, "resolvesAt", NOW + 2_592_000n);
+  add(thesisAbi, "settlementWindow", 1800n);
+  add(thesisAbi, "state", 0n);
+  add(thesisAbi, "realizedAlphaBps", 0n);
+  add(thesisAbi, "settledAt", 0n);
+  add(thesisAbi, "creatorPayout", 0n);
+  add(thesisAbi, "challengePayoutPool", 0n);
+  add(thesisAbi, "basketLength", 1n);
+  add(thesisAbi, "referenceFeed", REFERENCE_FEED);
+  add(thesisAbi, "totalClaimed", 0n);
+  add(thesisAbi, "basketAsset", [BASKET_FEED, 10_000n]);
+  add(thesisAbi, "startPrices", 100n * 10n ** 18n);
+  add(thesisAbi, "challengerStake", 0n);
+  add(thesisAbi, "challengerPayout", 0n);
   add(oracleAbi, "decimals", 18);
   add(oracleAbi, "latestRoundData", [
     1n,
-    2_000n * 10n ** 18n,
-    NOW - 3600n,
+    100n * 10n ** 18n,
+    NOW - 10n,
     NOW,
     1n,
   ]);
-
   return answers;
 }
 
@@ -130,7 +119,6 @@ export async function fulfillRpc(route: Route) {
   }
   const single = !Array.isArray(parsed);
   const items = Array.isArray(parsed) ? parsed : [parsed];
-
   const responses = items.map((item) => {
     const id = item.id ?? 1;
     if (item.method === "eth_chainId")
@@ -144,13 +132,9 @@ export async function fulfillRpc(route: Route) {
     const call = item.params?.[0] as { to?: string; data?: string } | undefined;
     const data = call?.data ?? "";
     const to = (call?.to ?? "").toLowerCase();
-
-    // A direct (non-batched) read.
-    if (to !== MULTICALL3) {
+    if (to !== MULTICALL3)
       return { jsonrpc: "2.0", id, result: answerCall(data) ?? "0x" };
-    }
 
-    // aggregate3: decode the inner calls and answer each one.
     let results: Array<{ success: boolean; returnData: string }>;
     try {
       const decoded = decodeFunctionData({

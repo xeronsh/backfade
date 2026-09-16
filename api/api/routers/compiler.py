@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from api.assets import load_assets, symbol_to_feed
-from api.models import CompileRequest, ErrorBody, ErrorResponse, ThesisSpec
+from api.models import CompileRequest, ErrorBody, ErrorResponse, ThesisSpecV2
 from api.services.compiler import compile_narrative
 from api.validator import ValidationError
 
@@ -20,17 +20,16 @@ def error_response(
 
 @router.post(
     "/compile",
-    response_model=ThesisSpec,
+    response_model=ThesisSpecV2,
     responses={422: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
     operation_id="compileThesis",
 )
 async def compile_thesis(
     request: Request, payload: CompileRequest
-) -> ThesisSpec | JSONResponse:
+) -> ThesisSpecV2 | JSONResponse:
     try:
         return await compile_narrative(
             payload.text,
-            payload.preferred_duration_days,
             load_assets(),
             symbol_to_feed(),
             request.app.state.http_client,

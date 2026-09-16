@@ -3,8 +3,8 @@ pragma solidity ^0.8.24;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
-import {OracleMath} from "./OracleMath.sol";
+import {AggregatorV3Interface} from "../AggregatorV3Interface.sol";
+import {OracleMath} from "../OracleMath.sol";
 
 /// @title ThesisMarket
 /// @notice One bonded, priced, machine-verifiable thesis. BACK or FADE, oracle-resolved.

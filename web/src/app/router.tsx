@@ -1,21 +1,26 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 import { AppShell } from "@/components/backfade/AppShell";
-import CreateThesis from "@/routes/CreateThesis";
 import Feed from "@/routes/Feed";
-import MarketDetail from "@/routes/MarketDetail";
+import Leaderboard from "@/routes/Leaderboard";
+import PostThesis from "@/routes/PostThesis";
 import Profile from "@/routes/Profile";
+import ThesisThread from "@/routes/ThesisThread";
 
-/**
- * A client-side navigation should not look like a page load. The routes are
- * imported eagerly: together they are a fraction of the wallet SDK the shell
- * already ships, and splitting them out meant every first visit to a route
- * swapped the page for a skeleton while its chunk downloaded.
- */
+function LegacyThesisRedirect() {
+  const { address } = useParams();
+  return <Navigate to={address ? `/thesis/${address}` : "/"} replace />;
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
-    // `pathname` is read here so the effect genuinely depends on the route.
     if (pathname) window.scrollTo(0, 0);
   }, [pathname]);
   return null;
@@ -28,9 +33,12 @@ export function AppRouter() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Feed />} />
-          <Route path="create" element={<CreateThesis />} />
-          <Route path="market/:address" element={<MarketDetail />} />
+          <Route path="post" element={<PostThesis />} />
+          <Route path="thesis/:address" element={<ThesisThread />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile/:address" element={<Profile />} />
+          <Route path="create" element={<Navigate to="/post" replace />} />
+          <Route path="market/:address" element={<LegacyThesisRedirect />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

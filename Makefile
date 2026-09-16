@@ -1,6 +1,6 @@
 .PHONY: dev api web contracts codegen codegen-check api-check web-check test e2e check
 
-CHAIN_ENV = VITE_CHAIN_ID=46630 VITE_CHAIN_NAME='Robinhood Chain Testnet' VITE_RPC_URL=https://rpc.testnet.chain.robinhood.com VITE_EXPLORER_URL=https://explorer.testnet.chain.robinhood.com VITE_FACTORY_ADDRESS=0x9Db674834F4C060114Cb53f21e179fc54F905342 VITE_COLLATERAL_ADDRESS=0x7BA735a381B9FFe700a8c92558659461b359ee9c VITE_API_BASE=/v1 VITE_WALLETCONNECT_PROJECT_ID=ci-placeholder
+CHAIN_ENV = VITE_CHAIN_ID=46630 VITE_CHAIN_NAME='Robinhood Chain Testnet' VITE_RPC_URL=https://rpc.testnet.chain.robinhood.com VITE_EXPLORER_URL=https://explorer.testnet.chain.robinhood.com VITE_FACTORY_ADDRESS=0x49a9CF7661aAB5B658A5c19420993Fcf00841d2a VITE_COLLATERAL_ADDRESS=0x222903b08139FeeF6C0CAD921e0f2F7f5Eb81AB6 VITE_API_BASE=/v1 VITE_WALLETCONNECT_PROJECT_ID=ci-placeholder
 
 api:
 	cd api && uv run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000

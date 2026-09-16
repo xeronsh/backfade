@@ -1,176 +1,103 @@
-# Live E2E — final deployment
+# Live E2E — v0.2 Social Alpha
 
-Every number below was read back from Robinhood Chain Testnet, not copied from an earlier run.
-Reproduce any line with the `cast` command shown next to it.
+## Status
 
-Network
+The fresh v0.2 deployment and Creator → Challenger flow are live on Robinhood Chain Testnet. Its verified feeds did not publish a post-expiry observation inside the bounded window, so the Thesis was safely cancelled and all three principal claims completed. No successful `ThesisSettled` result is claimed because no safe oracle observation existed.
 
-| | |
+A previous short-window run is also recorded below. It reached safe `CANCELLED` and completed all three pull claims, proving the same failure-safe path.
+
+## Active network and deployment
+
+| Field | Value |
 |---|---|
+| Network | Robinhood Chain Testnet |
 | Chain ID | `46630` |
 | RPC | `https://rpc.testnet.chain.robinhood.com` |
-| Explorer | https://explorer.testnet.chain.robinhood.com |
+| MockUSDG | `0x222903b08139FeeF6C0CAD921e0f2F7f5Eb81AB6` |
+| ThesisFactory | `0x49a9CF7661aAB5B658A5c19420993Fcf00841d2a` |
+| ThesisChallenge | `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` |
+| Challenge window | `45 s` |
+| Horizon | `47,000 s` |
+| Settlement window | `1,800 s` (`30 min`) |
+| Maximum start-price age | `86,400 s` (`24 h`) |
 
-Contracts
+The active deployment uses only the verified allowlisted AMD, PLTR, NVDA, TSLA, and COIN feeds. The API enables exactly this set; no unsupported crypto feed is substituted.
 
-| Contract | Address |
-|---|---|
-| MockUSDG (collateral, 18 dp) | `0x7BA735a381B9FFe700a8c92558659461b359ee9c` |
-| ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` |
-| Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` |
+## Active Creator → Challenger evidence
 
-## The thesis
+Creator `0xe8507D6396C332a891b2eAFa14e34e812fa289D7` posted:
 
-> "AI infrastructure keeps outperforming: AMD and PLTR beat a TSLA benchmark."
+> AI infrastructure keeps outperforming: AMD and PLTR beat a TSLA reference.
 
-| Parameter | Value |
-|---|---|
-| Basket | AMD 6000 bps (60%) + PLTR 4000 bps (40%) |
-| Benchmark | TSLA |
-| Hurdle | +1000 bps (+10%) |
-| Creator bond | 500 MockUSDG (BACK side) |
-| Entry window (`bettingEndsAt`) | 1789442967 |
-| Expiry (`resolvesAt`) | 1789444167 |
-| Settlement window | 1800 s |
+| Step | Transaction | Result |
+|---|---|---|
+| `ThesisCreated` / Bond & Post | [`0x4025bf8faf5eeded00a631368fb0fbfa7f6ccb641a69bd8a73f20609e523235f`](https://explorer.testnet.chain.robinhood.com/tx/0x4025bf8faf5eeded00a631368fb0fbfa7f6ccb641a69bd8a73f20609e523235f) | `creatorBond = 1,000 USDG` |
+| `ChallengePosted` A | [`0xd20b3ddf8176e1b1d16a6a0a01adbeb85253b557b74f9c5873c2263043e6c72f`](https://explorer.testnet.chain.robinhood.com/tx/0xd20b3ddf8176e1b1d16a6a0a01adbeb85253b557b74f9c5873c2263043e6c72f) | `300 USDG`, note recorded |
+| `ChallengePosted` B | [`0xfeb79767732870638d6789e86261defb9e3f065633fab5850cb6c952e4ed6fb5`](https://explorer.testnet.chain.robinhood.com/tx/0xfeb79767732870638d6789e86261defb9e3f065633fab5850cb6c952e4ed6fb5) | `200 USDG`, note recorded |
 
-## Transactions
+The active Thesis read-back is:
 
-| Step | Transaction |
-|---|---|
-| Approve collateral | [`0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754`](https://explorer.testnet.chain.robinhood.com/tx/0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754) |
-| Create market (factory) | [`0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c`](https://explorer.testnet.chain.robinhood.com/tx/0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c) |
-| BACK 300 (trader) | [`0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b`](https://explorer.testnet.chain.robinhood.com/tx/0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b) |
-| FADE 200 (trader) | [`0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb`](https://explorer.testnet.chain.robinhood.com/tx/0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb) |
-| Resolve | [`0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858`](https://explorer.testnet.chain.robinhood.com/tx/0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858) |
-| Winner claim | [`0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f`](https://explorer.testnet.chain.robinhood.com/tx/0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f) |
+```text
+creatorBond       = 1000000000000000000000
+challengePool     = 500000000000000000000
+openBounty        = 500000000000000000000
+matchedConviction = 500000000000000000000
+state             = LOCKED
+challengeEndsAt   = 1789555630
+resolvesAt        = 1789602585
+settlementWindow  = 1800
+```
 
-## Oracle observations
+Start prices were captured from the verified feeds at creation:
 
-Prices are the feed value the contract actually recorded. Start prices are read from the
-market's own storage, so they are exactly what settlement used:
+```text
+AMD  = 503920000000000000000
+PLTR = 172100000000000000000
+TSLA = 358039999990000000000
+```
+
+## Settlement gate and observed result
+
+At settlement, every feed must satisfy:
+
+```text
+resolvesAt <= updatedAt <= resolvesAt + settlementWindow
+```
+
+AMD, PLTR, and TSLA did not publish observations with `updatedAt >= resolvesAt` before the active deadline. Calling `settle()` on stale data would have been unsafe, so the valid fallback was used:
+
+| Step | Transaction | Result |
+|---|---|---|
+| `ThesisCancelled` | [`0x472fffa4873087169e64c3b48ac4c316939b525c6cae293653c6fb65314f8426`](https://explorer.testnet.chain.robinhood.com/tx/0x472fffa4873087169e64c3b48ac4c316939b525c6cae293653c6fb65314f8426) | Alpha `0`, refunds enabled |
+| Creator `Claimed` | [`0xb4ec5b012d5aad5897d54a2289cbb2f75ee4ece5473bf7e83111e0ed401b6195`](https://explorer.testnet.chain.robinhood.com/tx/0xb4ec5b012d5aad5897d54a2289cbb2f75ee4ece5473bf7e83111e0ed401b6195) | `1,000 USDG` |
+| Challenger A `Claimed` | [`0xfe30346546f15ce516b521f57d1cf6b62f9a43d599f013edb87b135b573da1e2`](https://explorer.testnet.chain.robinhood.com/tx/0xfe30346546f15ce516b521f57d1cf6b62f9a43d599f013edb87b135b573da1e2) | `300 USDG` |
+| Challenger B `Claimed` | [`0x18e7277642f401ab4debc95f0b11fa02689d803d0268f9511ea7524a21edcecd`](https://explorer.testnet.chain.robinhood.com/tx/0x18e7277642f401ab4debc95f0b11fa02689d803d0268f9511ea7524a21edcecd) | `200 USDG` |
+
+The final active Thesis balance was `0 USDG`. This is live cancellation and pull-claim evidence, not successful settlement evidence. A `ThesisSettled` event must not be fabricated from stale feeds.
+
+## Previous safe-cancellation evidence
+
+The previous v0.2 attempt used Thesis `0x84E6841b3B1dC270F3Fd46326232AdC5437c806b` with a `500 USDG` bond and two Challenges of `300` and `200 USDG`. Its feeds did not print after expiry, so it was cancelled:
+
+| Step | Transaction | Result |
+|---|---|---|
+| `ThesisCancelled` | `0x9b4f854f5bf51704c78a54b07a8a23bf0e03851c686834e55493385281b307a1` | Alpha `0`, refunds enabled |
+| Creator `Claimed` | `0x24c14adfa4ad70255f6bc6bbe8f4ea286a979012cb824ce4ed7fdd4cb8ea1628` | `500 USDG` |
+| Challenger A `Claimed` | `0x9638cc9c751e9ec12ffbabc00cc463f7c4a3bebaa6637c9f9393c39b1185ceb4` | `300 USDG` |
+| Challenger B `Claimed` | `0x3ff59afa118c12dce73eb5d928de820960f4d75b5c7f6b56651e99b644ab1980` | `200 USDG` |
+
+The previous Thesis contract balance finished at `0 USDG`. This is live cancellation/claim evidence, not successful settlement evidence.
+
+## Reproduction
 
 ```bash
-cast call 0xBf496Ef435C814C81864b5F337F23b63D4b26BB3 \
-  'startPrices(uint256)(int256)' 0 --rpc-url https://rpc.testnet.chain.robinhood.com   # AMD
+RPC=https://rpc.testnet.chain.robinhood.com
+THESIS=0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30
+cast call $THESIS 'state()(uint8)' --rpc-url $RPC
+cast call $THESIS 'challengePool()(uint256)' --rpc-url $RPC
+cast call $THESIS 'openBounty()(uint256)' --rpc-url $RPC
+cast call 0x5406FC983e7f84B544FF6fc855e06c22Cf36A795 \
+  'latestRoundData()(uint80,int256,uint256,uint256,uint80)' --rpc-url $RPC
 ```
 
-| Feed | Start (8 dp) | End (8 dp) | Start block | End block |
-|---|---|---|---|---|
-| AMD | 49,481,000,000 | 49,450,000,000 | 119698588 | 119707718 |
-| PLTR | 17,250,500,000 | 17,243,500,000 | 119698593 | 119707721 |
-| TSLA (benchmark) | 35,987,890,846 | 35,989,721,393 | 119697936 | 119707711 |
-
-## Recomputation
-
-`OracleMath.returnBps` scales by 1e18 before converting to bps, then **truncates toward
-zero** (Solidity `/`), which is not Python's `//` for negative values:
-
-```python
-def div_toward_zero(a, b):
-    """Solidity integer division: truncates toward zero, unlike Python's //."""
-    q = abs(a) // abs(b)
-    return q if (a < 0) == (b < 0) else -q
-
-def return_bps(start, end):
-    scaled = div_toward_zero(end * 10**18, start) - 10**18
-    return div_toward_zero(scaled * 10_000, 10**18)
-
-amd  = return_bps(49_481_000_000, 49_450_000_000)   # -6
-pltr = return_bps(17_250_500_000, 17_243_500_000)   # -4
-tsla = return_bps(35_987_890_846, 35_989_721_393)   #  0
-
-basket = div_toward_zero(amd * 6000 + pltr * 4000, 10_000)   # -5
-alpha  = basket - tsla                                       # -5
-
-assert alpha == -5          # matches narrativeAlphaBps() onchain
-assert alpha < 1000         # below the hurdle -> FADE
-```
-
-Onchain read-back:
-
-```bash
-cast call $MARKET 'narrativeAlphaBps()(int256)' --rpc-url $RPC   # -5
-cast call $MARKET 'outcome()(uint8)'            --rpc-url $RPC   # 2 = Fade
-```
-
-## Result
-
-| | |
-|---|---|
-| Narrative Alpha | **−5 bps** |
-| Hurdle | +1000 bps |
-| Outcome | **FADE** |
-| Pools | 800 BACK / 200 FADE |
-| Winner payout | **1000 MockUSDG** (200 stake × 1000 total ÷ 200 winning pool) |
-| Market balance after claim | **0** |
-| `totalClaimed` | 1000 |
-
-The losing side's `claim()` reverts, as it must. After the winner claimed, the market held
-exactly zero collateral: pari-mutuel, no house cut, nothing left behind.
-
-## Settlement-window rejection
-
-Reproduced on this deployment. A second market (`0x08042F839fc704B71bA42D11B567210480a51C44`,
-expiry `1789449886`) was resolved immediately after expiry while the TSLA print was still stamped
-one second *before* expiry:
-
-```
-TSLA updatedAt = 1789449885  ->  resolve() REVERTED: OracleMath: pre-expiry price
-TSLA updatedAt = 1789449956  ->  resolve() SUCCEEDED
-```
-
-Settlement refused to price an expired thesis off a stale observation and only accepted the market
-once a post-expiry print existed. This is the anti-lookback guard doing its job, observed on the
-live chain rather than asserted only in a unit test.
-
-## Empty winning pool -> cancellation
-
-That same market then exercised the refund guard. Settlement decided FADE (alpha +16 bps, below
-the +1000 bps hurdle), but nobody had ever taken the FADE side, so the winning pool was empty and
-pro-rata payout had nobody to pay:
-
-| | |
-|---|---|
-| `narrativeAlphaBps` | +16 |
-| `backPool` / `fadePool` | 100 / **0** |
-| `outcome` | `Cancelled` (3) |
-| `resolve()` tx | [`0x16d9d21ce938731513381797402edd5dc106c5dc8e6c67ca966fe37eea445bef`](https://explorer.testnet.chain.robinhood.com/tx/0x16d9d21ce938731513381797402edd5dc106c5dc8e6c67ca966fe37eea445bef) |
-| `claim()` | **reverted** — a cancelled market pays through `refund()` |
-| `refund()` tx | [`0xe48731995c38b44403616f128517c9f4f5a87c58ba931af88fddc136b47f6588`](https://explorer.testnet.chain.robinhood.com/tx/0xe48731995c38b44403616f128517c9f4f5a87c58ba931af88fddc136b47f6588) |
-| Market balance | 100 → **0** |
-
-Without this guard the creator's 100 MockUSDG would have been permanently unreachable: the
-winning side held no stake, and cancellation was already blocked by `AlreadyResolved`. The refund
-path returns every stake instead.
-
-## Cancellation and refund
-
-The same deployment was exercised on its fallback path. A market was created with a 30-minute
-settlement window and one FADE position of 200 MockUSDG, then left until the window closed.
-
-| Step | Result |
-|---|---|
-| `resolve()` after the window | **reverted** `SettlementWindowPassed` |
-| `cancelAfterDeadline()` | [`0x5e643655a3b9717ebd717897fd390999e6d78b799ecdf280ee0756c333a94eab`](https://explorer.testnet.chain.robinhood.com/tx/0x5e643655a3b9717ebd717897fd390999e6d78b799ecdf280ee0756c333a94eab) |
-| `claim()` on a cancelled market | **reverted** `NotCancelled` |
-| `refund()` (FADE holder) | [`0x479594b28063dac7410722110b81134badc65a0327b97b323a3825d3e9e34d8d`](https://explorer.testnet.chain.robinhood.com/tx/0x479594b28063dac7410722110b81134badc65a0327b97b323a3825d3e9e34d8d) |
-| `refund()` a second time | **reverted** `NoPosition` |
-| Market balance | 200 → **0** |
-
-The participant's balance returned to its pre-position value exactly. Placing a position on the
-other side of this market is not possible in the same run, which is the point: a market that never
-gets a legal oracle print refunds everyone rather than settling on a stale price or stranding
-collateral.
-
-The UI derives these states from the same inputs and is covered by
-`web/src/lib/market/state.test.ts`; all lifecycle branches are rendered by the React Market route.
-
-## Platform migration wallet E2E status
-
-The canonical contract E2E above is live and explorer-backed. The React migration's browser-wallet
-run is **blocked in this execution environment**: no browser wallet extension is installed and no
-WalletConnect project credential is available. No mock result is recorded as a live pass.
-
-Required manual run on the current deployment: Connect and switch to Robinhood Chain Testnet,
-Approve exact collateral, Create, BACK, FADE, Resolve or Cancel, then Claim or Refund. Record the
-resulting explorer transaction links here before treating the real-wallet gate as passed.
+The deterministic local version of the full lifecycle, including settlement, pro-rata claims, cancellation, and rounding invariants, is covered by `forge test --root contracts` and the contract tests under `contracts/test/`. That local evidence does not replace the active live settlement gate.

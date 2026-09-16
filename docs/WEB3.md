@@ -1,53 +1,43 @@
 # Web3 Architecture
 
-## Network
+## Network and configuration
 
-The app targets Robinhood Chain Testnet, chain ID `46630`, with ETH as the native currency.
-RPC and explorer configuration is environment validated. Current deployed contract addresses are
-canonical in [`DEPLOYMENTS.md`](DEPLOYMENTS.md); feature components never hardcode them.
+Backfade v0.2 targets Robinhood Chain Testnet, chain ID `46630`, with ETH for gas. RPC, explorer, Factory, collateral, and WalletConnect values are environment-validated. The active v0.2 deployment is recorded in [`DEPLOYMENTS.md`](DEPLOYMENTS.md); historical v0.1 addresses are not reused.
 
-## Wallet stack
+## Wallet boundary
 
 ```text
 RainbowKit → Wagmi → Viem → Robinhood Chain Testnet
 ```
 
-RainbowKit provides wallet discovery, injected/EIP-6963 connectors, WalletConnect, account state,
-connect/disconnect, and network UX. The UI uses `ConnectButton.Custom` so wallet actions match the
-Backfade design system. There is no `window.ethereum.request()` application flow and no global
-`currentAccount` state.
+The browser wallet signs every transaction. The FastAPI compiler never receives a private key, creates a wallet client, forwards a signed transaction, or holds collateral.
 
-The browser wallet signs every transaction. The backend never receives a private key, creates a
-wallet client, forwards a signed transaction, or holds custody.
+## Reads
 
-## Contract source and reads
+`web/src/features/thesis/hooks.ts` reads Factory Thesis addresses, immutable Thesis data, latest oracle values, Challenger stakes, and activity events through Viem multicall and event queries. TanStack Query caches and polls unresolved Theses. The chain is the only canonical source; a partial read fails closed.
 
-ABIs are generated from Foundry artifacts by `scripts/codegen/contracts.mjs` into
-`web/src/generated/contracts.ts`. No hand-copied ABI is a source of truth. CI runs the ABI parity
-gate after regeneration.
+Live Alpha is calculated from stored normalized start prices and latest positive feed prices. It is labelled indicative until settlement. Realized Alpha is read from `realizedAlphaBps()` after the contract stores it.
 
-Factory market addresses and market fields are read with Viem multicall through the Wagmi public
-client. Market detail also reads the immutable basket/benchmark, start prices, latest oracle
-rounds, pool totals, and contract event activity. Required partial reads fail closed. TanStack
-Query caches those reads ephemerally and polls unresolved markets so deadline states transition
-without remounting. Refreshing reconstructs state from the chain; browser storage is never
-canonical market storage.
+## Writes
 
-## Transaction lifecycle
-
-All writes use the shared transaction state machine:
+Every write follows:
 
 ```text
-IDLE → VALIDATING → SIMULATING → wallet signature → PENDING → successful receipt → CONFIRMED
-                                                               └─ reverted receipt → FAILED
+validate → simulate → wallet sign → wait receipt → invalidate queries
 ```
 
-Approval uses the exact required token amount. A successful receipt invalidates affected query
-keys; there is no timeout-based refresh and no page reload. The receipt status is checked before `CONFIRMED`; reverted receipts enter `FAILED`. Sonner reports
-action, wallet/network step, pending, confirmation, failure, and explorer link.
+Actions are:
 
-## Market actions
+- Bond & Post through `ThesisFactory.createThesis`;
+- Raise Conviction through `ThesisChallenge.raiseConviction`;
+- Fade through `ThesisChallenge.challenge`;
+- Settle or cancel through permissionless lifecycle methods;
+- Claim through the pull-based `claim` method.
 
-The frontend derives OPEN, CLOSED, READY, CANCELLABLE, PROVEN, FAILED, and CANCELLED through one
-pure function. Resolve, cancel, claim, refund, BACK, and FADE are only offered when the derived
-state permits them. Settlement semantics remain in the frozen contracts.
+ERC20 approval uses the exact required amount. Reverted receipts enter the failed transaction state. There is no page reload or hidden transaction retry.
+
+## Contract source and generated ABI
+
+`ThesisFactory` accepts only deployment-configured canonical collateral and allowlisted feeds. It fixes the challenge window and horizon. `ThesisChallenge` stores the immutable call, start prices, creator bond, Challenge Pool, Alpha, payout pools, claims, and `OPEN`/`LOCKED`/`SETTLED`/`CANCELLED` state.
+
+ABIs are generated from Foundry source by `scripts/codegen/contracts.mjs` into `web/src/generated/contracts.ts`. Hand-copied ABI and API interfaces are not used by v0.2.

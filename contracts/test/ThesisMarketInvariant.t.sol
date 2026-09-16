@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseTest} from "./BaseTest.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
-import {ThesisMarket} from "../src/ThesisMarket.sol";
+import {ThesisMarket} from "../src/legacy/ThesisMarket.sol";
 
 /// @notice Handler that only performs legal user actions, so the invariants below are
 ///         checked over realistic state transitions instead of random calldata.

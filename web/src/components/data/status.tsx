@@ -12,7 +12,7 @@ const tones = {
 
 export type StatusTone = keyof typeof tones;
 
-/** Any labelled state: market lifecycle, transaction phase, network state. */
+/** Any labelled state: Thesis lifecycle, transaction phase, network state. */
 export function Status({
   children,
   tone = "neutral",

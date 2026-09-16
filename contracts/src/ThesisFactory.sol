@@ -2,55 +2,129 @@
 pragma solidity ^0.8.24;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ThesisMarket} from "./ThesisMarket.sol";
+import {ThesisChallenge} from "./ThesisChallenge.sol";
 
 /// @title ThesisFactory
-/// @notice Validates constraints, pulls the creator bond, deploys a ThesisMarket.
-/// @dev No settlement logic lives here. Events are the index.
+/// @notice Deployment-configured factory for immutable social theses.
+/// @dev There is no setter, governance role, proxy, or upgrade path.
 contract ThesisFactory {
     using SafeERC20 for IERC20;
 
-    /// @dev Defaults for the single testnet/demo deployment shape.
-    /// @dev Calibrated from the live-testnet cadence probe: the feeds update every ~36-52s
-    ///      (p99 under 6 min, one historical 21h outage). A 30 minute settlement window is
-    ///      ~5x the p99 gap — short enough to leave little room to shop for an end price,
-    ///      long enough that a normal feed hiccup cannot force a cancel. The 30 minute start
-    ///      age is the same multiple, so an open market always starts on a fresh print
-    ///      instead of accepting an arbitrarily stale creation price.
-    uint64 public constant DEFAULT_SETTLEMENT_WINDOW = 30 minutes;
-    uint256 public constant DEFAULT_MAX_START_AGE = 30 minutes;
+    uint256 public constant MAX_BASKET_ASSETS = 5;
+    uint256 public constant WEIGHTS_TOTAL_BPS = 10_000;
 
-    address[] public markets;
-    mapping(address => bool) public isMarket;
+    IERC20 public immutable canonicalCollateral;
+    uint64 public immutable challengeWindow;
+    uint64 public immutable horizon;
+    uint64 public immutable settlementWindow;
+    uint256 public immutable maxStartAge;
 
-    event MarketCreated(address indexed market, address indexed creator, uint256 creatorBond);
+    address[] public allowedFeeds;
+    mapping(address => bool) public allowedFeed;
+    address[] public theses;
+    mapping(address => bool) public isThesis;
 
     error InvalidParams(string reason);
 
-    function createMarket(ThesisMarket.MarketParams calldata params, uint256 creatorBond)
-        external
-        returns (address market)
-    {
+    event ThesisCreated(address indexed thesis, address indexed creator, uint256 creatorBond);
+
+    constructor(
+        address collateral_,
+        address[] memory allowedFeeds_,
+        uint64 challengeWindow_,
+        uint64 horizon_,
+        uint64 settlementWindow_,
+        uint256 maxStartAge_
+    ) {
+        if (collateral_ == address(0) || collateral_.code.length == 0) {
+            revert InvalidParams("invalid collateral");
+        }
+        if (challengeWindow_ == 0 || horizon_ <= challengeWindow_) revert InvalidParams("timing");
+        if (settlementWindow_ == 0 || maxStartAge_ == 0) revert InvalidParams("oracle timing");
+        canonicalCollateral = IERC20(collateral_);
+        challengeWindow = challengeWindow_;
+        horizon = horizon_;
+        settlementWindow = settlementWindow_;
+        maxStartAge = maxStartAge_;
+
+        for (uint256 i = 0; i < allowedFeeds_.length; i++) {
+            address feed = allowedFeeds_[i];
+            if (feed == address(0) || feed.code.length == 0 || allowedFeed[feed]) {
+                revert InvalidParams("feed allowlist");
+            }
+            allowedFeed[feed] = true;
+            allowedFeeds.push(feed);
+        }
+        if (allowedFeeds.length == 0) revert InvalidParams("empty feed allowlist");
+    }
+
+    function createThesis(
+        string calldata narrative,
+        ThesisChallenge.BasketAsset[] calldata basket,
+        address referenceFeed,
+        uint256 creatorBond
+    ) external returns (address thesis) {
+        _validate(narrative, basket, referenceFeed, creatorBond);
+
+        canonicalCollateral.safeTransferFrom(msg.sender, address(this), creatorBond);
+        ThesisChallenge.BasketAsset[] memory basketCopy = new ThesisChallenge.BasketAsset[](basket.length);
+        for (uint256 i = 0; i < basket.length; i++) {
+            basketCopy[i] = basket[i];
+        }
+
+        ThesisChallenge.ThesisParams memory params = ThesisChallenge.ThesisParams({
+            narrative: narrative,
+            basket: basketCopy,
+            referenceFeed: referenceFeed,
+            challengeEndsAt: uint64(block.timestamp + challengeWindow),
+            resolvesAt: uint64(block.timestamp + horizon),
+            settlementWindow: settlementWindow,
+            maxStartAge: maxStartAge,
+            collateral: address(canonicalCollateral)
+        });
+
+        thesis = address(new ThesisChallenge(params, msg.sender, creatorBond));
+        canonicalCollateral.safeTransfer(thesis, creatorBond);
+        theses.push(thesis);
+        isThesis[thesis] = true;
+        emit ThesisCreated(thesis, msg.sender, creatorBond);
+    }
+
+    function thesesLength() external view returns (uint256) {
+        return theses.length;
+    }
+
+    function thesisAt(uint256 index) external view returns (address) {
+        return theses[index];
+    }
+
+    function allowedFeedsLength() external view returns (uint256) {
+        return allowedFeeds.length;
+    }
+
+    function _validate(
+        string calldata narrative,
+        ThesisChallenge.BasketAsset[] calldata basket,
+        address referenceFeed,
+        uint256 creatorBond
+    ) private view {
         if (creatorBond == 0) revert InvalidParams("zero bond");
-        // collateral flows factory <- creator <- market in two hops:
-        // 1. creator -> factory (this contract, already approved)
-        // 2. factory -> market inside captureBond at construction
-        IERC20(params.collateral).safeTransferFrom(msg.sender, address(this), creatorBond);
-        market = address(
-            new ThesisMarket(params, msg.sender, creatorBond, DEFAULT_SETTLEMENT_WINDOW, DEFAULT_MAX_START_AGE)
-        );
-        IERC20(params.collateral).safeTransfer(market, creatorBond);
-        markets.push(market);
-        isMarket[market] = true;
+        uint256 narrativeBytes = bytes(narrative).length;
+        if (narrativeBytes == 0 || narrativeBytes > 280) revert InvalidParams("narrative");
+        if (basket.length == 0 || basket.length > MAX_BASKET_ASSETS) revert InvalidParams("basket length");
+        if (!allowedFeed[referenceFeed]) revert InvalidParams("reference feed");
 
-        emit MarketCreated(market, msg.sender, creatorBond);
-    }
-
-    function marketsLength() external view returns (uint256) {
-        return markets.length;
-    }
-
-    function marketAt(uint256 index) external view returns (address) {
-        return markets[index];
+        uint256 weightTotal;
+        for (uint256 i = 0; i < basket.length; i++) {
+            if (!allowedFeed[basket[i].feed] || basket[i].weightBps == 0) {
+                revert InvalidParams("basket feed");
+            }
+            if (basket[i].feed == referenceFeed) revert InvalidParams("reference in basket");
+            for (uint256 j = 0; j < i; j++) {
+                if (basket[j].feed == basket[i].feed) revert InvalidParams("duplicate basket feed");
+            }
+            weightTotal += basket[i].weightBps;
+        }
+        if (weightTotal != WEIGHTS_TOTAL_BPS) revert InvalidParams("weights");
     }
 }

@@ -1,118 +1,76 @@
 # Backfade
 
-> Back the thesis. Fade the noise.
+Crypto calls with skin in the game.
 
-Backfade turns market narratives into bonded, benchmarked, verifiable onchain `thesis` positions.
-The chain owns market state and settlement; the API only compiles narratives into validated
-`ThesisSpec` data.
+If you call it, bond it.
+If you doubt it, fade it.
 
-## Status and scope
+Backfade turns crypto opinions into capital-backed social challenges. Creators bond a Thesis, Challengers put money behind disagreement, and verified price feeds settle the argument. Wins and losses stay on the track record.
+
+## v0.2 Social Alpha
 
 - **Network:** Robinhood Chain Testnet (`46630`)
 - **Frontend:** React + Vite + TypeScript + Tailwind CSS v4
-- **Backend:** FastAPI compiler and asset registry
-- **Contracts:** Foundry Solidity contracts; deployed addresses are in [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md)
-- **Current scope:** testnet demo only; MockUSDG has no real value
-- **Explicitly absent:** database, indexer, queue, backend wallet custody, authentication, and secondary trading
+- **Backend:** FastAPI compiler returning `ThesisSpecV2`
+- **Contracts:** Foundry Solidity; `ThesisFactory` deploys immutable `ThesisChallenge` instances
+- **Collateral:** deployment-configured MockUSDG on testnet only; no real value
+- **Feeds:** only the deployment allowlist is accepted. The current registry is equity-heavy until reliable verified crypto feeds are available.
 
-Settlement, balances, oracle observations, and payouts are read from the contracts. The backend
-never signs transactions or stores canonical market state.
+The chain owns narrative commitments, collateral, oracle settlement, claims, and lifecycle state. The API only structures narrative input and re-anchors feeds from the checked-in registry. The browser wallet signs every write; there is no custody, database, indexer, or social graph.
 
-## Architecture
+## Product loop
 
 ```text
-Browser ──▶ React/Vite ──▶ Robinhood Chain Testnet RPC
-    │              └──────▶ /v1 ──▶ FastAPI compiler
-    └────────────── wallet signature via RainbowKit/Wagmi
+POST → BOND → FADE → SETTLE → BUILD TRACK RECORD
 ```
 
-- `web/` owns routes, wallet UX, chain reads/writes, and generated clients.
-- `api/` owns narrative compilation, the asset registry, validation, and health endpoints.
-- `contracts/` owns financial semantics and settlement rules.
-- `scripts/` owns code generation and parity checks.
-- `docs/` contains current architecture, design, deployment, and live-evidence records.
-
-## Prerequisites
-
-Install:
-
-- Node.js and npm
-- Python 3.12+
-- [`uv`](https://docs.astral.sh/uv/)
-- [Foundry](https://book.getfoundry.sh/getting-started/installation)
-
-Dependencies are already pinned by `web/package-lock.json`, `api/uv.lock`, and Foundry's checked-in
-libraries.
+The primary objects are people, Thesis posts, Challenges, and realized financial history. A Challenge always contains plain text plus capital. There are no free replies, generic Back positions, odds, binary outcomes, or rank rewards.
 
 ## Run locally
 
-The Makefile supplies the public testnet defaults used by the demo:
+Prerequisites: Node.js/npm, Python 3.12+, [`uv`](https://docs.astral.sh/uv/), and [Foundry](https://book.getfoundry.sh/getting-started/installation).
 
 ```bash
-make dev
-```
-
-This starts:
-
-- FastAPI at `http://127.0.0.1:8000`
-- Vite at `http://127.0.0.1:5173`
-- same-origin proxy routes for `/v1` and `/health`
-
-For an LLM-backed compiler, copy `api/.env.example` to `api/.env` and set
-`BACKFADE_LLM_API_KEY`. Development without a key uses the deterministic mock compiler.
-Never commit `.env` files, private keys, or wallet credentials.
-
-Run services separately when needed:
-
-```bash
+make dev       # FastAPI :8000 + Vite :5173
 make api       # API only
 make web       # frontend only
 ```
 
+Development without an LLM key uses the deterministic compiler fallback. Never commit `.env` files, private keys, or wallet credentials.
+
 ## Verification
 
-Run the full local gates from the repository root:
-
 ```bash
-make test       # contracts + API + frontend checks
-make check      # code generation parity + all checks + ABI parity + secret scan
-make e2e        # Playwright Chromium and Firefox smoke tests
+make test      # contracts + API + frontend tests
+make check     # codegen, format/lint/type/build, ABI parity, secret scan
+make e2e       # Playwright browser flow
 ```
 
-Individual checks:
+`make check` regenerates `web/src/generated/contracts.ts`, `api/openapi.json`, and Orval output, then fails if committed generated artifacts drift.
 
-```bash
-make contracts
-make api-check
-make web-check
-python3 scripts/abi_parity.py
-```
+## Routes
 
-`make check` regenerates contract/OpenAPI clients and fails if committed generated output drifts.
-The browser suite uses deterministic RPC fixtures and does not require a wallet extension.
-
-## Key routes
-
-- `/` — market Feed
-- `/create` — compile and launch a thesis
-- `/market/:address` — market detail, evidence, Position panel, and lifecycle actions
-- `/profile/:address` — creator facts read from chain
+- `/` — single-column Thesis feed
+- `/post` — narrative, Reference confirmation, Conviction, Bond & Post
+- `/thesis/:address` — Thesis thread, Alpha, Challenges, capital tape, settlement, claims
+- `/leaderboard` — Overall, Creators, and Faders ranked by realized net P&L
+- `/profile/:address` — immutable Thesis and Challenge track record
+- `/create` and `/market/:address` — legacy redirects
 
 ## Documentation
 
 | Topic | Document |
 |---|---|
+| Financial semantics and formulas | [`docs/MECHANISM.md`](docs/MECHANISM.md) |
 | Runtime boundaries and code generation | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | UI tokens and interaction rules | [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) |
 | Wallet and transaction flow | [`docs/WEB3.md`](docs/WEB3.md) |
-| Deployment addresses and verification | [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md) |
-| Live contract evidence and limitations | [`docs/LIVE_E2E.md`](docs/LIVE_E2E.md) |
-| Verified testnet feeds | [`docs/TESTNET_ASSETS.md`](docs/TESTNET_ASSETS.md) |
-| Product scope and deferred work | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
-| Architecture decisions | [`docs/adr/`](docs/adr/) |
-| Security posture | [`SECURITY.md`](SECURITY.md) |
+| v0.2 deployment and preserved v0.1 history | [`docs/DEPLOYMENTS.md`](docs/DEPLOYMENTS.md) |
+| Live deployment evidence | [`docs/LIVE_E2E.md`](docs/LIVE_E2E.md) |
+| Verified testnet asset registry | [`docs/TESTNET_ASSETS.md`](docs/TESTNET_ASSETS.md) |
+| Deferred product work | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| Security assumptions | [`SECURITY.md`](SECURITY.md) |
 
-## Security
+## Version boundary
 
-This repository targets a testnet. Do not use real funds or production credentials. Read
-[`SECURITY.md`](SECURITY.md) before deploying or connecting a wallet.
+`v0.1-binary` points to `556fcabe91221b9ff348f9e8ffd4d31f9a570549`. v0.2 work lives on `v0.2-social-alpha`. Historical v0.1 deployment addresses and semantics remain documented; they are not silently reused as v0.2 contracts.

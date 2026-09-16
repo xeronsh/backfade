@@ -8,5 +8,9 @@
 export interface ThesisAsset {
   symbol: string;
   feed: string;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
   weight_bps: number;
 }

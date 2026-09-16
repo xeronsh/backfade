@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface ThesisBenchmark {
+export interface ThesisReference {
   symbol: string;
   feed: string;
 }
