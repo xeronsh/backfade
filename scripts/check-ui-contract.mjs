@@ -45,7 +45,10 @@ const TEXT_UTILITY = /\btext-(xs|sm|base|lg|xl|[2-9]xl|\[[^\]]+\])(?![\w-])/g;
 // CSS declaration is a second source of truth.
 const HARDCODED_DURATION =
   /duration-\[[^\]]+\]|transition-duration:\s*[0-9.]+m?s\b|(?:^|[\s"'])duration-\d{2,}/;
-const ARBITRARY_TAILWIND = /\[[^\]"\s]+\]/;
+// A Tailwind arbitrary value carries a unit, a css function, a hash, or a
+// separator; an array index like `visible[0]` must not be flagged.
+const ARBITRARY_TAILWIND =
+  /\[[^\]"'\s]*(?:\d(?:px|rem|em|%|vh|vw|ms|s)\b|rgb|hsl|var\(|calc\(|#|\/|_){1}[^\]"'\s]*\]/;
 
 // The interface is typographic. Icons are not a substitute for words, and a
 // brand mark is a wordmark rather than a glyph, so no page ships an icon set.
