@@ -150,7 +150,7 @@ export default function MarketDetail() {
                       value={`${formatAmount(market.totalClaimed)} USDG`}
                     />
                   </MetricGroup>
-                  <CardFooter className="text-sm text-text-2">
+                  <CardFooter className="text-body text-text-2">
                     Creator bond: {formatAmount(market.creatorBond)} USDG ·
                     Creator <AddressValue value={market.creator} />
                   </CardFooter>
@@ -219,7 +219,7 @@ export default function MarketDetail() {
               <PageSection title="Activity">
                 <Card>
                   {market.activity.length === 0 ? (
-                    <p className="text-sm text-text-3">
+                    <p className="text-body text-text-3">
                       No activity indexed yet.
                     </p>
                   ) : (
@@ -227,7 +227,7 @@ export default function MarketDetail() {
                       {market.activity.map((activity) => (
                         <li
                           key={`${activity.transactionHash}-${activity.kind}`}
-                          className="flex items-start justify-between gap-4 text-sm"
+                          className="flex items-start justify-between gap-4 text-body"
                         >
                           <div>
                             <p className="font-medium">{activity.label}</p>
@@ -292,7 +292,7 @@ export default function MarketDetail() {
                   </Button>
                 ) : null}
                 {["OPEN", "CLOSED"].includes(market.state) ? (
-                  <p className="text-sm text-text-3">
+                  <p className="text-body text-text-3">
                     This market is still accepting conviction through the
                     Position panel.
                   </p>

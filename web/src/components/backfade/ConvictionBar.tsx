@@ -13,7 +13,7 @@ export function ConvictionBar({ back, fade }: { back: bigint; fade: bigint }) {
         value={backPercent}
         aria-label={`BACK ${backPercent}% and FADE ${fadePercent}%`}
       />
-      <div className="flex justify-between text-sm font-medium">
+      <div className="flex justify-between text-body font-medium">
         <span className="text-fade">FADE {fadePercent}%</span>
         <span className="text-back">BACK {backPercent}%</span>
       </div>

@@ -36,13 +36,13 @@ export function MetricGroup({
       className={cn(
         layout === "grid"
           ? cn(
-              "grid gap-4 text-sm",
+              "grid gap-4 text-body",
               columns === 2 && "grid-cols-2",
               columns === 3 && "grid-cols-2 sm:grid-cols-3",
               columns === 4 && "grid-cols-2 sm:grid-cols-4",
               columns === 5 && "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
             )
-          : "grid gap-3 text-sm",
+          : "grid gap-3 text-body",
         className,
       )}
     >
@@ -132,7 +132,7 @@ export function DataRow({
       >
         {label}
       </dt>
-      <dd className="min-w-0 text-sm text-text-1">{children}</dd>
+      <dd className="min-w-0 text-body text-text-1">{children}</dd>
     </div>
   );
 }

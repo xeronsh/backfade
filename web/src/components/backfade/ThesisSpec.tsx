@@ -45,7 +45,7 @@ function ChainThesisSpecView({ spec }: { spec: ChainThesisSpec }) {
           </span>
         </DataRow>
       </MetricGroup>
-      <CardFooter className="text-sm text-text-2">
+      <CardFooter className="text-body text-text-2">
         Basket, benchmark, weights, hurdle, and narrative are read from the
         deployed market contract.
       </CardFooter>
@@ -78,7 +78,7 @@ function CompilerThesisSpecView({ spec }: { spec: GeneratedThesisSpec }) {
           </span>
         </DataRow>
       </MetricGroup>
-      <CardFooter className="text-sm text-text-2">
+      <CardFooter className="text-body text-text-2">
         Risk: <span className="text-text-1">{spec.risk.level}</span>.{" "}
         {spec.risk.warnings.join(" ")}
       </CardFooter>

@@ -68,7 +68,7 @@ export default function Profile() {
               }
             />
           </MetricGroup>
-          <CardFooter className="text-sm text-text-2">
+          <CardFooter className="text-body text-text-2">
             Capital bonded{" "}
             <span className="font-mono text-text-1" data-financial>
               {formatAmount(capitalBonded)} USDG

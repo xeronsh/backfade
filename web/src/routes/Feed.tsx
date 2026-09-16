@@ -142,7 +142,7 @@ export default function Feed() {
                             className="grid gap-1 transition-colors duration-standard hover:text-brand"
                           >
                             <Status dot>{market.state}</Status>
-                            <strong className="truncate text-sm font-semibold">
+                            <strong className="truncate text-body font-semibold">
                               {market.narrative}
                             </strong>
                             <MetaLabel>
@@ -155,7 +155,7 @@ export default function Feed() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-4 text-sm text-text-2">
+                    <p className="mt-4 text-body text-text-2">
                       Chain markets will appear here when indexed.
                     </p>
                   )}

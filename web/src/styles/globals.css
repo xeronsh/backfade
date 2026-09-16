@@ -97,7 +97,8 @@
   /* Shadows are limited to overlays. Cards use borders. */
   --shadow-popover: 0 16px 48px rgb(0 0 0 / 35%);
 
-  /* Motion */
+  /* Motion. The same four values as `duration` in lib/motion.ts;
+     `src/lib/motion.test.ts` fails if the two tables drift apart. */
   --transition-duration-fast: 120ms;
   --transition-duration-standard: 160ms;
   --transition-duration-slow: 220ms;

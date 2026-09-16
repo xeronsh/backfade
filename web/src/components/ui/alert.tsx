@@ -67,7 +67,7 @@ export function Alert({
         {title}
       </p>
       {description ? (
-        <p className="mt-3 max-w-xl text-sm leading-5 text-text-2">
+        <p className="mt-3 max-w-xl text-body leading-5 text-text-2">
           {description}
         </p>
       ) : null}

@@ -10,7 +10,7 @@ export function Label({ className, htmlFor, ...props }: LabelProps) {
     // biome-ignore lint/a11y/noLabelWithoutControl: htmlFor is required and forwarded to the native label.
     <label
       htmlFor={htmlFor}
-      className={cn("block text-sm font-medium text-text-1", className)}
+      className={cn("block text-body font-medium text-text-1", className)}
       {...props}
     />
   );

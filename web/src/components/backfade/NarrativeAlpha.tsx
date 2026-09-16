@@ -10,7 +10,7 @@ export function NarrativeAlpha({ value }: { value: bigint }) {
       </p>
       <p
         className={cn(
-          "mt-1 font-mono text-2xl font-semibold tabular-nums",
+          "mt-1 font-mono text-narrative font-semibold tabular-nums",
           positive ? "text-back" : "text-fade",
         )}
         data-financial

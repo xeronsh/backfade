@@ -16,7 +16,7 @@ export function AppShell() {
         <div className="mx-auto flex min-h-19 w-full max-w-page flex-wrap items-center gap-3 px-5 py-2 sm:px-6 md:flex-nowrap md:gap-5 md:py-0">
           <NavLink
             to="/"
-            className="flex items-center gap-3 text-base font-bold"
+            className="flex items-center gap-3 text-body font-bold"
             aria-label="Backfade home"
           >
             <span className="brand-mark" aria-hidden="true">

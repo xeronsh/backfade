@@ -88,7 +88,12 @@ describe("MarketDetail layout", () => {
     const aside = container.querySelector('[data-slot="split-aside"]');
     expect(aside).not.toBeNull();
     expect(aside).toHaveAttribute("data-aside-position", "sticky");
-    expect(aside?.className).toContain("lg:sticky");
+    // jsdom does not apply stylesheets, so assert the class the sticky state
+    // compiles to; the real desktop-sticky/mobile-static behaviour is proven by
+    // the Playwright test that reads getComputedStyle at both viewports.
+    const classes = aside?.className ?? "";
+    expect(classes).toContain("lg:sticky");
+    expect(classes).toContain("lg:top-24");
     expect(container.querySelector('[data-slot="split-main"]')).not.toBeNull();
   });
 
