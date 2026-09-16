@@ -1,5 +1,6 @@
-from api.main import app
 from fastapi.testclient import TestClient
+
+from api.main import app
 
 
 def test_compile_returns_validated_thesis_spec() -> None:
