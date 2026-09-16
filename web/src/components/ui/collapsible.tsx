@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
  * One disclosure primitive for the whole product: Base UI focus management,
  * Escape handling, and a chevron that rotates through the shared 160ms token.
  * Replaces ad-hoc `<details>/<summary>` markup.
+ *
+ * The panel opens and closes through the `collapse` variants in
+ * `lib/motion.ts`, so no call site animates it by hand.
  */
 export function Collapsible({
   className,
@@ -44,7 +47,13 @@ export function CollapsiblePanel({
 }: ComponentProps<typeof BaseCollapsible.Panel>) {
   return (
     <BaseCollapsible.Panel
-      className={cn("pt-3 text-meta leading-5 text-text-3", className)}
+      className={cn(
+        "h-[var(--collapsible-panel-height)] overflow-hidden pt-3 text-meta leading-5 text-text-3",
+        "transition-[height,opacity] duration-standard ease-standard opacity-100",
+        "data-[starting-style]:h-0 data-[starting-style]:opacity-0",
+        "data-[ending-style]:h-0 data-[ending-style]:opacity-0",
+        className,
+      )}
       {...props}
     />
   );
