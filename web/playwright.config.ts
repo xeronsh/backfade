@@ -14,7 +14,11 @@ export default defineConfig({
     command: "npm run build && npm run preview -- --host 127.0.0.1",
     cwd: ".",
     url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
+    // Never trust a server that is already listening: a foreign process on this
+    // port previously served another project's bundle and silently made the
+    // whole suite assert against the wrong app.
+    reuseExistingServer: false,
+    timeout: 120_000,
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },

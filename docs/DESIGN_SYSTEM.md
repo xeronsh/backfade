@@ -25,7 +25,9 @@ focus, and active navigation. BACK and FADE colors never replace their words.
 ## Type and geometry
 
 - System sans for prose; system mono for addresses, amounts, bps, percentages, and dates.
-- Page title 32/38; narrative 18/25; body 15/22; metadata 12/16.
+- Page title 32/38; narrative 18/25; body 15/22; metadata 12/16. These four roles are the
+  only sizes in the product: `text-page-title`, `text-narrative`, `text-body`, `text-meta`.
+  The contract gate rejects any other Tailwind size utility.
 - Four-pixel spacing grid; standard values are 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80.
 - Radius: 4px data, 6px chip, 8px field, 10px button, 12px card, 14px panel, pill only when
   semantic.
@@ -56,9 +58,13 @@ in `make web-check` and fails the build when a route bypasses the component syst
   `<summary>`, or `<svg>`;
 - `@base-ui/react` may only be imported from `components/ui/`;
 - no raw color literals outside `styles/globals.css`;
-- no inline motion durations or easings outside `lib/motion.ts`.
+- no inline motion durations or easings outside `lib/motion.ts`;
+- no type size outside the four documented roles;
+- no hardcoded CSS/class duration outside `styles/globals.css` and `lib/motion.ts`.
 
 Motion values live only in `lib/motion.ts` and the `--transition-duration-*` tokens.
+`lib/motion.test.ts` asserts the two tables hold the same four values, so neither can
+drift without failing the build.
 
 ## Page rules
 

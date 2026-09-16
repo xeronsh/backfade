@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { expect, test } from "@playwright/test";
+import { fulfillRpc, MARKET_ADDRESS, RPC_URL_PATTERN } from "./rpc-fixture";
 
 const compiled = {
   version: 1,
@@ -82,7 +83,15 @@ test("Create keeps two columns down to 1024px", async ({ page }) => {
   }
 });
 
-test("Position aside is sticky on desktop only", async ({ page }) => {
+test("Position aside is sticky on desktop and static on mobile", async ({
+  page,
+}) => {
+  // The market route renders its split layout only after chain data resolves,
+  // so serve the multicall fixture instead of letting the route fall back to
+  // its empty state. There is deliberately no early return here: if the aside
+  // stops rendering, this test must fail rather than pass vacuously.
+  await page.route(RPC_URL_PATTERN, fulfillRpc);
+
   for (const viewport of [
     { width: 1280, height: 900, expected: "sticky" },
     { width: 720, height: 900, expected: "static" },
@@ -91,22 +100,37 @@ test("Position aside is sticky on desktop only", async ({ page }) => {
       width: viewport.width,
       height: viewport.height,
     });
-    // Block the indexer so the route renders its shell deterministically.
-    await page.route("**/v1/**", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "[]",
-      }),
-    );
-    await page.goto("/market/0x9Db674834F4C060114Cb53f21e179fc54F905342");
+    await page.goto(`/market/${MARKET_ADDRESS}`);
+
     const aside = page.locator('[data-slot="split-aside"]');
-    if ((await aside.count()) === 0) return; // empty-state route: no aside to check
+    await expect(aside).toHaveCount(1);
     await expect(aside).toHaveAttribute("data-aside-position", "sticky");
     expect(
       await aside.evaluate((node) => getComputedStyle(node).position),
     ).toBe(viewport.expected);
   }
+});
+
+test("Market route renders every section once chain data resolves", async ({
+  page,
+}) => {
+  await page.route(RPC_URL_PATTERN, fulfillRpc);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/market/${MARKET_ADDRESS}`);
+
+  for (const name of [
+    "ThesisSpec",
+    "Pool summary",
+    "Oracle observations",
+    "Timeline & settlement",
+    "Activity",
+    "Lifecycle action",
+  ]) {
+    await expect(page.getByRole("region", { name })).toHaveCount(1);
+  }
+  // Pool figures come from MetricGroup/DataRow, not hand-rolled markup.
+  await expect(page.getByText("BACK pool")).toBeVisible();
+  await expect(page.getByText("100.00 USDG")).toBeVisible();
 });
 
 test("Market route validates address", async ({ page }) => {
