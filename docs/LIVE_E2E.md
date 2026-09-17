@@ -19,7 +19,7 @@ The successful settlement path is covered separately by the wallet-backed local 
 3. advance local time, publish fresh post-expiry feed observations, and settle;
 4. claim as the Creator and both Challengers.
 
-The test asserts `state == SETTLED`, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed == 1,500 USDG`, and a zero Thesis collateral balance. The latest run completed `14 passed` across Chromium and Firefox. This is genuine local wallet/RPC evidence; the live testnet record below remains cancellation-only until its verified feeds publish a safe post-expiry observation.
+The test asserts `state == SETTLED`, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed == 1,500 USDG`, and a zero Thesis collateral balance. The latest run completed `14 passed` across Chromium and Firefox. The settled run also captures current-build visual evidence as `social-alpha-feed.png`, `social-alpha-thread.png`, `social-alpha-leaderboard.png`, and `social-alpha-profile.png`; rerun `make e2e` to regenerate these ignored Playwright artifacts. This is genuine local wallet/RPC evidence; the live testnet record below remains cancellation-only until its verified feeds publish a safe post-expiry observation.
 
 ## Fresh live settlement candidate
 
