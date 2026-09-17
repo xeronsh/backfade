@@ -12,9 +12,31 @@
 | Optimizer | enabled, 200 runs |
 | Collateral | MockUSDG, testnet only |
 
-## Active v0.2 Social Alpha deployment
+## Fresh v0.2 settlement deployment
 
-This is the fresh deployment used for the live settlement attempt. Its `13.06 h` horizon is deliberate: the verified testnet equity feeds publish in a daily window, so expiry is placed immediately before the next window. The product-shaped defaults remain `30 minutes` challenge window and `7 days` horizon in `contracts/script/Deploy.s.sol`.
+This is the newest v0.2 deployment used for the live settlement run. Its `8 h` horizon places expiry after the next verified stock-feed window. The `48 h` maximum start age is explicit because the feeds' last verified observations were more than 24 h old at creation; no unverified or fabricated price was used.
+
+| Setting | Value |
+|---|---:|
+| Challenge window | `45 s` |
+| Horizon | `28,800 s` (`8 h`) |
+| Settlement window | `1,800 s` (`30 min`) |
+| Maximum start-price age | `172,800 s` (`48 h`) |
+
+| Contract | Address | Deployment transaction |
+|---|---|---|
+| MockUSDG | `0x84C5f600720532f71009dd2cBED168e766383eE8` | [`0x04ef0d163d6968fb8d5f9030a92504bbf1c1cdbf549f84cce66d87176000a515`](https://explorer.testnet.chain.robinhood.com/tx/0x04ef0d163d6968fb8d5f9030a92504bbf1c1cdbf549f84cce66d87176000a515) |
+| ThesisFactory | `0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94` | [`0xec7266b35e17d344cba1314cab93b0445fa0decc545a22b7820a3929c9bb1ffa`](https://explorer.testnet.chain.robinhood.com/tx/0xec7266b35e17d344cba1314cab93b0445fa0decc545a22b7820a3929c9bb1ffa) |
+
+| Thesis | Address | Create transaction |
+|---|---|---|
+| Fresh settlement candidate | `0x914345586A1fb1598BFB371DA5cca53614ff91C7` | [`0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96`](https://explorer.testnet.chain.robinhood.com/tx/0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96) |
+
+The candidate has a `1,000 USDG` Creator bond and two funded Challenges of `300 USDG` and `200 USDG`. Challenge A is [`0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7`](https://explorer.testnet.chain.robinhood.com/tx/0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7); Challenge B is [`0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1`](https://explorer.testnet.chain.robinhood.com/tx/0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1). The candidate remains `LOCKED` until verified post-expiry observations arrive.
+
+## Earlier v0.2 Social Alpha deployment (cancelled)
+
+This earlier fresh deployment was used for the first live settlement attempt. Its `13.06 h` horizon was deliberate: the verified testnet equity feeds publish in a daily window, so expiry was placed immediately before the next window. The product-shaped defaults remain `30 minutes` challenge window and `7 days` horizon in `contracts/script/Deploy.s.sol`.
 
 | Setting | Value |
 |---|---:|
@@ -78,7 +100,7 @@ These addresses and semantics are preserved as historical evidence only. They ar
 | ThesisFactory | `0x9Db674834F4C060114Cb53f21e179fc54F905342` |
 | Demo ThesisMarket | `0xBf496Ef435C814C81864b5F337F23b63D4b26BB3` |
 
-The exact source baseline is tagged `v0.1-binary` at `556fcabe91221b9ff348f9e8ffd4d31f9a570549`. Historical deployment evidence remains available from the baseline commit and is not presented as v0.2 behavior.
+The exact source baseline is tagged `v0.1-binary` at `556fcabe91221b9ff348f9e8ffd4d31f9a570549`. Historical deployment evidence remains available from the baseline commit and is not presented as v0.2 behavior. The original deployment record is preserved verbatim at [`archive/v0.1-binary/DEPLOYMENTS.md`](archive/v0.1-binary/DEPLOYMENTS.md).
 
 ## Deployment commands
 

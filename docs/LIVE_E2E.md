@@ -6,6 +6,8 @@ The fresh v0.2 deployment and Creator → Challenger flow are live on Robinhood 
 
 A previous short-window run is also recorded below. It reached safe `CANCELLED` and completed all three pull claims, proving the same failure-safe path.
 
+The original v0.1-binary deployment/E2E record is preserved verbatim at [`archive/v0.1-binary/LIVE_E2E.md`](archive/v0.1-binary/LIVE_E2E.md); v0.2 evidence is kept separate.
+
 The successful settlement path is covered separately by the wallet-backed local E2E below. It uses a fresh Anvil chain and does not turn ephemeral local transaction hashes into testnet evidence.
 
 ## Wallet-backed local settlement evidence
@@ -18,6 +20,19 @@ The successful settlement path is covered separately by the wallet-backed local 
 4. claim as the Creator and both Challengers.
 
 The test asserts `state == SETTLED`, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed == 1,500 USDG`, and a zero Thesis collateral balance. The latest run completed `14 passed` across Chromium and Firefox. This is genuine local wallet/RPC evidence; the live testnet record below remains cancellation-only until its verified feeds publish a safe post-expiry observation.
+
+## Fresh live settlement candidate
+
+A new v0.2 factory and Thesis were deployed on Robinhood Chain Testnet while preparing the settlement run:
+
+| Item | Address / transaction |
+|---|---|
+| MockUSDG | `0x84C5f600720532f71009dd2cBED168e766383eE8` · [`0x04ef0d163d6968fb8d5f9030a92504bbf1c1cdbf549f84cce66d87176000a515`](https://explorer.testnet.chain.robinhood.com/tx/0x04ef0d163d6968fb8d5f9030a92504bbf1c1cdbf549f84cce66d87176000a515) |
+| ThesisFactory | `0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94` · [`0xec7266b35e17d344cba1314cab93b0445fa0decc545a22b7820a3929c9bb1ffa`](https://explorer.testnet.chain.robinhood.com/tx/0xec7266b35e17d344cba1314cab93b0445fa0decc545a22b7820a3929c9bb1ffa) |
+| Thesis | `0x914345586A1fb1598BFB371DA5cca53614ff91C7` · [`0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96`](https://explorer.testnet.chain.robinhood.com/tx/0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96) |
+| Challenges | `0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7` · `0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1` |
+
+The candidate uses a `45 s` Challenge window, `28,800 s` horizon, `1,800 s` settlement window, and a `172,800 s` maximum start-price age. It is not represented as settled until all three verified feeds publish observations in the contract's post-expiry window.
 
 ## Active network and deployment
 

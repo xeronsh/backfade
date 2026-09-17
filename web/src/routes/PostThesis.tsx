@@ -175,7 +175,7 @@ export default function PostThesis() {
                   <Textarea
                     id="narrative"
                     maxLength={280}
-                    placeholder="HYPE will outperform BTC this week."
+                    placeholder="AMD and PLTR will outperform TSLA this week."
                     className="mt-2"
                     {...form.register("narrative")}
                   />
