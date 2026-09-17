@@ -32,9 +32,9 @@ A new v0.2 factory and Thesis were deployed on Robinhood Chain Testnet while pre
 | Thesis | `0x914345586A1fb1598BFB371DA5cca53614ff91C7` · [`0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96`](https://explorer.testnet.chain.robinhood.com/tx/0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96) |
 | Challenges | `0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7` · `0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1` |
 
-The candidate uses a `45 s` Challenge window, `28,800 s` horizon, `1,800 s` settlement window, and a `172,800 s` maximum start-price age. It is not represented as settled until all three verified feeds publish observations in the contract's post-expiry window.
+The candidate uses a `45 s` Challenge window, `28,800 s` horizon, `1,800 s` settlement window, and a `172,800 s` maximum start-price age. It is not represented as settled until all three verified feeds publish observations in the contract's post-expiry window. After the claims complete, `make live-check` verifies the onchain `SETTLED` state, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed`, and the zero collateral balance.
 
-## Active network and deployment
+## Earlier v0.2 deployment and cancellation record
 
 | Field | Value |
 |---|---|
@@ -49,9 +49,9 @@ The candidate uses a `45 s` Challenge window, `28,800 s` horizon, `1,800 s` sett
 | Settlement window | `1,800 s` (`30 min`) |
 | Maximum start-price age | `86,400 s` (`24 h`) |
 
-The active deployment uses only the verified allowlisted AMD, PLTR, NVDA, TSLA, and COIN feeds. The API enables exactly this set; no unsupported crypto feed is substituted.
+The earlier deployment used only the verified allowlisted AMD, PLTR, NVDA, TSLA, and COIN feeds. The API enables exactly this set; no unsupported crypto feed is substituted.
 
-## Active Creator → Challenger evidence
+## Earlier Creator → Challenger evidence
 
 Creator `0xe8507D6396C332a891b2eAFa14e34e812fa289D7` posted:
 
@@ -63,7 +63,7 @@ Creator `0xe8507D6396C332a891b2eAFa14e34e812fa289D7` posted:
 | `ChallengePosted` A | [`0xd20b3ddf8176e1b1d16a6a0a01adbeb85253b557b74f9c5873c2263043e6c72f`](https://explorer.testnet.chain.robinhood.com/tx/0xd20b3ddf8176e1b1d16a6a0a01adbeb85253b557b74f9c5873c2263043e6c72f) | `300 USDG`, note recorded |
 | `ChallengePosted` B | [`0xfeb79767732870638d6789e86261defb9e3f065633fab5850cb6c952e4ed6fb5`](https://explorer.testnet.chain.robinhood.com/tx/0xfeb79767732870638d6789e86261defb9e3f065633fab5850cb6c952e4ed6fb5) | `200 USDG`, note recorded |
 
-The active Thesis read-back is:
+The earlier Thesis read-back was:
 
 ```text
 creatorBond       = 1000000000000000000000
@@ -92,7 +92,7 @@ At settlement, every feed must satisfy:
 resolvesAt <= updatedAt <= resolvesAt + settlementWindow
 ```
 
-AMD, PLTR, and TSLA did not publish observations with `updatedAt >= resolvesAt` before the active deadline. Calling `settle()` on stale data would have been unsafe, so the valid fallback was used:
+AMD, PLTR, and TSLA did not publish observations with `updatedAt >= resolvesAt` before the earlier deadline. Calling `settle()` on stale data would have been unsafe, so the valid fallback was used:
 
 | Step | Transaction | Result |
 |---|---|---|
@@ -101,7 +101,7 @@ AMD, PLTR, and TSLA did not publish observations with `updatedAt >= resolvesAt` 
 | Challenger A `Claimed` | [`0xfe30346546f15ce516b521f57d1cf6b62f9a43d599f013edb87b135b573da1e2`](https://explorer.testnet.chain.robinhood.com/tx/0xfe30346546f15ce516b521f57d1cf6b62f9a43d599f013edb87b135b573da1e2) | `300 USDG` |
 | Challenger B `Claimed` | [`0x18e7277642f401ab4debc95f0b11fa02689d803d0268f9511ea7524a21edcecd`](https://explorer.testnet.chain.robinhood.com/tx/0x18e7277642f401ab4debc95f0b11fa02689d803d0268f9511ea7524a21edcecd) | `200 USDG` |
 
-The final active Thesis balance was `0 USDG`. This is live cancellation and pull-claim evidence, not successful settlement evidence. A `ThesisSettled` event must not be fabricated from stale feeds.
+The final earlier Thesis balance was `0 USDG`. This is live cancellation and pull-claim evidence, not successful settlement evidence. A `ThesisSettled` event must not be fabricated from stale feeds.
 
 ## Previous safe-cancellation evidence
 

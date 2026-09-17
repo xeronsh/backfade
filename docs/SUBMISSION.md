@@ -21,8 +21,8 @@ The frontend uses the local FastAPI compiler through the Vite `/v1` proxy. Walle
 | Network | Robinhood Chain Testnet |
 | Chain ID | `46630` |
 | RPC | `https://rpc.testnet.chain.robinhood.com` |
-| Factory | `0x49a9CF7661aAB5B658A5c19420993Fcf00841d2a` |
-| Collateral | `0x222903b08139FeeF6C0CAD921e0f2F7f5Eb81AB6` |
+| Factory | `0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94` |
+| Collateral | `0x84C5f600720532f71009dd2cBED168e766383eE8` |
 
 All addresses and configuration are canonical in [`DEPLOYMENTS.md`](DEPLOYMENTS.md). The v0.1 binary deployment remains historical and is not reused.
 
@@ -42,7 +42,7 @@ There are no free comments, generic Back positions, probability/odds UI, binary 
 
 ## Live testnet evidence
 
-The fresh deployment created Thesis `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` with a `1,000 USDG` creator bond. Two Challengers posted `300 USDG` and `200 USDG` notes. The registry feeds did not publish a safe post-expiry observation, so the Thesis was cancelled rather than settled on stale data. All three principal claims succeeded and the final contract balance was `0 USDG`.
+The earlier fresh deployment created Thesis `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` with a `1,000 USDG` creator bond and was safely cancelled when the registry feeds did not publish a post-expiry observation. A newer settlement candidate, Thesis `0x914345586A1fb1598BFB371DA5cca53614ff91C7`, has the same `1,000 USDG` bond plus `300 USDG` and `200 USDG` funded Challenges; its verified post-expiry settlement result is recorded in [`LIVE_E2E.md`](LIVE_E2E.md) only after onchain confirmation.
 
 The complete testnet transaction table is [`LIVE_E2E.md`](LIVE_E2E.md), including `ThesisCreated`, `ChallengePosted`, `ThesisCancelled`, and `Claimed` evidence. The same document records the successful wallet-backed local `ThesisSettled`/`Claimed` E2E; a successful live testnet settlement is not claimed until the allowlisted feeds resume and produce post-expiry observations.
 
