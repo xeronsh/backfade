@@ -232,7 +232,7 @@ export default function PostThesis() {
                         {...form.register("conviction")}
                       />
                       <p className="mt-2 text-meta text-text-3">
-                        The deployment fixes the challenge window and 7-day
+                        The deployment fixes the Challenge window and settlement
                         horizon.
                       </p>
                       <Button

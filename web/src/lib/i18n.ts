@@ -19,7 +19,7 @@ export const dict = {
     "tx.confirm": "Confirm",
     "tx.failedBody":
       "Transaction did not confirm. Review the wallet request and amount, then retry.",
-    "market.explorer": "Explorer",
+    "thesis.explorer": "Explorer",
     "thesis.creatorRole": "Creator",
     "thesis.challengerRole": "Challenger",
     "create.entryWindow": "{minutes} minutes before Challenges close",
@@ -46,7 +46,7 @@ export const dict = {
     "tx.submit": "提交",
     "tx.confirm": "确认",
     "tx.failedBody": "交易未确认。请检查钱包请求与金额后重试。",
-    "market.explorer": "浏览器",
+    "thesis.explorer": "浏览器",
     "thesis.creatorRole": "创建者",
     "thesis.challengerRole": "挑战者",
     "create.entryWindow": "挑战窗口关闭前 {minutes} 分钟",

@@ -1,4 +1,5 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { parseUnits } from "viem";
@@ -20,6 +21,7 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const transaction = useTransaction();
+  const queryClient = useQueryClient();
   const position = useThesisPosition(thesis.address);
   const { address: account, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -80,6 +82,9 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
       });
       setAmount("");
       setNote("");
+      await queryClient.refetchQueries({
+        queryKey: ["thesis", thesis.address],
+      });
     } catch (error) {
       toast(formatError(error));
     }

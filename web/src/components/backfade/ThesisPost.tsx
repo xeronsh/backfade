@@ -77,7 +77,7 @@ export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
             to={`/thesis/${thesis.address}`}
             className="font-mono text-meta font-semibold uppercase tracking-label text-brand hover:text-brand-hover"
           >
-            Fade it →
+            {thesis.state === "OPEN" ? "Fade it →" : "Open thread →"}
           </Link>
         </div>
       </CardContent>

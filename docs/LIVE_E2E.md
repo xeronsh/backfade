@@ -6,6 +6,19 @@ The fresh v0.2 deployment and Creator → Challenger flow are live on Robinhood 
 
 A previous short-window run is also recorded below. It reached safe `CANCELLED` and completed all three pull claims, proving the same failure-safe path.
 
+The successful settlement path is covered separately by the wallet-backed local E2E below. It uses a fresh Anvil chain and does not turn ephemeral local transaction hashes into testnet evidence.
+
+## Wallet-backed local settlement evidence
+
+`make e2e` starts Anvil, deploys the v0.2 factory and verified-feed mocks with Forge, and serves the real app/API. The Chromium and Firefox suite then uses an injected browser wallet to:
+
+1. create a Thesis with the Creator's USDG bond;
+2. approve and post two funded Challenges with separate Challenger accounts;
+3. advance local time, publish fresh post-expiry feed observations, and settle;
+4. claim as the Creator and both Challengers.
+
+The test asserts `state == SETTLED`, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed == 1,500 USDG`, and a zero Thesis collateral balance. The latest run completed `14 passed` across Chromium and Firefox. This is genuine local wallet/RPC evidence; the live testnet record below remains cancellation-only until its verified feeds publish a safe post-expiry observation.
+
 ## Active network and deployment
 
 | Field | Value |

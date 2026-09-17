@@ -8,8 +8,9 @@ process.env.VITE_RPC_URL ??= "https://rpc.testnet.chain.robinhood.com";
 process.env.VITE_EXPLORER_URL ??=
   "https://explorer.testnet.chain.robinhood.com";
 process.env.VITE_FACTORY_ADDRESS ??=
-  "0x9a9adD5032432f9884341B536682e35179aC6474";
+  "0x49a9CF7661aAB5B658A5c19420993Fcf00841d2a";
 process.env.VITE_COLLATERAL_ADDRESS ??=
-  "0xAfDB01Bd1D89c4d24C479865948F9c36C43eC1B3";
+  "0x222903b08139FeeF6C0CAD921e0f2F7f5Eb81AB6";
+process.env.VITE_FACTORY_DEPLOYMENT_BLOCK ??= "120336292";
 process.env.VITE_API_BASE ??= "/v1";
 process.env.VITE_WALLETCONNECT_PROJECT_ID ??= "test-placeholder";

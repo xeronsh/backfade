@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeAll, describe, expect, it, vi } from "vitest";
@@ -76,13 +77,15 @@ beforeAll(async () => {
 describe("Thesis thread", () => {
   it("renders Alpha, conviction, and Challenge CTA language", () => {
     render(
-      <LocaleProvider>
-        <MemoryRouter initialEntries={[`/market/${thesis.address}`]}>
-          <Routes>
-            <Route path="market/:address" element={<MarketDetail />} />
-          </Routes>
-        </MemoryRouter>
-      </LocaleProvider>,
+      <QueryClientProvider client={new QueryClient()}>
+        <LocaleProvider>
+          <MemoryRouter initialEntries={[`/market/${thesis.address}`]}>
+            <Routes>
+              <Route path="market/:address" element={<MarketDetail />} />
+            </Routes>
+          </MemoryRouter>
+        </LocaleProvider>
+      </QueryClientProvider>,
     );
     expect(screen.getAllByText("AMD will outperform TSLA.")).not.toHaveLength(
       0,

@@ -44,7 +44,7 @@ There are no free comments, generic Back positions, probability/odds UI, binary 
 
 The fresh deployment created Thesis `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` with a `1,000 USDG` creator bond. Two Challengers posted `300 USDG` and `200 USDG` notes. The registry feeds did not publish a safe post-expiry observation, so the Thesis was cancelled rather than settled on stale data. All three principal claims succeeded and the final contract balance was `0 USDG`.
 
-The complete transaction table is [`LIVE_E2E.md`](LIVE_E2E.md), including `ThesisCreated`, `ChallengePosted`, `ThesisCancelled`, and `Claimed` evidence. A successful live `ThesisSettled` flow is not claimed until the allowlisted feeds resume and produce post-expiry observations.
+The complete testnet transaction table is [`LIVE_E2E.md`](LIVE_E2E.md), including `ThesisCreated`, `ChallengePosted`, `ThesisCancelled`, and `Claimed` evidence. The same document records the successful wallet-backed local `ThesisSettled`/`Claimed` E2E; a successful live testnet settlement is not claimed until the allowlisted feeds resume and produce post-expiry observations.
 
 ## Verification
 

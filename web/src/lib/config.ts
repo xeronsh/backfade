@@ -21,6 +21,7 @@ const envSchema = z.object({
     .default("https://explorer.testnet.chain.robinhood.com"),
   VITE_FACTORY_ADDRESS: addressSchema,
   VITE_COLLATERAL_ADDRESS: addressSchema,
+  VITE_FACTORY_DEPLOYMENT_BLOCK: z.coerce.number().int().nonnegative(),
   VITE_API_BASE: z.string().min(1),
   VITE_WALLETCONNECT_PROJECT_ID: z.string().min(1),
 });
@@ -32,6 +33,7 @@ const parsed = envSchema.safeParse({
   VITE_EXPLORER_URL: import.meta.env.VITE_EXPLORER_URL,
   VITE_FACTORY_ADDRESS: import.meta.env.VITE_FACTORY_ADDRESS,
   VITE_COLLATERAL_ADDRESS: import.meta.env.VITE_COLLATERAL_ADDRESS,
+  VITE_FACTORY_DEPLOYMENT_BLOCK: import.meta.env.VITE_FACTORY_DEPLOYMENT_BLOCK,
   VITE_API_BASE: import.meta.env.VITE_API_BASE,
   VITE_WALLETCONNECT_PROJECT_ID: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID,
 });
@@ -52,7 +54,9 @@ export const config = {
   explorerUrl: env.VITE_EXPLORER_URL,
   factoryAddress: env.VITE_FACTORY_ADDRESS as Address,
   collateralAddress: env.VITE_COLLATERAL_ADDRESS as Address,
+  factoryDeploymentBlock: env.VITE_FACTORY_DEPLOYMENT_BLOCK,
   apiBase: env.VITE_API_BASE,
   walletConnectProjectId: env.VITE_WALLETCONNECT_PROJECT_ID,
+  disableMulticall: import.meta.env.VITE_DISABLE_MULTICALL === "1",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } as const,
 } as const;

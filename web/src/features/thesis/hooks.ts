@@ -7,6 +7,7 @@ import {
   readContractResult,
   requireContractResult,
 } from "@/features/thesis/chainReads";
+import { config } from "@/lib/config";
 import { formatAmount, formatBps, shortAddress } from "@/lib/format";
 import { addresses } from "@/lib/web3/addresses";
 import {
@@ -31,6 +32,31 @@ import type {
 
 export type PublicClient = NonNullable<ReturnType<typeof usePublicClient>>;
 type RoundData = readonly [bigint, bigint, bigint, bigint, bigint];
+
+async function readContracts(
+  publicClient: PublicClient,
+  contracts: readonly unknown[],
+): Promise<ContractResult[]> {
+  if (!config.disableMulticall) {
+    return (await publicClient.multicall({
+      contracts: contracts as never,
+      allowFailure: true,
+    })) as ContractResult[];
+  }
+  const results: ContractResult[] = [];
+  for (const contract of contracts) {
+    try {
+      const result = await publicClient.readContract(contract as never);
+      results.push({
+        status: "success",
+        result,
+      });
+    } catch {
+      results.push({ status: "failure" });
+    }
+  }
+  return results;
+}
 
 const feedSymbols: Record<string, string> = {
   "0x81b48ec24970aa75ae940e2492fda006071ac31b": "TSLA",
@@ -128,14 +154,14 @@ function summaryFromResults(
 }
 
 async function fetchSummary(publicClient: PublicClient, address: Address) {
-  const results = (await publicClient.multicall({
-    contracts: summaryFunctions.map((functionName) => ({
+  const results = await readContracts(
+    publicClient,
+    summaryFunctions.map((functionName) => ({
       address,
       abi: THESIS_ABI,
       functionName,
-    })) as never,
-    allowFailure: true,
-  })) as ContractResult[];
+    })),
+  );
   return summaryFromResults(address, results);
 }
 
@@ -150,9 +176,14 @@ async function fetchActivities(
   address: Address,
 ): Promise<ThesisActivity[]> {
   const eventAbi = THESIS_ABI.filter((item) => item.type === "event");
+  const latestBlock = await publicClient.getBlockNumber({ cacheTime: 0 });
+  const fromBlock = BigInt(config.factoryDeploymentBlock);
+  if (latestBlock < fromBlock) return [];
   const logs = (await publicClient.getLogs({
     address,
     events: eventAbi as never,
+    fromBlock,
+    toBlock: latestBlock,
   })) as Array<{
     eventName?: string;
     args?: Record<string, unknown>;
@@ -248,14 +279,11 @@ async function fetchDetail(
   address: Address,
 ): Promise<ThesisDetail> {
   const summary = await fetchSummary(publicClient, address);
-  const baseResults = (await publicClient.multicall({
-    contracts: [
-      { address, abi: THESIS_ABI, functionName: "basketLength" },
-      { address, abi: THESIS_ABI, functionName: "referenceFeed" },
-      { address, abi: THESIS_ABI, functionName: "totalClaimed" },
-    ] as never,
-    allowFailure: true,
-  })) as ContractResult[];
+  const baseResults = await readContracts(publicClient, [
+    { address, abi: THESIS_ABI, functionName: "basketLength" },
+    { address, abi: THESIS_ABI, functionName: "referenceFeed" },
+    { address, abi: THESIS_ABI, functionName: "totalClaimed" },
+  ]);
   const basketLength = Number(
     requireContractResult<bigint>(baseResults[0], "basketLength"),
   );
@@ -270,15 +298,15 @@ async function fetchDetail(
     "totalClaimed",
   );
 
-  const basketResults = (await publicClient.multicall({
-    contracts: Array.from({ length: basketLength }, (_, index) => ({
+  const basketResults = await readContracts(
+    publicClient,
+    Array.from({ length: basketLength }, (_, index) => ({
       address,
       abi: THESIS_ABI,
       functionName: "basketAsset",
       args: [BigInt(index)],
-    })) as never,
-    allowFailure: true,
-  })) as ContractResult[];
+    })),
+  );
   const basket = basketResults.map((result, index) => {
     const [feed, weightBps] = requireContractResult<
       readonly [Address, number | bigint]
@@ -287,26 +315,26 @@ async function fetchDetail(
   });
 
   const feeds = [...basket.map((asset) => asset.feed), referenceFeed];
-  const startResults = (await publicClient.multicall({
-    contracts: feeds.map((_, index) => ({
+  const startResults = await readContracts(
+    publicClient,
+    feeds.map((_, index) => ({
       address,
       abi: THESIS_ABI,
       functionName: "startPrices",
       args: [BigInt(index)],
-    })) as never,
-    allowFailure: true,
-  })) as ContractResult[];
+    })),
+  );
   const startPrices = startResults.map((result, index) =>
     requireContractResult<bigint>(result, `startPrice[${index}]`),
   );
 
-  const oracleResults = (await publicClient.multicall({
-    contracts: feeds.flatMap((feed) => [
+  const oracleResults = await readContracts(
+    publicClient,
+    feeds.flatMap((feed) => [
       { address: feed, abi: ORACLE_ABI, functionName: "decimals" },
       { address: feed, abi: ORACLE_ABI, functionName: "latestRoundData" },
-    ]) as never,
-    allowFailure: true,
-  })) as ContractResult[];
+    ]),
+  );
   const endPrices = feeds.map((_feed, index) => {
     const decimals = readContractResult<bigint>(oracleResults[index * 2]);
     const round = readContractResult<RoundData>(oracleResults[index * 2 + 1]);
@@ -341,8 +369,9 @@ async function fetchDetail(
     ),
   ];
   const challengerResults = challengerAddresses.length
-    ? ((await publicClient.multicall({
-        contracts: challengerAddresses.flatMap((challenger) => [
+    ? await readContracts(
+        publicClient,
+        challengerAddresses.flatMap((challenger) => [
           {
             address,
             abi: THESIS_ABI,
@@ -355,9 +384,8 @@ async function fetchDetail(
             functionName: "challengerPayout",
             args: [challenger],
           },
-        ]) as never,
-        allowFailure: true,
-      })) as ContractResult[])
+        ]),
+      )
     : [];
   const challengers: ChallengerPosition[] = challengerAddresses.map(
     (challenger, index) => ({
@@ -395,15 +423,15 @@ export async function fetchThesisDetails(
     }),
   );
   if (count === 0) return [];
-  const addressResults = (await publicClient.multicall({
-    contracts: Array.from({ length: count }, (_, index) => ({
+  const addressResults = await readContracts(
+    publicClient,
+    Array.from({ length: count }, (_, index) => ({
       address: addresses.factory,
       abi: FACTORY_ABI,
       functionName: "thesisAt",
       args: [BigInt(index)],
-    })) as never,
-    allowFailure: true,
-  })) as ContractResult[];
+    })),
+  );
   const thesisAddresses = addressResults
     .map((result) => readContractResult<string>(result))
     .filter((value): value is Address => Boolean(value && isAddress(value)));
@@ -427,8 +455,8 @@ export function useTheses() {
         : Promise.reject(new Error("Blockchain client is not ready.")),
     enabled: Boolean(publicClient),
     staleTime: 5_000,
-    refetchInterval: 15_000,
-    refetchIntervalInBackground: true,
+    refetchInterval: config.disableMulticall ? false : 15_000,
+    refetchIntervalInBackground: !config.disableMulticall,
   });
 }
 
@@ -441,9 +469,9 @@ export function useThesis(address: Address | undefined) {
         ? fetchDetail(publicClient, address)
         : Promise.reject(new Error("Thesis address is not ready.")),
     enabled: Boolean(publicClient && address),
-    staleTime: 0,
-    refetchInterval: 5_000,
-    refetchIntervalInBackground: true,
+    staleTime: 5_000,
+    refetchInterval: config.disableMulticall ? false : 5_000,
+    refetchIntervalInBackground: !config.disableMulticall,
   });
 }
 
@@ -462,35 +490,32 @@ export function useThesisPosition(address: Address | undefined) {
     queryFn: async () => {
       if (!publicClient || !address || !user)
         throw new Error("Wallet position is not ready.");
-      const results = (await publicClient.multicall({
-        contracts: [
-          {
-            address,
-            abi: THESIS_ABI,
-            functionName: "challengerStake",
-            args: [user],
-          },
-          {
-            address,
-            abi: THESIS_ABI,
-            functionName: "challengerPayout",
-            args: [user],
-          },
-          {
-            address: addresses.collateral,
-            abi: ERC20_ABI,
-            functionName: "allowance",
-            args: [user, address],
-          },
-          {
-            address: addresses.collateral,
-            abi: ERC20_ABI,
-            functionName: "balanceOf",
-            args: [user],
-          },
-        ] as never,
-        allowFailure: true,
-      })) as ContractResult[];
+      const results = await readContracts(publicClient, [
+        {
+          address,
+          abi: THESIS_ABI,
+          functionName: "challengerStake",
+          args: [user],
+        },
+        {
+          address,
+          abi: THESIS_ABI,
+          functionName: "challengerPayout",
+          args: [user],
+        },
+        {
+          address: addresses.collateral,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [user, address],
+        },
+        {
+          address: addresses.collateral,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [user],
+        },
+      ]);
       return {
         stake: readContractResult<bigint>(results[0]) ?? 0n,
         payout: readContractResult<bigint>(results[1]) ?? 0n,
@@ -500,8 +525,8 @@ export function useThesisPosition(address: Address | undefined) {
     },
     enabled: Boolean(publicClient && address && user),
     staleTime: 5_000,
-    refetchInterval: 5_000,
-    refetchIntervalInBackground: true,
+    refetchInterval: config.disableMulticall ? false : 5_000,
+    refetchIntervalInBackground: !config.disableMulticall,
   });
 }
 
@@ -515,8 +540,8 @@ export function useLeaderboard(mode: LeaderboardMode = "overall") {
     },
     enabled: Boolean(publicClient),
     staleTime: 15_000,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: true,
+    refetchInterval: config.disableMulticall ? false : 30_000,
+    refetchIntervalInBackground: !config.disableMulticall,
   });
 }
 

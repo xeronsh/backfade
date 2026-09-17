@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { type Address, isAddress } from "viem";
@@ -15,7 +16,7 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useThesis, useThesisPosition } from "@/features/thesis/hooks";
+import { useThesis } from "@/features/thesis/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
 import {
@@ -53,7 +54,7 @@ export default function ThesisThread() {
   const address =
     rawAddress && isAddress(rawAddress) ? (rawAddress as Address) : undefined;
   const query = useThesis(address);
-  const position = useThesisPosition(address);
+  const queryClient = useQueryClient();
   const transaction = useTransaction();
   const { address: account, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
@@ -108,6 +109,8 @@ export default function ThesisThread() {
         abi: THESIS_ABI,
         functionName,
       });
+      if (functionName !== "claim")
+        await queryClient.refetchQueries({ queryKey: ["thesis", address] });
     } catch (error) {
       toast(formatError(error));
     }
@@ -117,7 +120,10 @@ export default function ThesisThread() {
     account &&
       final &&
       (account.toLowerCase() === thesis.creator.toLowerCase() ||
-        (position.data?.stake ?? 0n) > 0n),
+        thesis.challengers.some(
+          (challenger) =>
+            challenger.address.toLowerCase() === account.toLowerCase(),
+        )),
   );
 
   return (

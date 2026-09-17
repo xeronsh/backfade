@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ThesisDetail } from "@/features/thesis/types";
@@ -60,9 +61,11 @@ const thesis: ThesisDetail = {
 describe("ChallengeComposer", () => {
   it("requires text and capital within Open Bounty", () => {
     render(
-      <LocaleProvider>
-        <ChallengeComposer thesis={thesis} />
-      </LocaleProvider>,
+      <QueryClientProvider client={new QueryClient()}>
+        <LocaleProvider>
+          <ChallengeComposer thesis={thesis} />
+        </LocaleProvider>
+      </QueryClientProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Fade this Thesis" }));
     expect(mocks.toast).toHaveBeenCalledWith(

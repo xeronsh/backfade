@@ -36,7 +36,7 @@ export default function Feed() {
       <PageHeader
         eyebrow="CAPITAL-BACKED CRYPTO OPINIONS"
         title="Don't reply. Fade it."
-        lede="Creators bond a Thesis. Challengers put money behind disagreement. Market prices settle the argument."
+        lede="Creators bond a Thesis. Challengers put money behind disagreement. Verified price feeds settle the argument."
         actions={
           <ButtonLink to="/post" variant="primary">
             Post a Thesis
