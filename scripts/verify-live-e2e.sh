@@ -13,29 +13,40 @@ fail() {
   exit 1
 }
 
-[[ "$(cast code "$THESIS" --rpc-url "$RPC")" != "0x" ]] || fail "Thesis has no bytecode"
-[[ "$(cast code "$COLLATERAL" --rpc-url "$RPC")" != "0x" ]] || fail "collateral has no bytecode"
+rpc() {
+  local attempt output=""
+  for attempt in {1..5}; do
+    if output=$(cast "$@" --rpc-url "$RPC" 2>&1); then
+      printf '%s\n' "$output"
+      return 0
+    fi
+    sleep 2
+  done
+  printf '%s\n' "$output" >&2
+  return 1
+}
 
-state=$(cast call "$THESIS" 'state()(uint8)' --rpc-url "$RPC" | awk 'NR == 1 {print $1}')
-total_claimed=$(cast call "$THESIS" 'totalClaimed()(uint256)' --rpc-url "$RPC" | awk 'NR == 1 {print $1}')
-balance=$(cast call "$COLLATERAL" 'balanceOf(address)(uint256)' "$THESIS" --rpc-url "$RPC" | awk 'NR == 1 {print $1}')
+[[ "$(rpc code "$THESIS")" != "0x" ]] || fail "Thesis has no bytecode"
+[[ "$(rpc code "$COLLATERAL")" != "0x" ]] || fail "collateral has no bytecode"
+
+state=$(rpc call "$THESIS" 'state()(uint8)' | awk 'NR == 1 {print $1}')
+total_claimed=$(rpc call "$THESIS" 'totalClaimed()(uint256)' | awk 'NR == 1 {print $1}')
+balance=$(rpc call "$COLLATERAL" 'balanceOf(address)(uint256)' "$THESIS" | awk 'NR == 1 {print $1}')
 [[ "$state" == "2" ]] || fail "expected SETTLED state (2), got $state"
 [[ "$total_claimed" == "$EXPECTED_TOTAL" ]] || fail "expected totalClaimed=$EXPECTED_TOTAL, got $total_claimed"
 [[ "$balance" == "0" ]] || fail "expected zero Thesis collateral balance, got $balance"
 
-latest=$(cast block-number --rpc-url "$RPC")
-settled_logs=$(cast logs --json \
+latest=$(rpc block-number)
+settled_logs=$(rpc logs --json \
   --address "$THESIS" \
   --from-block "$FROM_BLOCK" \
   --to-block "$latest" \
-  'ThesisSettled(int256,uint256,uint256,uint256,uint64)' \
-  --rpc-url "$RPC" | jq 'length')
-claimed_logs=$(cast logs --json \
+  'ThesisSettled(int256,uint256,uint256,uint256,uint64)' | jq 'length')
+claimed_logs=$(rpc logs --json \
   --address "$THESIS" \
   --from-block "$FROM_BLOCK" \
   --to-block "$latest" \
-  'Claimed(address,uint256)' \
-  --rpc-url "$RPC" | jq 'length')
+  'Claimed(address,uint256)' | jq 'length')
 [[ "$settled_logs" == "1" ]] || fail "expected one ThesisSettled log, got $settled_logs"
 [[ "$claimed_logs" == "$EXPECTED_CLAIMS" ]] || fail "expected $EXPECTED_CLAIMS Claimed logs, got $claimed_logs"
 
