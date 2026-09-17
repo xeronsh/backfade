@@ -12,9 +12,9 @@
 | Optimizer | enabled, 200 runs |
 | Collateral | MockUSDG, testnet only |
 
-## Fresh v0.2 settlement deployment
+## Fresh v0.2 settlement attempt (safely cancelled)
 
-This is the newest v0.2 deployment used for the live settlement run. Its `8 h` horizon places expiry after the next verified stock-feed window. The `48 h` maximum start age is explicit because the feeds' last verified observations were more than 24 h old at creation; no unverified or fabricated price was used.
+This v0.2 deployment was used for the first bounded live settlement attempt. Its `8 h` horizon placed expiry after the next verified stock-feed window. The `48 h` maximum start age was explicit because the feeds' last verified observations were more than 24 h old at creation; no unverified or fabricated price was used.
 
 | Setting | Value |
 |---|---:|
@@ -32,7 +32,38 @@ This is the newest v0.2 deployment used for the live settlement run. Its `8 h` h
 |---|---|---|
 | Fresh settlement candidate | `0x914345586A1fb1598BFB371DA5cca53614ff91C7` | [`0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96`](https://explorer.testnet.chain.robinhood.com/tx/0x41773707b7f2844349d268b16a0d8e687d79283c0907efa6ebf52b9f56b59f96) |
 
-The candidate has a `1,000 USDG` Creator bond and two funded Challenges of `300 USDG` and `200 USDG`. Challenge A is [`0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7`](https://explorer.testnet.chain.robinhood.com/tx/0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7); Challenge B is [`0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1`](https://explorer.testnet.chain.robinhood.com/tx/0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1). The candidate remains `LOCKED` until verified post-expiry observations arrive.
+The candidate had a `1,000 USDG` Creator bond and two funded Challenges of `300 USDG` and `200 USDG`. Challenge A was [`0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7`](https://explorer.testnet.chain.robinhood.com/tx/0x8c7a47833e74eaa16a13c866093c31050a2b480ec89294656f8394a4495754b7); Challenge B was [`0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1`](https://explorer.testnet.chain.robinhood.com/tx/0xbd26fbdc670bf592cddb4f61df1a6eafc7d42018629429d70377f7efe65e7de1). No verified post-expiry observations arrived before the deadline, so it was safely cancelled and all principal was claimed.
+
+| Step | Transaction | Result |
+|---|---|---|
+| `ThesisCancelled` | [`0x2bf95ad27639dbbecf50f96a8b47e0fd6a7cd85bcc3844a3063a3064a886c06a`](https://explorer.testnet.chain.robinhood.com/tx/0x2bf95ad27639dbbecf50f96a8b47e0fd6a7cd85bcc3844a3063a3064a886c06a) | refunds enabled |
+| Creator `Claimed` | [`0x3ed2c89772dfffa3c5921bd765f489e3d254d4cde01c13af0ed957d75f5f9b2f`](https://explorer.testnet.chain.robinhood.com/tx/0x3ed2c89772dfffa3c5921bd765f489e3d254d4cde01c13af0ed957d75f5f9b2f) | `1,000 USDG` |
+| Challenger A `Claimed` | [`0x5bbcc059ac7006e8f5aeba7629ec109695111ffcb23368d1d25af98571cf6812`](https://explorer.testnet.chain.robinhood.com/tx/0x5bbcc059ac7006e8f5aeba7629ec109695111ffcb23368d1d25af98571cf6812) | `300 USDG` |
+| Challenger B `Claimed` | [`0x6c505219e3f3d91994ce0df65758c753a59863ca30e39cf4cf54efffed15490d`](https://explorer.testnet.chain.robinhood.com/tx/0x6c505219e3f3d91994ce0df65758c753a59863ca30e39cf4cf54efffed15490d) | `200 USDG` |
+
+The final Thesis collateral balance was `0 USDG`; `totalClaimed` was `1,500 USDG`. This is live cancellation evidence, not settlement evidence.
+
+## Next fresh v0.2 settlement candidate
+
+A second fresh v0.2 Factory and Thesis were deployed with the same canonical MockUSDG and verified AMD/PLTR/TSLA feeds. Its `22 h` horizon aligns expiry with the next measured verified-feed window; the `48 h` maximum start age remains explicit because the creation prices were observed onchain and were still inside that bound. This candidate is monitored separately from the cancelled attempt above.
+
+| Setting | Value |
+|---|---:|
+| Challenge window | `45 s` |
+| Horizon | `79,200 s` (`22 h`) |
+| Settlement window | `1,800 s` (`30 min`) |
+| Maximum start-price age | `172,800 s` (`48 h`) |
+
+| Contract | Address | Deployment transaction |
+|---|---|---|
+| MockUSDG | `0x256049FCac7349bd037fecb4D849be2610392Ee1` | [`0xa7208442fea55ab730cdc6f9ac739d583b8ac406356ce54ea72482b5dfcff419`](https://explorer.testnet.chain.robinhood.com/tx/0xa7208442fea55ab730cdc6f9ac739d583b8ac406356ce54ea72482b5dfcff419) |
+| ThesisFactory | `0xc37c86C7c59790342381a7c64eBF23fba6686375` | [`0x65e3ed3be6674e98faebdc52c71a4175d802a52c949b2c984374622e78478b04`](https://explorer.testnet.chain.robinhood.com/tx/0x65e3ed3be6674e98faebdc52c71a4175d802a52c949b2c984374622e78478b04) |
+
+| Thesis | Address | Create transaction |
+|---|---|---|
+| Next settlement candidate | `0x12404Ce775a22532bE58e0105252819A982cFB21` | [`0x329a31fef3a7132ed9748efe84e2addf3ef9becd0c97dc862d1ed5ac2f07c47e`](https://explorer.testnet.chain.robinhood.com/tx/0x329a31fef3a7132ed9748efe84e2addf3ef9becd0c97dc862d1ed5ac2f07c47e) |
+
+The candidate has a `1,000 USDG` Creator bond, `challengeEndsAt = 1789661152`, `resolvesAt = 1789740307`, and two funded Challenges. Challenge A (`300 USDG`) is [`0x3bde8925fa9bd0a4f7f50e5d328df0235316f5069e95d6136d64449d020e825f`](https://explorer.testnet.chain.robinhood.com/tx/0x3bde8925fa9bd0a4f7f50e5d328df0235316f5069e95d6136d64449d020e825f); Challenge B (`200 USDG`) is [`0x9fa0ed125813d393ad4ca1c2be7502682a4ec8a67ca4724a93c13e7e2e353b07`](https://explorer.testnet.chain.robinhood.com/tx/0x9fa0ed125813d393ad4ca1c2be7502682a4ec8a67ca4724a93c13e7e2e353b07). At the time of writing it is `LOCKED` with `challengePool = 500 USDG`; settlement and claims are appended only after all three feeds pass the onchain freshness window.
 
 ## Earlier v0.2 Social Alpha deployment (cancelled)
 
