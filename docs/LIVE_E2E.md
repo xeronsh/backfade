@@ -2,7 +2,7 @@
 
 ## Status
 
-The fresh v0.2 deployment and Creator → Challenger flow are live on Robinhood Chain Testnet. Its verified feeds did not publish a post-expiry observation inside the bounded window, so the Thesis was safely cancelled and all three principal claims completed. No successful `ThesisSettled` result is claimed because no safe oracle observation existed.
+The earlier v0.2 deployment and Creator → Challenger flow are live on Robinhood Chain Testnet. Its verified feeds did not publish a post-expiry observation inside the bounded window, so that Thesis was safely cancelled and all three principal claims completed. The current fresh settlement candidate is recorded below and remains pending until the verified feeds publish a safe post-expiry observation.
 
 A previous short-window run is also recorded below. It reached safe `CANCELLED` and completed all three pull claims, proving the same failure-safe path.
 
