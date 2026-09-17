@@ -165,7 +165,7 @@ test("Legacy and invalid routes remain safe", async ({ page }) => {
 
 test("Wallet-backed Creator to Challenger settlement and claims", async ({
   page,
-}) => {
+}, testInfo) => {
   test.setTimeout(120_000);
   const creator = requireAddress(CREATOR, "E2E_CREATOR_ADDRESS");
   const challengerA = requireAddress(CHALLENGER_A, "E2E_CHALLENGER_A_ADDRESS");
@@ -283,6 +283,10 @@ test("Wallet-backed Creator to Challenger settlement and claims", async ({
       .getByRole("region", { name: "Challenges" })
       .getByText("Funding already looks crowded.", { exact: true }),
   ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-thread.png"),
+    fullPage: true,
+  });
 
   const [state, totalClaimed, creatorPayout, challengePayoutPool, balance] =
     await Promise.all([
@@ -351,14 +355,22 @@ test("Wallet-backed Creator to Challenger settlement and claims", async ({
     page.getByRole("link", { name: "Open thread →" }).first(),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Fade it →" })).toHaveCount(0);
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-feed.png"),
+    fullPage: true,
+  });
 });
 
-test("Leaderboard and profile use settled chain data", async ({ page }) => {
+test("Leaderboard and profile use settled chain data", async ({ page }, testInfo) => {
   await page.goto("/leaderboard");
   await expect(
     page.getByRole("heading", { name: "Realized P&L leaderboard" }),
   ).toBeVisible();
   await expect(page.getByText("Matched Capital").first()).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-leaderboard.png"),
+    fullPage: true,
+  });
   await page.goto(`/profile/${requireAddress(CREATOR, "E2E_CREATOR_ADDRESS")}`);
   await expect(
     page.getByRole("heading", { name: shortAddress(CREATOR) }),
@@ -367,6 +379,10 @@ test("Leaderboard and profile use settled chain data", async ({ page }) => {
     page.getByRole("heading", { name: "Track Record" }),
   ).toBeVisible();
   await expect(page.getByText(NARRATIVE).first()).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-profile.png"),
+    fullPage: true,
+  });
 });
 
 test("Primary navigation remains client-side", async ({ page }) => {
