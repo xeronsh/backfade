@@ -361,7 +361,9 @@ test("Wallet-backed Creator to Challenger settlement and claims", async ({
   });
 });
 
-test("Leaderboard and profile use settled chain data", async ({ page }, testInfo) => {
+test("Leaderboard and profile use settled chain data", async ({
+  page,
+}, testInfo) => {
   await page.goto("/leaderboard");
   await expect(
     page.getByRole("heading", { name: "Realized P&L leaderboard" }),
