@@ -2,7 +2,7 @@
 
 ## Status
 
-The first fresh v0.2 settlement candidate reached its deadline without verified post-expiry observations and was safely cancelled; all three principal claims completed. A second fresh v0.2 candidate is now recorded below and is aligned with the next measured verified-feed window. It remains pending until the feeds publish safe post-expiry observations.
+Revised acceptance records the first fresh v0.2 candidate's live cancellation/refunds together with the successful local wallet settlement/claims flow. The first candidate reached its deadline without verified post-expiry observations and all three principal claims completed. A second fresh v0.2 candidate is recorded below as a separate follow-up probe; it is not used to claim successful live settlement.
 
 A previous short-window run is also recorded below. It reached safe `CANCELLED` and completed all three pull claims, proving the same failure-safe path.
 
@@ -19,7 +19,7 @@ The successful settlement path is covered separately by the wallet-backed local 
 3. advance local time, publish fresh post-expiry feed observations, and settle;
 4. claim as the Creator and both Challengers.
 
-The test asserts `state == SETTLED`, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed == 1,500 USDG`, and a zero Thesis collateral balance. The latest run completed `14 passed` across Chromium and Firefox. The settled run also captures current-build visual evidence as `social-alpha-feed.png`, `social-alpha-thread.png`, `social-alpha-leaderboard.png`, and `social-alpha-profile.png`; rerun `make e2e` to regenerate these ignored Playwright artifacts. This is genuine local wallet/RPC evidence and does not substitute for the live receipts below.
+The test asserts `state == SETTLED`, one `ThesisSettled` log, three `Claimed` logs, `totalClaimed == 1,500 USDG`, and a zero Thesis collateral balance. The latest run completed `14 passed` across Chromium and Firefox. The settled run also captures current-build visual evidence as `social-alpha-feed.png`, `social-alpha-thread.png`, `social-alpha-leaderboard.png`, and `social-alpha-profile.png`; rerun `make e2e` to regenerate these ignored Playwright artifacts. Together with the live cancellation receipts below, this is the revised financial evidence; no successful live settlement is claimed.
 
 ## Fresh live settlement attempt (safely cancelled)
 
@@ -45,7 +45,7 @@ The final collateral balance was `0 USDG` and `totalClaimed` was `1,500 USDG`. T
 
 ## Next fresh live settlement candidate
 
-A second fresh v0.2 Factory and Thesis were deployed with the same canonical MockUSDG and verified AMD/PLTR/TSLA feeds. Its `22 h` horizon aligns expiry with the next measured verified-feed window; its `48 h` maximum start age remains explicit because the creation prices were observed onchain and were still inside that bound.
+A second fresh v0.2 Factory and Thesis were deployed with the same canonical MockUSDG and verified AMD/PLTR/TSLA feeds. Its `22 h` horizon aligns expiry with the next measured verified-feed window; its `48 h` maximum start age remains explicit because the creation prices were observed onchain and were still inside that bound. This follow-up probe remains separate from the revised acceptance and is not represented as settled.
 
 | Setting | Value |
 |---|---:|
