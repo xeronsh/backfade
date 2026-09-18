@@ -120,6 +120,29 @@ async function setLocalTimeAfterExpiry(page: Page) {
   await walletRequest(page, "evm_mine");
 }
 
+async function waitForClaimedLogs(
+  thesisAddress: `0x${string}`,
+  fromBlock: bigint,
+) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const toBlock = await publicClient.getBlockNumber();
+    const logs = await publicClient.getLogs({
+      address: thesisAddress,
+      event: thesisEventsAbi[1],
+      fromBlock,
+      toBlock,
+    });
+    if (logs.length >= 3) return logs;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return publicClient.getLogs({
+    address: thesisAddress,
+    event: thesisEventsAbi[1],
+    fromBlock,
+    toBlock: await publicClient.getBlockNumber(),
+  });
+}
+
 test.describe.configure({ mode: "serial" });
 
 test("Home loads the Thesis feed from the local chain", async ({ page }) => {
@@ -323,21 +346,13 @@ test("Wallet-backed Creator to Challenger settlement and claims", async ({
   expect(balance).toBe(0n);
 
   const fromBlock = BigInt(process.env.E2E_DEPLOYMENT_BLOCK ?? "0");
-  const toBlock = await publicClient.getBlockNumber();
-  const [settledLogs, claimedLogs] = await Promise.all([
-    publicClient.getLogs({
-      address: thesisAddress,
-      event: thesisEventsAbi[0],
-      fromBlock,
-      toBlock,
-    }),
-    publicClient.getLogs({
-      address: thesisAddress,
-      event: thesisEventsAbi[1],
-      fromBlock,
-      toBlock,
-    }),
-  ]);
+  const settledLogs = await publicClient.getLogs({
+    address: thesisAddress,
+    event: thesisEventsAbi[0],
+    fromBlock,
+    toBlock: await publicClient.getBlockNumber(),
+  });
+  const claimedLogs = await waitForClaimedLogs(thesisAddress, fromBlock);
   expect(settledLogs).toHaveLength(1);
   expect(claimedLogs).toHaveLength(3);
   expect(
