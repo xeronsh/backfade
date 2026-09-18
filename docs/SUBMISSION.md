@@ -42,7 +42,7 @@ There are no free comments, generic Back positions, probability/odds UI, binary 
 
 ## Live testnet evidence
 
-The earlier fresh deployment created Thesis `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` with a `1,000 USDG` creator bond and was safely cancelled when the registry feeds did not publish a post-expiry observation. A newer settlement candidate, Thesis `0x914345586A1fb1598BFB371DA5cca53614ff91C7`, has the same `1,000 USDG` bond plus `300 USDG` and `200 USDG` funded Challenges; its verified post-expiry settlement result is recorded in [`LIVE_E2E.md`](LIVE_E2E.md) only after onchain confirmation.
+The earlier fresh deployment created Thesis `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` with a `1,000 USDG` creator bond and was safely cancelled when the registry feeds did not publish a post-expiry observation. Thesis `0x914345586A1fb1598BFB371DA5cca53614ff91C7` then demonstrated the same live Creator → two Challenger flow with `1,000 USDG`, `300 USDG`, and `200 USDG`; it was safely cancelled, all three claims completed, and the final balance was zero. The revised evidence scope pairs this live cancellation with the successful wallet-backed local settlement flow documented in [`LIVE_E2E.md`](LIVE_E2E.md).
 
 The complete testnet transaction table is [`LIVE_E2E.md`](LIVE_E2E.md), including `ThesisCreated`, `ChallengePosted`, `ThesisCancelled`, and `Claimed` evidence. The same document records the successful wallet-backed local `ThesisSettled`/`Claimed` E2E; a successful live testnet settlement is not claimed until the allowlisted feeds resume and produce post-expiry observations.
 

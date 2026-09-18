@@ -44,7 +44,7 @@ Development without an LLM key uses the deterministic compiler fallback. Never c
 make test      # contracts + API + frontend tests
 make check     # codegen, format/lint/type/build, ABI parity, secret scan
 make e2e       # Playwright browser flow
-make live-check # verify the documented live Thesis settlement and claims
+make live-check # verify documented live cancellation/refunds and claims
 ```
 
 `make check` regenerates `web/src/generated/contracts.ts`, `api/openapi.json`, and Orval output, then fails if committed generated artifacts drift.

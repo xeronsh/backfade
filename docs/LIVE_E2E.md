@@ -151,12 +151,27 @@ The previous Thesis contract balance finished at `0 USDG`. This is live cancella
 
 ```bash
 RPC=https://rpc.testnet.chain.robinhood.com
-THESIS=0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30
+THESIS=0x914345586A1fb1598BFB371DA5cca53614ff91C7
+COLLATERAL=0x84C5f600720532f71009dd2cBED168e766383eE8
+FROM_BLOCK=120693575
 cast call $THESIS 'state()(uint8)' --rpc-url $RPC
-cast call $THESIS 'challengePool()(uint256)' --rpc-url $RPC
-cast call $THESIS 'openBounty()(uint256)' --rpc-url $RPC
-cast call 0x5406FC983e7f84B544FF6fc855e06c22Cf36A795 \
-  'latestRoundData()(uint80,int256,uint256,uint256,uint80)' --rpc-url $RPC
+cast call $THESIS 'totalClaimed()(uint256)' --rpc-url $RPC
+cast call $COLLATERAL 'balanceOf(address)(uint256)' $THESIS --rpc-url $RPC
+cast logs --json --address $THESIS --from-block $FROM_BLOCK \
+  --to-block latest 'ThesisCancelled(uint64)' --rpc-url $RPC | jq length
+cast logs --json --address $THESIS --from-block $FROM_BLOCK \
+  --to-block latest 'Claimed(address,uint256)' --rpc-url $RPC | jq length
+cast receipt 0x2bf95ad27639dbbecf50f96a8b47e0fd6a7cd85bcc3844a3063a3064a886c06a --rpc-url $RPC
 ```
 
-The deterministic local version of the full lifecycle, including settlement, pro-rata claims, cancellation, and rounding invariants, is covered by `forge test --root contracts` and the contract tests under `contracts/test/`. That local evidence does not replace the active live settlement gate.
+Expected readback:
+
+```text
+state=3
+ totalClaimed=1500000000000000000000
+ balance=0
+ ThesisCancelled logs=1
+ Claimed logs=3
+```
+
+The deterministic local version of the full lifecycle, including settlement, pro-rata claims, cancellation, and rounding invariants, is covered by `forge test --root contracts` and the contract tests under `contracts/test/`. Under the revised evidence scope, the local successful settlement is paired with the live cancellation/refund gate above; no stale observation is treated as a live settlement.
