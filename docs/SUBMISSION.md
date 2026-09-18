@@ -1,170 +1,67 @@
-# Backfade — Submission
+# Backfade v0.2 — Submission
 
-> **Back the thesis. Fade the noise.**
+> If you call it, bond it. If you doubt it, Fade it.
 
-Backfade turns market narratives into **bonded, benchmarked and verifiable onchain theses**.
-
-Markets trade assets. Communities trade narratives.
-
----
+Backfade turns narrative opinions into capital-backed Thesis/Challenge threads. The chain owns collateral, oracle settlement, claims, and lifecycle state; the browser renders the social surface.
 
 ## Live demo
 
-The demo runs the production build locally and exposes it through **one** Cloudflare Tunnel.
-`vite preview` proxies `/v1` to FastAPI, so the browser sees a single origin with no CORS.
-
 ```bash
 make dev
-# optional public same-origin tunnel
+# optional same-origin tunnel
 cloudflared tunnel --url http://127.0.0.1:5173 --protocol http2
 ```
 
-The public hostname is printed by `cloudflared` at startup and changes on every restart, so it is
-read from the terminal rather than pinned here. No VPS is involved: the app runs on a laptop and
-the tunnel gives it a public HTTPS origin.
+The frontend uses the local FastAPI compiler through the Vite `/v1` proxy. Wallet writes go directly to Robinhood Chain Testnet.
 
-## Network
+## Network and contracts
 
 | Field | Value |
 |---|---|
 | Network | Robinhood Chain Testnet |
-| Chain ID | 46630 |
+| Chain ID | `46630` |
 | RPC | `https://rpc.testnet.chain.robinhood.com` |
-| Explorer | https://explorer.testnet.chain.robinhood.com |
+| Factory | `0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94` |
+| Collateral | `0x84C5f600720532f71009dd2cBED168e766383eE8` |
 
-## Final contracts
+All addresses and configuration are canonical in [`DEPLOYMENTS.md`](DEPLOYMENTS.md). The v0.1 binary deployment remains historical and is not reused.
 
-All deployment addresses, verification status, and explorer links are canonical in [`docs/DEPLOYMENTS.md`](DEPLOYMENTS.md).
-
-
-## Demo thesis
-
-| Field | Value |
-|---|---|
-| Narrative | AI infrastructure keeps outperforming: AMD and PLTR beat a TSLA benchmark. |
-| Basket | AMD 60% + PLTR 40% |
-| Benchmark | TSLA |
-| Hurdle | +10% |
-| Outcome | **FADE** — Narrative Alpha settled at **−5 bps**, far below the hurdle |
-
-The narrative did not clear its hurdle and BACK lost. No oracle value was fabricated to produce
-a prettier demo. Full transaction and recomputation trail: `docs/LIVE_E2E.md`.
-
-## Transactions
-
-| Step | Tx |
-|---|---|
-| Approve collateral | [`0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754`](https://explorer.testnet.chain.robinhood.com/tx/0x5bb5104d1faa8952b0c29464e18d0f1e0114943787420a0292babd87c3182754) |
-| Create market (factory) | [`0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c`](https://explorer.testnet.chain.robinhood.com/tx/0x669eaacf04d2452c7df9f1a45931863c596bcdc14ea2e9ff32c821f41cd73c4c) |
-| Trader BACK 300 | [`0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b`](https://explorer.testnet.chain.robinhood.com/tx/0xf26b7cd27478804cce9715789c4dd16c1e9044d2d272b5433f40ff75c384e51b) |
-| Trader FADE 200 | [`0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb`](https://explorer.testnet.chain.robinhood.com/tx/0x288cb19639ba5d0eeebb8b36e36b2c2e981e34fe8837ba0b073295e4cb2b14fb) |
-| Resolve | [`0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858`](https://explorer.testnet.chain.robinhood.com/tx/0x47f0d2d4d0dffe73e434d6c548ce6136a5cd92f8d74c7facae71ee2b2024a858) |
-| Winner claim | [`0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f`](https://explorer.testnet.chain.robinhood.com/tx/0x973438d3a164df0624f0c039976a9cad868b39c33d2721b8ca3ecfa0dadc825f) |
-
-## Oracle evidence
-
-Feeds are AggregatorV3-compatible **seeded testnet feeds**, not mainnet Chainlink proxies. This is
-documented honestly rather than implied otherwise (`docs/TESTNET_ASSETS.md`).
-
-### Measured feed cadence
-
-Measured from approximately **4,000 real testnet update transactions** per feed:
-
-| Percentile | Gap |
-|---|---|
-| median | 36–52 sec |
-| p90 | 0.75–5.0 min |
-| p99 | 2.8–6.2 min |
-| worst observed | 21.1 h (TSLA / GME history) |
-
-### Important limitation (not hidden)
-
-Testnet AggregatorV3 feeds **do not expose `getRoundData` round history** (the selector is absent
-from every feed's bytecode; calls revert with empty data). A "first post-expiry round" therefore
-**cannot be cryptographically selected on this testnet**, so this is not what the protocol claims.
-
-The shipped fallback, which is what the code actually enforces:
-
-- **pre-expiry oracle updates are rejected** — `OracleMath: pre-expiry price`
-- **settlement is bounded** to a per-market 30 minute window
-- **stale or dead feeds lead to cancellation with a full refund**, never a stale-price settlement
-
-The core integrity property was demonstrated on live testnet data:
-
-```
-expiry (resolvesAt)   = 1789449886
-TSLA updatedAt        = 1789449885  ->  resolve() REVERTED: pre-expiry price
-TSLA updatedAt        = 1789449956  ->  resolve() SUCCEEDED
-```
-
-Separately, the cancellation fallback was exercised end to end: past the settlement window
-`resolve()` reverts `SettlementWindowPassed`, `cancelAfterDeadline()` opens refunds, and every
-participant recovers their own stake exactly (market balance 200 → 0).
-
-A pre-expiry price cannot settle a market.
-
-## Testing
-
-| Gate | Result |
-|---|---|
-| `forge test` | **71 passed / 0 failed** |
-| Fuzz | 7 suites × 256 runs |
-| Invariant | 7 suites × 2048 calls |
-| `npx tsc --noEmit` | PASS |
-| `npm run build` | PASS |
-| `uv run python selfcheck.py` | ALL BACKEND CHECKS PASSED |
-| `python3 scripts/abi_parity.py` | ABI PARITY OK |
-| Secret scan | no keys tracked, none in history |
-| Explorer source verification | MockUSDG ✅ · ThesisFactory ✅ · Demo ThesisMarket ✅ (`Pass - Verified`) |
-
-## Architecture
+## Product loop
 
 ```text
-Browser  ──HTTPS──▶  Cloudflare Tunnel  ──▶  Vite preview :4173   (frontend)
-                                         └─▶  FastAPI      :8000   (thesis compiler)
-
-Frontend ──RPC──▶  Robinhood Chain Testnet 46630  (contracts, chain = source of truth)
+POST → BOND → FADE → SETTLE → BUILD TRACK RECORD
 ```
 
-No PostgreSQL, no SQLite, no Redis, no indexer, no queue. Feed and profile read
-`Factory.marketsLength()` / `Factory.marketAt()` and contract events directly.
+- `/` — Thesis feed
+- `/post` — compiler preview, explicit Reference confirmation, Conviction, Bond & Post
+- `/thesis/:address` — Thesis thread, Alpha, Challenges, capital, settlement, claims
+- `/profile/:address` — chain-derived history
+- `/leaderboard` — realized P&L discovery
 
-## Innovation
+There are no free comments, generic Back positions, probability/odds UI, binary outcomes, fees, rewards, or identity claims.
 
-1. **Narrative → Financial Claim.** Natural-language market narratives become deterministic,
-   machine-verifiable financial specifications: a weighted basket, a benchmark, an explicit hurdle,
-   and an expiry.
-2. **Creator Conviction.** Every thesis creator must put capital behind the claim; the bond is
-   locked as BACK stake until resolution, so publishing a view is never free.
-3. **Narrative Alpha.** Performance is judged relative to a benchmark instead of absolute price
-   movement. A basket that rises but trails its benchmark still loses.
+## Live testnet evidence
 
-## Known limitations
+The earlier fresh deployment created Thesis `0x1Ba1F165d3823188500e47C5fE9c41aBC88F3b30` with a `1,000 USDG` creator bond and was safely cancelled when the registry feeds did not publish a post-expiry observation. Thesis `0x914345586A1fb1598BFB371DA5cca53614ff91C7` then demonstrated the same live Creator → two Challenger flow with `1,000 USDG`, `300 USDG`, and `200 USDG`; it was safely cancelled, all three claims completed, and the final balance was zero. The revised evidence scope pairs this live cancellation with the successful wallet-backed local settlement flow documented in [`LIVE_E2E.md`](LIVE_E2E.md).
 
-- Testnet only. MockUSDG has no real value; its mint is permissionless by design for the demo.
-- Testnet feeds are **seeded AggregatorV3 feeds** and do not implement `getRoundData()`, so
-  settlement uses the latest observation inside the market's window rather than a specific round.
-- Settlement window is 30 minutes, calibrated to measured feed cadence (~36–52 s median, p99
-  ~6 min, one historical 21 h outage). Inside the window a resolver has bounded discretion over
-  which legal observation is used; shorter windows would risk forced cancels.
-- A dead feed ends in `cancel()` with a full refund rather than a stale-price settlement.
-- Pari-mutuel floor division may leave sub-wei dust per winner; a single winner drains the market
-  to exactly zero.
-- No secondary trading, no order book, no database/indexer, limited asset universe.
-- Not audited for production capital.
+The complete testnet transaction table is [`LIVE_E2E.md`](LIVE_E2E.md), including `ThesisCreated`, `ChallengePosted`, `ThesisCancelled`, and `Claimed` evidence. The same document records the successful wallet-backed local `ThesisSettled`/`Claimed` E2E; a successful live testnet settlement is not claimed until the allowlisted feeds resume and produce post-expiry observations.
 
-See `SECURITY.md` for the full security posture.
+## Verification
 
----
+```bash
+make test
+make check
+make e2e
+```
 
-## Submission package checklist
+`make test` covers 91 contract tests, API checks, frontend tests, and a production build. `make e2e` covers the social browser flow in Chromium and Firefox. Contract settlement/claim behavior is additionally covered by deterministic, fuzz, and invariant tests; the external feed outage is documented rather than hidden.
 
-| Item | Location |
-|---|---|
-| README (English-first) | [`README.md`](../README.md) |
-| Security posture | [`SECURITY.md`](../SECURITY.md) |
-| Final deployment + verification | [`DEPLOYMENTS.md`](DEPLOYMENTS.md) |
-| Live E2E evidence | [`LIVE_E2E.md`](LIVE_E2E.md) |
-| Verified feeds + cadence | [`TESTNET_ASSETS.md`](TESTNET_ASSETS.md) |
-| Cancellation + refund evidence | [`LIVE_E2E.md`](LIVE_E2E.md#cancellation-and-refund) |
-| Demo video | linked in the submission form |
+## Trust boundaries
+
+- `ThesisFactory` fixes canonical collateral, approved feeds, timings, and immutable Thesis creation.
+- `ThesisChallenge` stores narrative, Reference, basket/start prices, Conviction, Challenges, Alpha, payout pools, claims, and lifecycle.
+- FastAPI only structures text and re-anchors symbols to the checked-in enabled registry.
+- Wagmi/Viem reads chain data and submits simulated, wallet-signed writes.
+- Profiles and leaderboard data aggregate directly from Factory/Thesis reads and events; no database or indexer is used.
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`MECHANISM.md`](MECHANISM.md), and [`SECURITY.md`](../SECURITY.md).

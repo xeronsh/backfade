@@ -28,7 +28,7 @@ import type {
   ErrorResponse,
   HealthResponse,
   ListAssets200,
-  ThesisSpec
+  ThesisSpecV2
 } from './model';
 
 import { apiClient } from '../http';
@@ -278,7 +278,7 @@ export function useListAssets<TData = Awaited<ReturnType<typeof listAssets>>, TE
 
 
 export type compileThesisResponse200 = {
-  data: ThesisSpec
+  data: ThesisSpecV2
   status: 200
 }
 

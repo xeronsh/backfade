@@ -14,8 +14,6 @@ export function requireContractResult<T>(
   label: string,
 ): T {
   const result = readContractResult<T>(value);
-  if (result === undefined) {
-    throw new Error(`Chain read incomplete: ${label}.`);
-  }
+  if (result === undefined) throw new Error(`Chain read incomplete: ${label}.`);
   return result;
 }

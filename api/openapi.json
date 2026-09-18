@@ -78,7 +78,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ThesisSpec"
+                  "$ref": "#/components/schemas/ThesisSpecV2"
                 }
               }
             }
@@ -116,19 +116,6 @@
             "maxLength": 2000,
             "minLength": 1,
             "title": "Text"
-          },
-          "preferred_duration_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 365.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preferred Duration Days"
           }
         },
         "type": "object",
@@ -207,6 +194,8 @@
           },
           "weight_bps": {
             "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Weight Bps"
           }
         },
@@ -218,7 +207,7 @@
         ],
         "title": "ThesisAsset"
       },
-      "ThesisBenchmark": {
+      "ThesisReference": {
         "properties": {
           "symbol": {
             "type": "string",
@@ -234,39 +223,13 @@
           "symbol",
           "feed"
         ],
-        "title": "ThesisBenchmark"
+        "title": "ThesisReference"
       },
-      "ThesisRisk": {
-        "properties": {
-          "level": {
-            "type": "string",
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
-            "title": "Level"
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Warnings"
-          }
-        },
-        "type": "object",
-        "required": [
-          "level",
-          "warnings"
-        ],
-        "title": "ThesisRisk"
-      },
-      "ThesisSpec": {
+      "ThesisSpecV2": {
         "properties": {
           "version": {
             "type": "integer",
-            "const": 1,
+            "const": 2,
             "title": "Version"
           },
           "narrative": {
@@ -280,23 +243,16 @@
             "type": "array",
             "title": "Basket"
           },
-          "benchmark": {
-            "$ref": "#/components/schemas/ThesisBenchmark"
+          "reference": {
+            "$ref": "#/components/schemas/ThesisReference"
           },
-          "hurdle_bps": {
-            "type": "integer",
-            "title": "Hurdle Bps"
-          },
-          "duration_days": {
-            "type": "integer",
-            "title": "Duration Days"
-          },
-          "human_condition": {
+          "reference_origin": {
             "type": "string",
-            "title": "Human Condition"
-          },
-          "risk": {
-            "$ref": "#/components/schemas/ThesisRisk"
+            "enum": [
+              "explicit",
+              "suggested"
+            ],
+            "title": "Reference Origin"
           }
         },
         "type": "object",
@@ -304,13 +260,10 @@
           "version",
           "narrative",
           "basket",
-          "benchmark",
-          "hurdle_bps",
-          "duration_days",
-          "human_condition",
-          "risk"
+          "reference",
+          "reference_origin"
         ],
-        "title": "ThesisSpec"
+        "title": "ThesisSpecV2"
       }
     }
   }

@@ -12,8 +12,8 @@ interface SplitLayoutProps {
 }
 
 /**
- * Two-column page body. Replaces per-page `market-layout` / `feed-layout` /
- * `create-grid` grids so the column math lives in exactly one file.
+ * Two-column page body. Replaces per-page grid variants so the column math
+ * lives in exactly one file.
  */
 export function SplitLayout({
   main,

@@ -1,29 +1,29 @@
 # Roadmap
 
-This document records ideas that are deliberately outside the current platform engineering scope.
-They are not implemented by the frontend migration.
+Backfade v0.2 proves the narrow loop:
 
-## Protocol v0.2 ideas
+```text
+POST → BOND → FADE → SETTLE → BUILD TRACK RECORD
+```
 
-- Asset and collateral registries
-- Canonical collateral and protocol versioning
-- EIP-1167 market clones
-- Mainnet settlement sources and Data Streams
-- Duration hard bounds and richer events
-- Capture-bond cleanup and rounding-dust refinement
+## v0.2 shipped surface
 
-## Product ideas
+- Relative Thesis with a creator bond and explicit Reference confirmation.
+- Capital-backed Challenges with plain text notes and Open Bounty cap.
+- Continuous bounded transfer driven by realized Narrative Alpha.
+- Immutable onchain lifecycle: `OPEN`, `LOCKED`, `SETTLED`, `CANCELLED`.
+- Social feed, Thesis thread, profile history, and P&L leaderboard.
+- Client-side aggregation from Factory data and events; no indexer at current scale.
 
-- Search, comments, follows, notifications, watchlists, and private settings
-- Creator track record and reputation formula
-- Activity feeds and charts
-- Larger-feed virtualization or an indexer when chain reads become the bottleneck
-- Embedded wallets for non-crypto-native onboarding
-- Mainnet deployment
+## Deliberately deferred
 
-## Infrastructure triggers
+- Follow graph, notifications, bookmarks, reposts, quote Fades, DMs, search, and recommendations.
+- Database/indexer; add only after measured RPC latency becomes unacceptable at hundreds/thousands of Theses.
+- Protocol fees, treasury, governance, tokens, points, airdrops, and rank rewards.
+- Mainnet, embedded wallets, leverage, borrowing, liquidation, AMM, order book, secondary positions, and market-implied Alpha.
+- AI trading-agent infrastructure. Normal agent wallets may use the same primitives later.
+- Optional Share to X distribution action after the core loop is stable.
 
-A database is only reconsidered for durable offchain user state such as drafts, comments, follows,
-notifications, saved searches, or settings. A queue, Redis, or service split is only reconsidered
-when a measured production workload requires it. Observability beyond structured logs is deferred
-until the app is publicly operated.
+## Feed gate
+
+The protocol is asset-agnostic, but the production product is crypto-first only when verified reliable crypto feeds, allowlist deployment, and API/frontend registry parity exist. Until then, verified testnet feeds prove the mechanism without pretending unsupported assets are available.

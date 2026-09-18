@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BaseTest} from "./BaseTest.sol";
-import {ThesisMarket} from "../src/ThesisMarket.sol";
+import {ThesisMarket} from "../src/legacy/ThesisMarket.sol";
 import {MockV3Aggregator} from "./MockV3Aggregator.sol";
 
 contract ThesisMarketFuzzTest is BaseTest {

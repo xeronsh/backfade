@@ -1,47 +1,62 @@
-"""Single-call OpenAI-compatible compiler with a deterministic development fallback."""
+"""Single-call compiler with a deterministic development fallback."""
 
 import json
+import re
 from http import HTTPStatus
 
 import httpx
 import structlog
 
 from api.core.config import Settings, get_settings
-from api.models import ThesisAsset, ThesisBenchmark, ThesisRisk, ThesisSpec
+from api.models import ThesisAsset, ThesisReference, ThesisSpecV2
 
 logger = structlog.get_logger(__name__)
 
-SYSTEM_PROMPT = """You compile market narratives into structured financial theses.
+SYSTEM_PROMPT = """Compile a narrative into a Backfade ThesisSpecV2.
 Rules:
-- choose only supported assets (from the provided universe);
-- basket max 5 assets;
-- weights total exactly 10000 bps;
-- benchmark must represent the thesis comparison;
-- use a conservative hurdle (100-5000 bps);
+- choose only supported assets from the supplied universe;
+- basket has 1-5 assets and weights total exactly 10000 bps;
+- Reference is one asset the narrative claims the basket will outperform;
 - never invent feed addresses or feed fields;
-- output only schema fields;
-- never determine the market outcome.
+- never decide payout, collateral, challenge, settlement, or financial truth;
+- output only the requested schema.
 """
+
+
+def _truncate_utf8(text: str, max_bytes: int = 280) -> str:
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
+_REFERENCE_PATTERN = re.compile(
+    r"\b(?:outperform(?:s|ed)?|beat(?:s|ing)?|vs\.?|versus|against|relative\s+to)\s+"
+    r"\$?([A-Za-z][A-Za-z0-9_-]{1,11})\b",
+    re.IGNORECASE,
+)
 
 
 def llm_enabled(settings: Settings | None = None) -> bool:
     return (settings or get_settings()).llm_enabled
 
 
+def explicit_reference(text: str) -> str | None:
+    match = _REFERENCE_PATTERN.search(text)
+    return match.group(1).upper() if match else None
+
+
 async def compile_thesis(
     text: str,
-    preferred_duration_days: int | None,
     universe: list[dict],
     client: httpx.AsyncClient | None = None,
     settings: Settings | None = None,
-) -> ThesisSpec:
-    """One structured call with one retry; development without a key uses the mock."""
+) -> ThesisSpecV2:
+    """Compile once and retry once; development without a key uses the mock."""
     settings = settings or get_settings()
     if settings.llm_enabled:
         try:
-            return await _compile_with_llm(
-                text, preferred_duration_days, universe, client, settings
-            )
+            return await _compile_with_llm(text, universe, client, settings)
         except (
             httpx.HTTPError,
             ValueError,
@@ -52,9 +67,7 @@ async def compile_thesis(
         ) as error:
             logger.warning("llm.compile.retry", error=str(error))
         try:
-            return await _compile_with_llm(
-                text, preferred_duration_days, universe, client, settings
-            )
+            return await _compile_with_llm(text, universe, client, settings)
         except (
             httpx.HTTPError,
             ValueError,
@@ -64,22 +77,19 @@ async def compile_thesis(
             RuntimeError,
         ) as error:
             raise RuntimeError(f"LLM compile failed: {error}") from error
-    return mock_compile(text, preferred_duration_days, universe)
+    return mock_compile(text, universe)
 
 
 async def _compile_with_llm(
     text: str,
-    preferred_duration_days: int | None,
     universe: list[dict],
     client: httpx.AsyncClient | None,
     settings: Settings,
-) -> ThesisSpec:
+) -> ThesisSpecV2:
     base_url = settings.llm_base_url.rstrip("/")
     api_key = settings.llm_api_key
     if not api_key:
         raise RuntimeError("LLM API key is not configured")
-    model = settings.llm_model
-    duration = preferred_duration_days or 30
 
     schema = {
         "type": "object",
@@ -97,43 +107,22 @@ async def _compile_with_llm(
                     "additionalProperties": False,
                 },
             },
-            "benchmark": {
+            "reference": {
                 "type": "object",
                 "properties": {"symbol": {"type": "string"}},
                 "required": ["symbol"],
                 "additionalProperties": False,
             },
-            "hurdle_bps": {"type": "integer"},
-            "duration_days": {"type": "integer"},
-            "human_condition": {"type": "string"},
-            "risk": {
-                "type": "object",
-                "properties": {
-                    "level": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
-                    "warnings": {"type": "array", "items": {"type": "string"}},
-                },
-                "required": ["level", "warnings"],
-                "additionalProperties": False,
-            },
         },
-        "required": [
-            "narrative",
-            "basket",
-            "benchmark",
-            "hurdle_bps",
-            "duration_days",
-            "human_condition",
-            "risk",
-        ],
+        "required": ["narrative", "basket", "reference"],
         "additionalProperties": False,
     }
-
     payload = {
-        "model": model,
+        "model": settings.llm_model,
         "temperature": 0.1,
         "response_format": {
             "type": "json_schema",
-            "json_schema": {"name": "thesis_spec", "strict": True, "schema": schema},
+            "json_schema": {"name": "thesis_spec_v2", "strict": True, "schema": schema},
         },
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -141,8 +130,7 @@ async def _compile_with_llm(
                 "role": "user",
                 "content": (
                     f"Supported assets: {json.dumps([a['symbol'] for a in universe])}\n"
-                    f"Narrative: {text}\n"
-                    f"Preferred duration: {duration} days."
+                    f"Narrative: {text}"
                 ),
             },
         ],
@@ -163,82 +151,81 @@ async def _compile_with_llm(
             )
     if response.status_code != HTTPStatus.OK:
         raise RuntimeError(f"LLM HTTP {response.status_code}")
-    content = response.json()["choices"][0]["message"]["content"]
-    raw = json.loads(content)
-
-    # feeds are attached by the backend, never by the LLM
-    return ThesisSpec(
-        version=1,
+    raw = json.loads(response.json()["choices"][0]["message"]["content"])
+    reference_symbol = str(raw["reference"]["symbol"]).upper()
+    return ThesisSpecV2(
+        version=2,
         narrative=raw["narrative"],
         basket=raw["basket"],
-        benchmark=raw["benchmark"],
-        hurdle_bps=raw["hurdle_bps"],
-        duration_days=raw.get("duration_days") or duration,
-        human_condition=raw["human_condition"],
-        risk=raw["risk"],
+        reference=ThesisReference(symbol=reference_symbol, feed=""),
+        reference_origin=(
+            "explicit" if explicit_reference(text) == reference_symbol else "suggested"
+        ),
     )
 
 
-def mock_compile(
-    text: str, preferred_duration_days: int | None, universe: list[dict]
-) -> ThesisSpec:
-    """Deterministic fallback: keywords -> basket. Keeps the demo loop alive without a key."""
-    duration = preferred_duration_days or 30
+def mock_compile(text: str, universe: list[dict]) -> ThesisSpecV2:
+    """Deterministic fallback that never fabricates a feed address."""
     if isinstance(universe, dict):
         universe = universe.get("assets", [])
-    enabled = [a for a in universe if isinstance(a, dict) and a.get("enabled", True)]
-    by_symbol = {a["symbol"]: a for a in enabled}
+    enabled = [
+        asset
+        for asset in universe
+        if isinstance(asset, dict) and asset.get("enabled", True)
+    ]
+    by_symbol = {asset["symbol"].upper(): asset for asset in enabled}
+    if not by_symbol:
+        raise ValueError("No enabled assets are configured")
 
     keyword_map = {
-        "nuclear": (["AMD", "PLTR", "NVDA"], [4000, 3500, 2500], "TSLA"),
-        "energy": (["AMD", "PLTR"], [5000, 5000], "TSLA"),
-        "ai": (["NVDA", "PLTR"], [6000, 4000], "AMZN"),
-        "electric": (["TSLA", "RIVN"], [6000, 4000], "SPY"),
-        "crypto": (["COIN"], [10000], "ETH"),
-        "meme": (["GME"], [10000], "TSLA"),
+        "nuclear": (["AMD", "PLTR", "NVDA"], "TSLA"),
+        "energy": (["AMD", "PLTR"], "TSLA"),
+        "ai": (["NVDA", "PLTR"], "TSLA"),
+        "electric": (["TSLA", "COIN"], "AMD"),
+        "crypto": (["COIN"], "TSLA"),
+        "meme": (["GME"], "TSLA"),
     }
     lowered = text.lower()
-    chosen = None
-    for kw, val in keyword_map.items():
-        if kw in lowered:
-            # only use assets present in the registry
-            syms = [s for s in val[0] if s in by_symbol]
-            bench = val[2] if val[2] in by_symbol else None
-            if syms and bench:
-                w = [v for s, v in zip(val[0], val[1]) if s in by_symbol]
-                chosen = (syms, w, bench)
-                break
-    if chosen is None:
-        # default: equal-weight top-3 enabled assets vs the last one as benchmark
-        syms_all = [a["symbol"] for a in enabled]
-        syms = syms_all[:3]
-        bench = syms_all[3] if len(syms_all) > 3 else syms_all[-1]
-        if bench in syms:
-            syms = [s for s in syms if s != bench] or [syms_all[0]]
-        chosen = (syms, [10_000 // len(syms)] * len(syms), bench)
+    chosen: tuple[list[str], str] | None = None
+    for keyword, value in keyword_map.items():
+        if keyword in lowered:
+            chosen = value
+            break
 
-    syms, weights, benchmark = chosen
+    explicit = explicit_reference(text)
+    if explicit:
+        reference_symbol = explicit
+    elif chosen:
+        reference_symbol = chosen[1]
+    else:
+        reference_symbol = next(iter(by_symbol))
+
+    if chosen:
+        symbols = [
+            symbol.upper() for symbol in chosen[0] if symbol.upper() in by_symbol
+        ]
+    else:
+        symbols = list(by_symbol)[:3]
+    symbols = [symbol for symbol in symbols if symbol != reference_symbol]
+    if not symbols:
+        symbols = [symbol for symbol in by_symbol if symbol != reference_symbol][:1]
+    if not symbols:
+        # Keep an unsupported explicit Reference visible to the validator instead of
+        # silently changing the user's comparison.
+        symbols = list(by_symbol)[:1]
+
+    base_weight = 10_000 // len(symbols)
+    weights = [base_weight] * len(symbols)
+    weights[-1] += 10_000 - sum(weights)
     basket = [
-        ThesisAsset(symbol=s, feed=by_symbol[s]["feed"], weight_bps=w)
-        for s, w in zip(syms, weights)
+        ThesisAsset(symbol=symbol, feed=by_symbol[symbol]["feed"], weight_bps=weight)
+        for symbol, weight in zip(symbols, weights)
     ]
-    # fix rounding so weights always sum to 10000
-    basket[-1].weight_bps += 10_000 - sum(asset.weight_bps for asset in basket)
-
-    hurdle_bps = 1000
-    condition = (
-        f"{'/'.join(syms)} must outperform {benchmark} by at least "
-        f"{hurdle_bps / 100:.0f}% over {duration} days."
-    )
-    return ThesisSpec(
-        version=1,
-        narrative=text[:280],
+    reference_feed = by_symbol.get(reference_symbol, {}).get("feed", "")
+    return ThesisSpecV2(
+        version=2,
+        narrative=_truncate_utf8(text),
         basket=basket,
-        benchmark=ThesisBenchmark(symbol=benchmark, feed=by_symbol[benchmark]["feed"]),
-        hurdle_bps=hurdle_bps,
-        duration_days=duration,
-        human_condition=condition,
-        risk=ThesisRisk(
-            level="HIGH", warnings=["Mock compilation: verify weights before launch."]
-        ),
+        reference=ThesisReference(symbol=reference_symbol, feed=reference_feed),
+        reference_origin="explicit" if explicit else "suggested",
     )

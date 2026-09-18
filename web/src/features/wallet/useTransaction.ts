@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { Abi, Address } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
@@ -32,7 +31,6 @@ export function useTransaction() {
   const { address: account } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
-  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<TransactionPhase>("IDLE");
   const [error, setError] = useState<string | null>(null);
   const [hash, setHash] = useState<`0x${string}` | null>(null);
@@ -64,7 +62,6 @@ export function useTransaction() {
       });
       assertReceiptSuccess(receipt.status);
       setPhase("CONFIRMED");
-      await queryClient.invalidateQueries();
       return transactionHash;
     } catch (cause) {
       setPhase("FAILED");

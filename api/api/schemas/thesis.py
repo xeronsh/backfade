@@ -6,33 +6,24 @@ from pydantic import BaseModel, Field
 class ThesisAsset(BaseModel):
     symbol: str
     feed: str
-    weight_bps: int
+    weight_bps: int = Field(ge=1, le=10_000)
 
 
-class ThesisBenchmark(BaseModel):
+class ThesisReference(BaseModel):
     symbol: str
     feed: str
 
 
-class ThesisRisk(BaseModel):
-    level: Literal["LOW", "MEDIUM", "HIGH"]
-    warnings: list[str]
-
-
-class ThesisSpec(BaseModel):
-    version: Literal[1]
+class ThesisSpecV2(BaseModel):
+    version: Literal[2]
     narrative: str
     basket: list[ThesisAsset]
-    benchmark: ThesisBenchmark
-    hurdle_bps: int
-    duration_days: int
-    human_condition: str
-    risk: ThesisRisk
+    reference: ThesisReference
+    reference_origin: Literal["explicit", "suggested"]
 
 
 class CompileRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=2000)
-    preferred_duration_days: int | None = Field(default=None, ge=1, le=365)
+    text: str = Field(min_length=1, max_length=2_000)
 
 
 class ErrorBody(BaseModel):

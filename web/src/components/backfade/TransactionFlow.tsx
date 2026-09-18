@@ -88,7 +88,7 @@ export function TransactionFlow({
             target="_blank"
             rel="noreferrer"
           >
-            {t("market.explorer")}
+            {t("thesis.explorer")}
           </a>
         ) : null}
       </div>

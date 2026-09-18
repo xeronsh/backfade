@@ -1,83 +1,35 @@
 # Design System
 
-Backfade is **Editorial Finance × Social Market × Precision Instrument**. The interface is
-restrained, legible, market-native, and accountable. It is not a casino, cyberpunk UI, or generic
-shadcn demo.
+Backfade is editorial finance applied to a social feed: dark, precise, restrained, square, and readable. It is not casino UI, a market dashboard, or a generic AI product.
 
-## Tokens
+## Visual language
 
-Defined centrally in `web/src/styles/globals.css` and exposed through Tailwind v4 `@theme`.
-
-| Role | Token | Value |
-|---|---|---|
-| Canvas | `--canvas` | `#090B0C` |
-| Surfaces | `--surface-1/2/3` | `#0F1214` / `#15191C` / `#1B2024` |
-| Borders | `--border/strong` | `#242B2F` / `#343D42` |
-| Text | `--text-1/2/3` | `#F3F5F3` / `#A8B0AB` / `#707A74` |
-| Brand | `--brand` | `#D4FF68` |
-| BACK | `--back` / `--back-soft` | `#63D9A2` / `#12261D` |
-| FADE | `--fade` / `--fade-soft` | `#FF756D` / `#2B1818` |
-| Status | warning / info | `#E5C45E` / `#79BFFF` |
-
-Neutral surfaces cover most of the screen. Brand lime is reserved for primary product actions,
-focus, and active navigation. BACK and FADE colors never replace their words.
-
-## Type and geometry
-
-- System sans for prose; system mono for addresses, amounts, bps, percentages, and dates.
-- Page title 32/38; narrative 18/25; body 15/22; metadata 12/16. These four roles are the
-  only sizes in the product: `text-page-title`, `text-narrative`, `text-body`, `text-meta`.
-  The contract gate rejects any other Tailwind size utility.
-- Four-pixel spacing grid; standard values are 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80.
-- Radius: square by design. The current `--radius-*` tokens are all `0`; do not add rounded
-  corners in route-level classes.
-- Surface cards use borders, not shadows. Shadows are limited to popovers, dialogs, and toasts.
+- Neutral canvas and bordered surfaces carry most of the screen.
+- Lime brand color marks primary actions and active navigation.
+- Green/red tones communicate capital direction but never replace words.
+- System sans handles prose; system mono handles addresses, amounts, percentages, bps, and dates.
+- Four type roles are allowed: `text-page-title`, `text-narrative`, `text-body`, `text-meta`.
+- Cards use borders rather than shadows. Route-level geometry comes from layout primitives.
 
 ## Component hierarchy
 
-Generic primitives in `web/src/components/ui/` use Base UI behavior and Backfade-neutral styling:
-Button, ButtonLink, Input, Textarea, Badge, Card, Alert, Collapsible, Skeleton, Separator,
-Dialog, Popover, and Tooltip.
+- `components/ui/`: Button, ButtonLink, Input, Textarea, Badge, Card, Alert, and other generic controls.
+- `components/layout/`: PageContainer, PageHeader, PageSection, SplitLayout.
+- `components/data/`: Metric, MetricGroup, DataRow, Address, Amount, Timestamp, Figure, and Status.
+- `components/backfade/`: ThesisPost, ThesisSpec, ChallengeComposer, TransactionFlow, NarrativeAlpha, and WalletStatus.
 
-Layout primitives in `web/src/components/layout/` own page geometry: PageContainer,
-PageHeader, PageSection, SplitLayout.
+Routes compose these primitives instead of creating one-off interactive markup. All controls have visible focus, labels, keyboard access, and touch targets of at least 44px. User-generated Challenge notes render as plain text; no raw HTML or executable Markdown is interpreted.
 
-Data primitives in `web/src/components/data/` own information patterns: Metric, MetricGroup,
-DataRow, Amount, Address, Timestamp, Figure, Status.
+## Pages
 
-Domain components in `web/src/components/backfade/` own product semantics:
-ThesisCard, ThesisSpec, ConvictionBar/OutcomeSplit, NarrativeAlpha, PositionPanel, MarketStatus,
-TransactionFlow, and WalletStatus.
+- **Home:** one-column Thesis feed with Creator Conviction, Matched Conviction, Open Bounty, Alpha, Challenge count, and `Fade it`.
+- **Post:** write the narrative first, preview the compiler structure, explicitly confirm the Reference, enter Conviction, then Bond & Post.
+- **Thread:** original Thesis, Live/Realized Alpha, Challenges, capital tape, settlement, and Fade composer.
+- **Profile:** realized P&L, matched capital, resolved count, matched-weighted Creator Alpha, Fade P&L, and losing history.
+- **Leaderboard:** Overall, Creators, and Faders sorted by realized net P&L with matched capital, resolved count, and counterparties. It provides discovery, not identity proof or rewards.
 
-## Enforcement
+Mobile becomes a single column. Desktop uses a restrained two-column thread/post layout; there is no casino grid, odds panel, probability chart, or binary outcome split.
 
-The rules above are checked, not merely documented. `scripts/check-ui-contract.mjs` runs first
-in `make web-check` and fails the build when a route bypasses the component system:
+## Motion and enforcement
 
-- routes may not use raw `<button>`, `<input>`, `<textarea>`, `<select>`, `<details>`,
-  `<summary>`, or `<svg>`;
-- `@base-ui/react` may only be imported from `components/ui/`;
-- no raw color literals outside `styles/globals.css`;
-- no inline motion durations or easings outside `lib/motion.ts`;
-- no type size outside the four documented roles;
-- no hardcoded CSS/class duration outside `styles/globals.css` and `lib/motion.ts`.
-
-Motion values live only in `lib/motion.ts` and the `--transition-duration-*` tokens.
-`lib/motion.test.ts` asserts the two tables hold the same four values, so neither can
-drift without failing the build.
-
-## Page rules
-
-- Feed reads as a financial-social stream, not a prediction-market grid.
-- Create presents Human Narrative → Machine Financial Claim in two columns on desktop.
-- Market keeps the Position Panel sticky on desktop and normal-flow on mobile.
-- Profile reports chain-derived creator facts without a speculative reputation formula.
-- Empty, loading, wrong-network, wallet, compiler, and transaction failures answer both “what
-  happened?” and “what can I do?”.
-
-## Accessibility and motion
-
-All shared controls are keyboard reachable with visible focus. Labels and errors are associated
-with form fields; dialogs use Base UI focus management and Escape behavior. Touch targets are at
-least 44px. BACK and FADE are always named in text. Motion uses 120/160/220/280ms tokens, avoids
-bounce/parallax/particles, and respects `prefers-reduced-motion`.
+Motion is optional and respects `prefers-reduced-motion`. Values live in `web/src/lib/motion.ts` and CSS tokens. `scripts/check-ui-contract.mjs` rejects raw route controls, raw colors, inline timing values, off-scale text sizes, hard navigation, and icon-library imports.

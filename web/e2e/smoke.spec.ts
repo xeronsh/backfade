@@ -1,210 +1,424 @@
 import { spawn } from "node:child_process";
-import { expect, test } from "@playwright/test";
-import { fulfillRpc, MARKET_ADDRESS, RPC_URL_PATTERN } from "./rpc-fixture";
+import { expect, type Page, test } from "@playwright/test";
+import {
+  createPublicClient,
+  defineChain,
+  encodeFunctionData,
+  type Hash,
+  http,
+  parseAbi,
+} from "viem";
+import { installWallet, switchWalletAccount } from "./wallet";
 
-const compiled = {
-  version: 1,
-  narrative: "AI infrastructure outperforms the benchmark.",
-  basket: [
-    {
-      symbol: "AMD",
-      feed: "0x0000000000000000000000000000000000000001",
-      weight_bps: 10000,
+const RPC_URL = process.env.E2E_RPC_URL ?? "http://127.0.0.1:8599";
+const CREATOR = process.env.E2E_CREATOR_ADDRESS ?? "";
+const CHALLENGER_A = process.env.E2E_CHALLENGER_A_ADDRESS ?? "";
+const CHALLENGER_B = process.env.E2E_CHALLENGER_B_ADDRESS ?? "";
+const FEED_AMD = process.env.E2E_FEED_AMD ?? "";
+const FEED_PLTR = process.env.E2E_FEED_PLTR ?? "";
+const FEED_TSLA = process.env.E2E_FEED_TSLA ?? "";
+const COLLATERAL = process.env.VITE_COLLATERAL_ADDRESS ?? "";
+const NARRATIVE = "AMD will outperform TSLA.";
+
+const chain = defineChain({
+  id: 46630,
+  name: "Robinhood Chain Testnet",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: [RPC_URL] } },
+});
+const publicClient = createPublicClient({ chain, transport: http(RPC_URL) });
+const feedUpdateAbi = parseAbi(["function updateAnswer(int256)"]);
+const erc20WriteAbi = parseAbi(["function approve(address,uint256)"]);
+const challengeAbi = parseAbi(["function challenge(uint256,string)"]);
+const settleAbi = parseAbi(["function settle()"]);
+const claimAbi = parseAbi(["function claim()"]);
+const thesisReadAbi = parseAbi([
+  "function state() view returns (uint8)",
+  "function totalClaimed() view returns (uint256)",
+  "function creatorPayout() view returns (uint256)",
+  "function challengePayoutPool() view returns (uint256)",
+]);
+const erc20ReadAbi = parseAbi([
+  "function balanceOf(address) view returns (uint256)",
+]);
+const thesisEventsAbi = parseAbi([
+  "event ThesisSettled(int256 realizedAlphaBps, uint256 transferAmount, uint256 creatorPayout, uint256 challengePayoutPool, uint64 settledAt)",
+  "event Claimed(address indexed claimant, uint256 amount)",
+]);
+
+function shortAddress(address: string) {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+function requireAddress(value: string, name: string) {
+  if (!value) throw new Error(`Missing ${name} from the E2E environment.`);
+  return value as `0x${string}`;
+}
+
+async function connectWallet(page: Page) {
+  const account = page.getByRole("button", { name: /Wallet 0x/ });
+  if (!(await account.isVisible())) {
+    const connect = page.getByRole("button", { name: "Connect wallet" });
+    if (await connect.isVisible()) {
+      try {
+        await connect.click({ timeout: 5_000 });
+      } catch {
+        // An injected wallet may auto-connect while the button is being clicked.
+      }
+    }
+    const injected = page.getByRole("button", { name: "Browser Wallet" });
+    if (await injected.isVisible()) await injected.click();
+  }
+  await expect(account).toBeVisible();
+  const closeModal = page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close" });
+  if (await closeModal.isVisible()) await closeModal.click();
+}
+
+async function walletRequest(
+  page: Page,
+  method: string,
+  params: unknown[] = [],
+) {
+  return page.evaluate(
+    ({ method: requestMethod, params: requestParams }) => {
+      const provider = (
+        window as typeof window & {
+          ethereum?: {
+            request(args: {
+              method: string;
+              params?: unknown[];
+            }): Promise<unknown>;
+          };
+        }
+      ).ethereum;
+      if (!provider) throw new Error("E2E wallet is not installed");
+      return provider.request({ method: requestMethod, params: requestParams });
     },
-  ],
-  benchmark: {
-    symbol: "TSLA",
-    feed: "0x0000000000000000000000000000000000000002",
-  },
-  hurdle_bps: 1000,
-  duration_days: 30,
-  human_condition: "AMD must outperform TSLA by 10%.",
-  risk: { level: "MEDIUM", warnings: [] },
-};
-
-test("Feed loads", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
-});
-
-test("Create page compiles a thesis", async ({ page }) => {
-  await page.route("**/v1/thesis/compile", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(compiled),
-    }),
+    { method, params },
   );
-  await page.goto("/create");
-  await expect(
-    page.getByRole("heading", { name: "Create thesis" }),
-  ).toBeVisible();
-  await page
-    .getByRole("textbox", { name: "Narrative", exact: true })
-    .fill("AI infrastructure outperforms the benchmark.");
-  await page.getByRole("button", { name: "Compile thesis" }).click();
-  await expect(
-    page.getByText("AMD 100%", { exact: false }).first(),
-  ).toBeVisible();
-});
+}
 
-test("Create keeps two columns down to 1024px", async ({ page }) => {
-  await page.route("**/v1/thesis/compile", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(compiled),
-    }),
-  );
-  for (const width of [1100, 1024]) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto("/create");
-    await page
-      .getByRole("textbox", { name: "Narrative", exact: true })
-      .fill("AI infrastructure outperforms the benchmark.");
-    await page.getByRole("button", { name: "Compile thesis" }).click();
-    await expect(page.getByText("AMD 100%")).toBeVisible();
-
-    const narrative = await page
-      .getByRole("region", { name: "Human narrative" })
-      .boundingBox();
-    const claim = await page
-      .getByRole("region", { name: "Machine financial claim" })
-      .boundingBox();
-    expect(narrative).not.toBeNull();
-    expect(claim).not.toBeNull();
-    if (!narrative || !claim) throw new Error("column bounding boxes missing");
-    // Side by side, not stacked: the claim column starts right of the narrative.
-    expect(claim.x).toBeGreaterThan(narrative.x + narrative.width - 1);
-    expect(Math.abs(claim.y - narrative.y)).toBeLessThan(8);
-    // The compiled preview carries the bond terms, not an empty box.
-    await expect(page.getByText("Entry closes")).toBeVisible();
-    await expect(page.getByText("Resolves")).toBeVisible();
+async function sendWalletTransaction(
+  page: Page,
+  from: string,
+  to: string,
+  data: `0x${string}`,
+) {
+  const hash = (await walletRequest(page, "eth_sendTransaction", [
+    { from, to, data },
+  ])) as Hash;
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") {
+    throw new Error(`Wallet transaction reverted: ${hash}`);
   }
-});
+}
 
-test("Position aside is sticky on desktop and static on mobile", async ({
-  page,
-}) => {
-  // The market route renders its split layout only after chain data resolves,
-  // so serve the multicall fixture instead of letting the route fall back to
-  // its empty state. There is deliberately no early return here: if the aside
-  // stops rendering, this test must fail rather than pass vacuously.
-  await page.route(RPC_URL_PATTERN, fulfillRpc);
+async function setLocalTimeAfterExpiry(page: Page) {
+  await walletRequest(page, "evm_increaseTime", [240]);
+  await walletRequest(page, "evm_mine");
+}
 
-  for (const viewport of [
-    { width: 1280, height: 900, expected: "sticky" },
-    { width: 720, height: 900, expected: "static" },
-  ]) {
-    await page.setViewportSize({
-      width: viewport.width,
-      height: viewport.height,
+async function waitForClaimedLogs(
+  thesisAddress: `0x${string}`,
+  fromBlock: bigint,
+) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const toBlock = await publicClient.getBlockNumber();
+    const logs = await publicClient.getLogs({
+      address: thesisAddress,
+      event: thesisEventsAbi[1],
+      fromBlock,
+      toBlock,
     });
-    await page.goto(`/market/${MARKET_ADDRESS}`);
-
-    // Wait for the loaded state: while the chain read is pending the route
-    // renders its own SplitLayout skeleton, so asserting early can catch a node
-    // that React is about to replace.
-    await expect(page.getByRole("tab", { name: "Pool summary" })).toBeVisible();
-
-    const aside = page.locator('[data-slot="split-aside"]');
-    await expect(aside).toHaveCount(1);
-    await expect(aside).toHaveAttribute("data-aside-position", "sticky");
-    await expect
-      .poll(() => aside.evaluate((node) => getComputedStyle(node).position), {
-        message: `aside position at ${viewport.width}px`,
-      })
-      .toBe(viewport.expected);
+    if (logs.length >= 3) return logs;
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
-});
+  return publicClient.getLogs({
+    address: thesisAddress,
+    event: thesisEventsAbi[1],
+    fromBlock,
+    toBlock: await publicClient.getBlockNumber(),
+  });
+}
 
-test("Market route renders every section once chain data resolves", async ({
-  page,
-}) => {
-  await page.route(RPC_URL_PATTERN, fulfillRpc);
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto(`/market/${MARKET_ADDRESS}`);
+test.describe.configure({ mode: "serial" });
 
-  for (const name of [
-    "Market conviction",
-    "ThesisSpec",
-    "Evidence",
-    "Timeline & settlement",
-    "Activity",
-    "Lifecycle action",
-  ]) {
-    await expect(page.getByRole("region", { name })).toHaveCount(1);
-  }
-  await expect(page.getByRole("tab", { name: "Pool summary" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  await expect(
-    page.getByRole("tab", { name: "Oracle observations" }),
-  ).toHaveAttribute("aria-selected", "false");
-  // Pool figures come from MetricGroup/DataRow, not hand-rolled markup.
-  await expect(page.getByText("BACK pool")).toBeVisible();
-  await expect(page.getByText("100.00 USDG")).toBeVisible();
-  await page.getByRole("tab", { name: "Oracle observations" }).click();
-  await expect(page.getByRole("tabpanel")).toContainText("TSLA");
-});
-
-test("Primary navigation is client-side and keeps the chrome", async ({
-  page,
-}) => {
-  await page.route(RPC_URL_PATTERN, fulfillRpc);
+test("Home loads the Thesis feed from the local chain", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
-
-  // A document reload would wipe this marker.
-  await page.evaluate(() => {
-    (window as unknown as { __navMarker?: boolean }).__navMarker = true;
-  });
-
-  const nav = page.getByRole("navigation", { name: "Primary navigation" });
-  for (const label of ["Create", "Feed", "Create", "Feed"]) {
-    await nav.getByRole("link", { name: label }).click();
-    // The header must still be there straight away: no blank skeleton swap.
-    await expect(
-      page.getByRole("link", { name: "Backfade home" }),
-    ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () =>
-          (window as unknown as { __navMarker?: boolean }).__navMarker === true,
-      ),
-      "navigation must not reload the document",
-    ).toBe(true);
-  }
-
-  // Moving between routes with different content keeps the shell mounted too.
-  await page.goto(`/market/${MARKET_ADDRESS}`);
-  await expect(page.getByRole("tab", { name: "Pool summary" })).toBeVisible();
-  await page.evaluate(() => {
-    (window as unknown as { __navMarker?: boolean }).__navMarker = true;
-  });
-  await nav.getByRole("link", { name: "Feed" }).click();
-  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
-  expect(
-    await page.evaluate(
-      () =>
-        (window as unknown as { __navMarker?: boolean }).__navMarker === true,
-    ),
-  ).toBe(true);
+  await expect(
+    page.getByRole("heading", { name: "Don't reply. Fade it." }),
+  ).toBeVisible();
+  await expect(page.getByText("Post a Thesis").first()).toBeVisible();
 });
 
-test("Market route validates address", async ({ page }) => {
+test("Post flow uses the live compiler and requires Reference confirmation", async ({
+  page,
+}) => {
+  await page.goto("/post");
+  await expect(
+    page.getByRole("heading", { name: "Say it. Bond it." }),
+  ).toBeVisible();
+  await page.getByRole("textbox", { name: "Narrative" }).fill(NARRATIVE);
+  await page.getByRole("button", { name: "Structure Thesis" }).click();
+  await expect(
+    page.getByRole("button", { name: "Confirm Reference: TSLA" }),
+  ).toBeVisible();
+  await expect(page.getByText("(explicit)")).toBeVisible();
+  await expect(page.getByLabel("Creator Conviction (USDG)")).toBeVisible();
+  await page.getByRole("button", { name: "Confirm Reference: TSLA" }).click();
+  await expect(
+    page.getByRole("button", { name: "Reference confirmed: TSLA" }),
+  ).toBeVisible();
+});
+
+test("Legacy and invalid routes remain safe", async ({ page }) => {
+  await page.goto("/create");
+  await expect(page).toHaveURL(/\/post$/);
   await page.goto("/market/not-an-address");
   await expect(
-    page.getByRole("heading", { name: "Invalid market address" }),
+    page.getByRole("heading", { name: "Invalid Thesis address" }),
   ).toBeVisible();
-});
-
-test("Profile route validates address", async ({ page }) => {
   await page.goto("/profile/not-an-address");
   await expect(
     page.getByRole("heading", { name: "Invalid profile address" }),
   ).toBeVisible();
+});
+
+test("Wallet-backed Creator to Challenger settlement and claims", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const creator = requireAddress(CREATOR, "E2E_CREATOR_ADDRESS");
+  const challengerA = requireAddress(CHALLENGER_A, "E2E_CHALLENGER_A_ADDRESS");
+  const challengerB = requireAddress(CHALLENGER_B, "E2E_CHALLENGER_B_ADDRESS");
+  const feeds = [
+    requireAddress(FEED_AMD, "E2E_FEED_AMD"),
+    requireAddress(FEED_PLTR, "E2E_FEED_PLTR"),
+    requireAddress(FEED_TSLA, "E2E_FEED_TSLA"),
+  ];
+
+  const collateral = requireAddress(COLLATERAL, "VITE_COLLATERAL_ADDRESS");
+  await installWallet(page, RPC_URL, [creator, challengerA, challengerB]);
+  await page.goto("/post");
+  await connectWallet(page);
+  await page.getByRole("textbox", { name: "Narrative" }).fill(NARRATIVE);
+  await page.getByRole("button", { name: "Structure Thesis" }).click();
+  await page.getByRole("button", { name: "Confirm Reference: TSLA" }).click();
+  await page.getByLabel("Creator Conviction (USDG)").fill("1000");
+  await page.getByRole("button", { name: "Bond & Post" }).click();
+  await expect(page).toHaveURL(/\/thesis\/0x[0-9a-fA-F]{40}$/);
+  const thesisAddress = new URL(page.url()).pathname
+    .split("/")
+    .at(-1) as `0x${string}`;
+  const webOrigin = new URL(page.url()).origin;
+  const context = page.context();
+  const transactionPage = await context.newPage();
+  await page.close();
+  await installWallet(transactionPage, RPC_URL, [
+    creator,
+    challengerA,
+    challengerB,
+  ]);
+  page = transactionPage;
+  await page.goto(`${webOrigin}/favicon.svg`);
+
+  for (const [account, amount, note] of [
+    [challengerA, 300n, "Unlock pressure is underestimated."],
+    [challengerB, 200n, "Funding already looks crowded."],
+  ] as const) {
+    await switchWalletAccount(page, account);
+    await sendWalletTransaction(
+      page,
+      account,
+      collateral,
+      encodeFunctionData({
+        abi: erc20WriteAbi,
+        functionName: "approve",
+        args: [thesisAddress, amount * 10n ** 18n],
+      }),
+    );
+    await sendWalletTransaction(
+      page,
+      account,
+      thesisAddress,
+      encodeFunctionData({
+        abi: challengeAbi,
+        functionName: "challenge",
+        args: [amount * 10n ** 18n, note],
+      }),
+    );
+  }
+
+  await switchWalletAccount(page, creator);
+  await setLocalTimeAfterExpiry(page);
+  const updatePrices = [51_450_000_000n, 18_060_000_000n, 35_900_000_000n];
+  for (const [feed, price] of feeds.map(
+    (feed, index) => [feed, updatePrices[index]] as const,
+  )) {
+    await sendWalletTransaction(
+      page,
+      creator,
+      feed,
+      encodeFunctionData({
+        abi: feedUpdateAbi,
+        functionName: "updateAnswer",
+        args: [price],
+      }),
+    );
+  }
+
+  await sendWalletTransaction(
+    page,
+    creator,
+    thesisAddress,
+    encodeFunctionData({ abi: settleAbi, functionName: "settle" }),
+  );
+  for (const account of [creator, challengerA, challengerB]) {
+    await switchWalletAccount(page, account);
+    await sendWalletTransaction(
+      page,
+      account,
+      thesisAddress,
+      encodeFunctionData({ abi: claimAbi, functionName: "claim" }),
+    );
+  }
+
+  const finalPage = await context.newPage();
+  await installWallet(finalPage, RPC_URL, [creator, challengerA, challengerB]);
+  page = finalPage;
+  await page.goto(`/thesis/${thesisAddress}`);
+  await connectWallet(page);
+  await expect(page.getByText("SETTLED", { exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(
+    page.getByText("Realized Alpha", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Challenges" })
+      .getByText("Unlock pressure is underestimated.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Challenges" })
+      .getByText("Funding already looks crowded.", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-thread.png"),
+    fullPage: true,
+  });
+
+  const [state, totalClaimed, creatorPayout, challengePayoutPool, balance] =
+    await Promise.all([
+      publicClient.readContract({
+        address: thesisAddress,
+        abi: thesisReadAbi,
+        functionName: "state",
+      }),
+      publicClient.readContract({
+        address: thesisAddress,
+        abi: thesisReadAbi,
+        functionName: "totalClaimed",
+      }),
+      publicClient.readContract({
+        address: thesisAddress,
+        abi: thesisReadAbi,
+        functionName: "creatorPayout",
+      }),
+      publicClient.readContract({
+        address: thesisAddress,
+        abi: thesisReadAbi,
+        functionName: "challengePayoutPool",
+      }),
+      publicClient.readContract({
+        address: process.env.VITE_COLLATERAL_ADDRESS as `0x${string}`,
+        abi: erc20ReadAbi,
+        functionName: "balanceOf",
+        args: [thesisAddress],
+      }),
+    ]);
+  expect(Number(state)).toBe(2);
+  expect(totalClaimed).toBe(creatorPayout + challengePayoutPool);
+  expect(totalClaimed).toBe(1_500n * 10n ** 18n);
+  expect(balance).toBe(0n);
+
+  const fromBlock = BigInt(process.env.E2E_DEPLOYMENT_BLOCK ?? "0");
+  const settledLogs = await publicClient.getLogs({
+    address: thesisAddress,
+    event: thesisEventsAbi[0],
+    fromBlock,
+    toBlock: await publicClient.getBlockNumber(),
+  });
+  const claimedLogs = await waitForClaimedLogs(thesisAddress, fromBlock);
+  expect(settledLogs).toHaveLength(1);
+  expect(claimedLogs).toHaveLength(3);
+  expect(
+    new Set(claimedLogs.map((log) => log.args.claimant?.toLowerCase())),
+  ).toEqual(
+    new Set(
+      [creator, challengerA, challengerB].map((account) =>
+        account.toLowerCase(),
+      ),
+    ),
+  );
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("link", { name: "Open thread →" }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Fade it →" })).toHaveCount(0);
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-feed.png"),
+    fullPage: true,
+  });
+});
+
+test("Leaderboard and profile use settled chain data", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/leaderboard");
+  await expect(
+    page.getByRole("heading", { name: "Realized P&L leaderboard" }),
+  ).toBeVisible();
+  await expect(page.getByText("Matched Capital").first()).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-leaderboard.png"),
+    fullPage: true,
+  });
+  await page.goto(`/profile/${requireAddress(CREATOR, "E2E_CREATOR_ADDRESS")}`);
+  await expect(
+    page.getByRole("heading", { name: shortAddress(CREATOR) }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Track Record" }),
+  ).toBeVisible();
+  await expect(page.getByText(NARRATIVE).first()).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("social-alpha-profile.png"),
+    fullPage: true,
+  });
+});
+
+test("Primary navigation remains client-side", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    (window as unknown as { marker?: boolean }).marker = true;
+  });
+  const nav = page.getByRole("navigation", { name: "Primary navigation" });
+  for (const label of ["Post", "Leaderboard", "Feed"]) {
+    await nav.getByRole("link", { name: label }).click();
+    await expect(
+      page.getByRole("link", { name: "Backfade home" }),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { marker?: boolean }).marker),
+      )
+      .toBe(true);
+  }
 });
 
 test("Wrong configuration fails visibly", async ({ browser }, testInfo) => {
@@ -220,10 +434,6 @@ test("Wrong configuration fails visibly", async ({ browser }, testInfo) => {
   );
   const page = await browser.newPage();
   try {
-    // Vite can serve index.html before it has finished compiling the module
-    // graph, in which case the app never boots and nothing renders. Retry the
-    // whole load until the error surface actually appears instead of breaking
-    // on the first successful document load.
     await expect(async () => {
       await page.goto(`http://127.0.0.1:${port}`, {
         waitUntil: "domcontentloaded",
@@ -239,85 +449,8 @@ test("Wrong configuration fails visibly", async ({ browser }, testInfo) => {
       try {
         process.kill(-server.pid, "SIGTERM");
       } catch {
-        // The server may already have exited.
+        // server already exited
       }
     }
   }
-});
-
-test("Language toggle switches the interface and persists", async ({
-  page,
-}) => {
-  await page.route(RPC_URL_PATTERN, fulfillRpc);
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
-
-  // English is the default for an en-US browser.
-  await expect(page.getByRole("link", { name: "Backfade home" })).toBeVisible();
-
-  await page.getByRole("button", { name: "zh", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "观点流" })).toBeVisible();
-  const zhNav = page.getByRole("navigation", { name: "主导航" });
-  await expect(
-    zhNav.getByRole("link", { name: "创建", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Backfade 首页" })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.lang)).toBe(
-    "zh-CN",
-  );
-
-  // The choice survives a navigation and a reload.
-  await zhNav.getByRole("link", { name: "创建", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "创建 thesis" }),
-  ).toBeVisible();
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "创建 thesis" }),
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "en", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Create thesis" }),
-  ).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.lang)).toBe("en");
-});
-
-test("Switching language leaves the header geometry unchanged", async ({
-  page,
-}) => {
-  await page.route(RPC_URL_PATTERN, fulfillRpc);
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Feed" })).toBeVisible();
-
-  // The wallet control and the language toggle sit next to each other, so a
-  // width change in either would slide its neighbour. English and Chinese copy
-  // differ in length, so both must be pinned to a fixed slot.
-  const header = () =>
-    page.evaluate(() => {
-      const slot = (element: Element | undefined) => {
-        if (!element) return null;
-        const rect = element.getBoundingClientRect();
-        return { x: Math.round(rect.x), width: Math.round(rect.width) };
-      };
-      return {
-        toggle: slot(
-          document.querySelector("header button[aria-pressed]") ?? undefined,
-        ),
-        wallet: slot(
-          [...document.querySelectorAll("header button")].pop() ?? undefined,
-        ),
-      };
-    });
-
-  const before = await header();
-  expect(before.toggle).not.toBeNull();
-  expect(before.wallet).not.toBeNull();
-
-  await page.getByRole("button", { name: "zh", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "观点流" })).toBeVisible();
-
-  const after = await header();
-  expect(after.wallet).toEqual(before.wallet);
-  expect(after.toggle).toEqual(before.toggle);
 });

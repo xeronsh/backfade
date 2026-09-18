@@ -6,14 +6,17 @@ const root = resolve(new URL("../..", import.meta.url).pathname);
 const contracts = resolve(root, "contracts");
 const output = resolve(root, "web/src/generated/contracts.ts");
 const names = [
-  ["ThesisFactory", "FACTORY_ABI"],
-  ["ThesisMarket", "MARKET_ABI"],
-  ["MockUSDG", "ERC20_ABI"],
-  ["AggregatorV3Interface", "ORACLE_ABI"],
+  ["src/ThesisFactory.sol", "ThesisFactory", "FACTORY_ABI"],
+  ["src/ThesisChallenge.sol", "ThesisChallenge", "THESIS_ABI"],
+  // v0.1 artifacts stay generated for historical deployment inspection only.
+  ["src/legacy/ThesisMarket.sol", "ThesisMarket", "MARKET_ABI"],
+  ["src/legacy/LegacyThesisFactory.sol", "LegacyThesisFactory", "LEGACY_FACTORY_ABI"],
+  ["src/MockUSDG.sol", "MockUSDG", "ERC20_ABI"],
+  ["src/AggregatorV3Interface.sol", "AggregatorV3Interface", "ORACLE_ABI"],
 ];
 
-function inspect(contract) {
-  const raw = execFileSync("forge", ["inspect", `src/${contract}.sol:${contract}`, "abi", "--json"], {
+function inspect(source, contract) {
+  const raw = execFileSync("forge", ["inspect", `${source}:${contract}`, "abi", "--json"], {
     cwd: contracts,
     encoding: "utf8",
   });
@@ -21,8 +24,8 @@ function inspect(contract) {
 }
 
 const body = ["// AUTO-GENERATED — DO NOT EDIT.", "// Source: contracts/src/*.sol Foundry artifacts via forge inspect.", ""];
-for (const [contract, constant] of names) {
-  body.push(`export const ${constant} = ${JSON.stringify(inspect(contract), null, 2)} as const;`, "");
+for (const [source, contract, constant] of names) {
+  body.push(`export const ${constant} = ${JSON.stringify(inspect(source, contract), null, 2)} as const;`, "");
 }
 
 mkdirSync(dirname(output), { recursive: true });

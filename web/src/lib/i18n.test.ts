@@ -16,28 +16,27 @@ describe("bilingual copy", () => {
     }
   });
 
-  it("keeps the documented four type roles named the same in both locales", () => {
-    // The design tokens are language-independent; the copy must not rename them.
-    expect(dict.en["position.yourBack"]).toContain("BACK");
-    expect(dict.zh["position.yourBack"]).toContain("BACK");
-    expect(dict.en["position.yourFade"]).toContain("FADE");
-    expect(dict.zh["position.yourFade"]).toContain("FADE");
+  it("keeps the protocol roles named consistently in both locales", () => {
+    expect(dict.en["thesis.creatorRole"]).toBe("Creator");
+    expect(dict.zh["thesis.creatorRole"]).toBe("创建者");
+    expect(dict.en["thesis.challengerRole"]).toBe("Challenger");
+    expect(dict.zh["thesis.challengerRole"]).toBe("挑战者");
   });
 
   it("interpolates named placeholders", () => {
     expect(translate("en", "create.entryWindow", { minutes: 30 })).toBe(
-      "30 minutes after launch",
+      "30 minutes before Challenges close",
     );
     expect(translate("zh", "create.entryWindow", { minutes: 30 })).toBe(
-      "发布后 30 分钟",
+      "挑战窗口关闭前 30 分钟",
     );
-    expect(translate("en", "profile.proofRate")).toBe("Proof rate");
-    expect(translate("zh", "profile.proofRate")).toBe("胜率");
+    expect(translate("en", "profile.trackRecord")).toBe("Track record");
+    expect(translate("zh", "profile.trackRecord")).toBe("链上记录");
   });
 
   it("keeps an unknown placeholder rather than printing undefined", () => {
     expect(translate("en", "create.entryWindow")).toBe(
-      "{minutes} minutes after launch",
+      "{minutes} minutes before Challenges close",
     );
   });
 

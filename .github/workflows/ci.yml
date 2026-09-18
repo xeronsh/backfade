@@ -5,58 +5,11 @@ on:
     branches: [master]
   pull_request:
 
-env:
-  VITE_CHAIN_ID: "46630"
-  VITE_CHAIN_NAME: Robinhood Chain Testnet
-  VITE_RPC_URL: https://rpc.testnet.chain.robinhood.com
-  VITE_EXPLORER_URL: https://explorer.testnet.chain.robinhood.com
-  VITE_FACTORY_ADDRESS: "0x9Db674834F4C060114Cb53f21e179fc54F905342"
-  VITE_COLLATERAL_ADDRESS: "0x7BA735a381B9FFe700a8c92558659461b359ee9c"
-  VITE_API_BASE: /v1
-  VITE_WALLETCONNECT_PROJECT_ID: ci-placeholder
-
 jobs:
-  contracts:
-    name: Contracts
+  ci:
+    name: CI
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.7.1
-      - run: forge fmt --check
-        working-directory: contracts
-      - run: forge build --sizes
-        working-directory: contracts
-      - run: forge test -vv
-        working-directory: contracts
-
-  api:
-    name: API
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-      - run: uv sync --frozen
-        working-directory: api
-      - run: uv run ruff format --check api tests
-        working-directory: api
-      - run: uv run ruff check api tests
-        working-directory: api
-      - run: uv run mypy api
-        working-directory: api
-      - run: uv run pytest
-        working-directory: api
-      - run: uv run python export_openapi.py
-        working-directory: api
-      - run: uv run python selfcheck.py
-        working-directory: api
-
-  codegen:
-    name: Codegen and ABI parity
-    runs-on: ubuntu-latest
+    # ponytail: one setup path; split jobs only when CI duration becomes a problem.
     steps:
       - uses: actions/checkout@v7
         with:
@@ -64,85 +17,13 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       - uses: astral-sh/setup-uv@v7
       - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.7.1
-      - name: Pin npm
-        run: npm install --global npm@11.17.0
       - run: npm ci
         working-directory: web
       - run: uv sync --frozen
         working-directory: api
-      - run: forge build
-        working-directory: contracts
-      - run: node scripts/codegen/contracts.mjs
-      - run: uv run python export_openapi.py
-        working-directory: api
-      - run: npm run codegen
-        working-directory: web
-      - run: git diff --exit-code -- api/openapi.json web/src/generated web/src/lib/api/generated
-      - run: python3 scripts/abi_parity.py
-      - name: Secret scan
-        run: |
-          ! git grep -nE 'VITE_[A-Z_]*(KEY|SECRET|PRIVATE)|0x[a-fA-F0-9]{64}' -- web api scripts ':!web/abi-smoke.mjs'
-
-  web:
-    name: Web
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Pin npm
-        run: npm install --global npm@11.17.0
-      - run: npm ci
-        working-directory: web
-      - run: npm run lint
-        working-directory: web
-      - run: npm run typecheck
-        working-directory: web
-      - run: npm test
-        working-directory: web
-      - run: npm run build
-        working-directory: web
-
-  e2e:
-    name: Browser smoke
-    runs-on: ubuntu-latest
-    needs: [web]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Pin npm
-        run: npm install --global npm@11.17.0
-      - run: npm ci
-        working-directory: web
+      - run: make check
       - run: npx playwright install --with-deps chromium firefox
         working-directory: web
-      - run: npm run e2e
-        working-directory: web
-
-  abi-parity:
-    name: ABI parity
-    runs-on: ubuntu-latest
-    needs: [contracts, codegen]
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.7.1
-      - run: forge build
-        working-directory: contracts
-      - run: python3 scripts/abi_parity.py
+      - run: make e2e
