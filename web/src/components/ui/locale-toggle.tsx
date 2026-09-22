@@ -11,7 +11,7 @@ export function LocaleToggle({ className }: { className?: string }) {
   const { locale, setLocale, t } = useLocale();
 
   return (
-    <div className={cn("flex items-center gap-0.5", className)}>
+    <div className={cn("grid grid-cols-2 gap-0.5", className)}>
       {(["en", "zh"] as const).map((code) => {
         const active = locale === code;
         return (
@@ -22,7 +22,7 @@ export function LocaleToggle({ className }: { className?: string }) {
             aria-pressed={active}
             title={t("lang.toggle")}
             className={cn(
-              "min-h-9 min-w-9 rounded-chip border px-2 font-mono text-meta uppercase tracking-label transition-colors duration-standard",
+              "min-h-9 w-full rounded-chip border px-2 font-mono text-meta uppercase tracking-label transition-colors duration-standard",
               active
                 ? "border-brand/40 bg-brand/15 text-brand"
                 : "border-transparent text-text-3 hover:border-border hover:text-text-1",
