@@ -187,7 +187,7 @@ export const dict = {
     "post.lede":
       "Write a relative investment opinion, confirm its Reference, and expose conviction to people willing to Fade it.",
     "post.step1": "1. What's your Thesis?",
-    "post.step2": "2. Bond conviction",
+    "post.step2": "2. Set the structure, then bond",
     "post.narrative": "Narrative",
     "post.narrativePlaceholder": "AMD and PLTR will outperform TSLA this week.",
     "post.narrativeHint": "Keep it clear and relative.",
@@ -226,10 +226,23 @@ export const dict = {
     "challenge.openBounty": "Open Bounty",
 
     "spec.title": "Thesis structure",
-    "spec.thesis": "Thesis",
+    "spec.assets": "Assets",
+    "spec.assetsHint": "Pick 1–5 assets. Weights must total 100%.",
+    "spec.weight": "Weight",
+    "spec.total": "Total",
+    "spec.splitEvenly": "Split evenly",
     "spec.reference": "Reference",
     "spec.basket": "Basket",
+    "spec.claim": "Claim",
+    "spec.claimHint":
+      "Derived from the structure above. This sentence is what goes onchain and gets scored.",
     "spec.confirmReference": "Confirm Reference",
+    "spec.errEmpty": "Pick at least one asset.",
+    "spec.errTooMany": "At most 5 assets.",
+    "spec.errWeightZero": "Every weight must be above zero.",
+    "spec.errWeights": "Weights must total exactly 100%.",
+    "spec.errReferenceInBasket":
+      "The Reference cannot also be held in the basket.",
   },
   zh: {
     "nav.feed": "观点流",
@@ -267,7 +280,8 @@ export const dict = {
     "error.chainRead": "无法读取链上数据。",
     "error.startup": "Backfade 启动失败",
     "error.startupEyebrow": "启动错误",
-    "error.startupBody": "请刷新页面。若仍然失败，请查看浏览器控制台中的报错模块。",
+    "error.startupBody":
+      "请刷新页面。若仍然失败，请查看浏览器控制台中的报错模块。",
     "error.config": "Backfade 尚未配置",
     "error.configEyebrow": "配置错误",
     "error.configBody":
@@ -323,7 +337,8 @@ export const dict = {
 
     "leaderboard.eyebrow": "发现",
     "leaderboard.title": "已实现盈亏排行",
-    "leaderboard.lede": "发现资金背书的战绩。排行榜是发现入口，不构成身份证明。",
+    "leaderboard.lede":
+      "发现资金背书的战绩。排行榜是发现入口，不构成身份证明。",
     "leaderboard.modeLabel": "排行榜模式",
     "leaderboard.mode.overall": "总榜",
     "leaderboard.mode.creators": "创建者",
@@ -389,7 +404,7 @@ export const dict = {
     "post.lede":
       "写下一个相对判断，确认比较基准，然后把信念暴露给愿意挑战的人。",
     "post.step1": "1. 你的观点是什么？",
-    "post.step2": "2. 质押信念",
+    "post.step2": "2. 定结构，再押注",
     "post.narrative": "观点陈述",
     "post.narrativePlaceholder": "AMD 和 PLTR 本周将跑赢 TSLA。",
     "post.narrativeHint": "表述清晰，并给出比较基准。",
@@ -425,10 +440,21 @@ export const dict = {
     "challenge.openBounty": "开放赏金",
 
     "spec.title": "观点结构",
-    "spec.thesis": "观点",
+    "spec.assets": "标的",
+    "spec.assetsHint": "选择 1–5 个标的，权重合计必须为 100%。",
+    "spec.weight": "权重",
+    "spec.total": "合计",
+    "spec.splitEvenly": "均分",
     "spec.reference": "比较基准",
     "spec.basket": "组合",
+    "spec.claim": "声明",
+    "spec.claimHint": "由上面的结构推导。上链并被结算的就是这句话。",
     "spec.confirmReference": "确认比较基准",
+    "spec.errEmpty": "至少选择一个标的。",
+    "spec.errTooMany": "最多 5 个标的。",
+    "spec.errWeightZero": "每个权重都必须大于 0。",
+    "spec.errWeights": "权重合计必须正好 100%。",
+    "spec.errReferenceInBasket": "比较基准不能同时出现在组合里。",
   },
 } as const;
 

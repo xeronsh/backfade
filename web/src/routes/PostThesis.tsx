@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { type Address, decodeEventLog, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { z } from "zod";
-import { ThesisSpec } from "@/components/backfade/ThesisSpec";
+import { ThesisStructureEditor } from "@/components/backfade/ThesisStructureEditor";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
 import {
   PageContainer,
@@ -21,13 +21,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTransaction } from "@/features/wallet/useTransaction";
-import { useCompileThesis } from "@/lib/api/generated";
+import { useCompileThesis, useListAssets } from "@/lib/api/generated";
 import type { ThesisSpecV2 } from "@/lib/api/generated/model/thesisSpecV2";
+import { canonicalClaim, validateClaim } from "@/lib/claim";
 import { config } from "@/lib/config";
 import { formatError } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, FACTORY_ABI } from "@/lib/web3/contracts";
-import { useLocale } from "@/lib/locale-provider";
 
 const schema = z.object({
   narrative: z.string().trim().min(8).max(280),
@@ -35,11 +36,32 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
+/**
+ * The allowlist is the contract's, not this list's, but the editor should only
+ * offer assets the factory will accept. The payload is typed loosely upstream,
+ * so narrow it here rather than trusting the shape.
+ */
+function readAssets(payload: unknown): Array<{ symbol: string; feed: string }> {
+  if (!payload || typeof payload !== "object") return [];
+  const assets = (payload as { assets?: unknown }).assets;
+  if (!Array.isArray(assets)) return [];
+  return assets
+    .filter(
+      (entry): entry is { symbol: string; feed?: string; enabled?: boolean } =>
+        !!entry &&
+        typeof entry === "object" &&
+        typeof (entry as { symbol?: unknown }).symbol === "string",
+    )
+    .filter((entry) => entry.enabled !== false)
+    .map((entry) => ({ symbol: entry.symbol, feed: entry.feed ?? "" }));
+}
+
 export default function PostThesis() {
   const { t, locale } = useLocale();
-  const [compiled, setCompiled] = useState<ThesisSpecV2 | null>(null);
+  const [structure, setStructure] = useState<ThesisSpecV2 | null>(null);
   const [referenceConfirmed, setReferenceConfirmed] = useState(false);
   const compile = useCompileThesis();
+  const assets = useListAssets();
   const transaction = useTransaction();
   const { address: account, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -51,13 +73,21 @@ export default function PostThesis() {
     defaultValues: { narrative: "", conviction: "" },
   });
 
+  const registry = readAssets(assets.data?.data);
+  const availableSymbols = registry.map((asset) => asset.symbol);
+  const feedFor = (symbol: string) =>
+    registry.find((asset) => asset.symbol === symbol)?.feed ?? "";
+  const structureError = structure
+    ? validateClaim(structure)
+    : ("empty" as const);
+
   async function compileNarrative(values: FormValues) {
     try {
       const result = await compile.mutateAsync({
         data: { text: values.narrative },
       });
       if (result.status !== 200) throw new Error(t("post.compilerInvalid"));
-      setCompiled(result.data);
+      setStructure(result.data);
       setReferenceConfirmed(false);
       toast(t("post.confirmReference"));
     } catch (error) {
@@ -66,7 +96,7 @@ export default function PostThesis() {
   }
 
   async function postThesis(values: FormValues) {
-    if (!compiled) return;
+    if (!structure || structureError) return;
     if (!referenceConfirmed) {
       toast(t("post.confirmReference"));
       return;
@@ -94,12 +124,12 @@ export default function PostThesis() {
       return;
     }
 
-    const basket = compiled.basket.map((asset) => ({
+    const basket = structure.basket.map((asset) => ({
       feed: asset.feed as Address,
       weightBps: asset.weight_bps,
     }));
     if (
-      !isAddress(compiled.reference.feed) ||
+      !isAddress(structure.reference.feed) ||
       basket.some((asset) => !isAddress(asset.feed))
     ) {
       toast(t("post.compilerFeed"));
@@ -129,9 +159,9 @@ export default function PostThesis() {
         abi: FACTORY_ABI,
         functionName: "createThesis",
         args: [
-          compiled.narrative,
+          canonicalClaim(structure),
           basket,
-          compiled.reference.feed as Address,
+          structure.reference.feed as Address,
           conviction,
         ],
       });
@@ -204,12 +234,33 @@ export default function PostThesis() {
           aside={
             <PageSection title={t("post.step2")}>
               <Card>
-                {compiled ? (
+                {structure ? (
                   <>
-                    <ThesisSpec spec={compiled} />
+                    <ThesisStructureEditor
+                      structure={structure}
+                      symbols={availableSymbols}
+                      disabled={transaction.isPending}
+                      onChange={(next) => {
+                        // The editor works in symbols; feeds are resolved from the
+                        // registry here so no symbol can reach the contract without one.
+                        setStructure({
+                          ...structure,
+                          basket: next.basket.map((asset) => ({
+                            ...asset,
+                            feed: feedFor(asset.symbol),
+                          })),
+                          reference: {
+                            symbol: next.reference.symbol,
+                            feed: feedFor(next.reference.symbol),
+                          },
+                        });
+                        setReferenceConfirmed(false);
+                      }}
+                    />
                     <Button
                       variant={referenceConfirmed ? "back" : "default"}
                       className="mt-5 w-full"
+                      disabled={!!structureError}
                       onClick={() =>
                         setReferenceConfirmed((confirmed) => !confirmed)
                       }
@@ -217,10 +268,10 @@ export default function PostThesis() {
                     >
                       {referenceConfirmed
                         ? t("post.confirmedToggle", {
-                            symbol: compiled.reference.symbol,
+                            symbol: structure.reference.symbol,
                           })
                         : t("post.confirmToggle", {
-                            symbol: compiled.reference.symbol,
+                            symbol: structure.reference.symbol,
                           })}
                     </Button>
                     <form
@@ -245,7 +296,7 @@ export default function PostThesis() {
                         variant="primary"
                         type="submit"
                         className="mt-5 w-full"
-                        disabled={transaction.isPending}
+                        disabled={transaction.isPending || !!structureError}
                       >
                         {transaction.isPending
                           ? t("post.posting")

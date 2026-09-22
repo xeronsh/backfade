@@ -13,6 +13,32 @@ vi.mock("@/lib/api/generated", () => ({
     mutateAsync: mocks.mutateAsync,
     isPending: false,
   }),
+  useListAssets: () => ({
+    data: {
+      data: {
+        assets: [
+          {
+            symbol: "AMD",
+            name: "AMD",
+            feed: "0x0000000000000000000000000000000000000001",
+            enabled: true,
+          },
+          {
+            symbol: "PLTR",
+            name: "Palantir",
+            feed: "0x0000000000000000000000000000000000000003",
+            enabled: true,
+          },
+          {
+            symbol: "TSLA",
+            name: "Tesla",
+            feed: "0x0000000000000000000000000000000000000002",
+            enabled: true,
+          },
+        ],
+      },
+    },
+  }),
 }));
 vi.mock("@/features/wallet/useTransaction", () => ({
   useTransaction: () => ({
@@ -69,6 +95,8 @@ describe("Post Thesis flow", () => {
     expect(
       await screen.findByRole("button", { name: "Confirm Reference: TSLA" }),
     ).toBeInTheDocument();
+    // The claim is derived from the structure, never from the compiled narrative.
+    expect(screen.getByText("AMD 100% beats TSLA")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Creator Conviction (USDG)"), {
       target: { value: "1000" },
