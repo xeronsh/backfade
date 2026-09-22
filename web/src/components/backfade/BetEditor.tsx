@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   FilterBar,
   type FilterOption,
@@ -11,7 +11,6 @@ import {
   type BetError,
   type BetLimits,
   type BetStructure,
-  betSentence,
   evenWeights,
   formatHorizon,
   formatPayoutRange,
@@ -33,9 +32,9 @@ const ERROR_KEYS = {
   payoutRange: "bet.errPayoutRange",
 } as const satisfies Record<BetError, string>;
 
-/// Presets spanning the factory's legal range. Anything outside the deployed
-/// bounds is dropped, and the current value is kept visible even if it is not a
-/// preset, so a bound change can never hide the selected range.
+// Presets spanning the factory's legal range. Anything outside the deployed
+// bounds is dropped, and the current value is kept visible even if it is not a
+// preset, so a bound change can never hide the selected range.
 const PAYOUT_PRESETS = [100, 500, 1_000, 2_500, 5_000];
 
 /**
@@ -54,9 +53,27 @@ function rescale(weights: number[]): number[] {
 }
 
 /**
+ * Label column plus controls. Four parameter groups read as one aligned list,
+ * and putting the label beside the control rather than above it costs no height.
+ */
+function FormRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-x-4 gap-y-2">
+      <span className="pt-2 text-meta uppercase tracking-label text-text-3">
+        {label}
+      </span>
+      <div className="grid min-w-0 gap-2">{children}</div>
+    </div>
+  );
+}
+
+/**
  * The creator authors the Bet directly: what is held, against what, over how
  * long, and how much Alpha moves the pool. The compiler is not involved — the
  * thesis is prose, the Bet is precise, and the two are written separately.
+ *
+ * This panel holds five decisions and shares one screen with the thesis and the
+ * Bond action, so every group is a label plus a single row of controls.
  */
 export function BetEditor({
   bet,
@@ -131,16 +148,27 @@ export function BetEditor({
     });
   }
 
+  function setWeight(symbol: string, raw: string) {
+    const parsed = Number(raw);
+    onChange({
+      ...bet,
+      basket: bet.basket.map((entry) =>
+        entry.symbol === symbol
+          ? {
+              ...entry,
+              weight_bps: Number.isFinite(parsed)
+                ? Math.round(parsed * 100)
+                : 0,
+            }
+          : entry,
+      ),
+    });
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <h2 className="text-narrative font-semibold">{t("bet.title")}</h2>
-      </CardHeader>
-      <CardContent className="pt-5">
-        <div className="grid gap-2">
-          <span className="text-meta uppercase tracking-label text-text-3">
-            {t("bet.assets")}
-          </span>
+    <Card className="p-5">
+      <div className="grid gap-4">
+        <FormRow label={t("bet.assets")}>
           <ToggleChips
             options={allSymbols
               .filter((symbol) => symbol !== bet.reference.symbol)
@@ -149,65 +177,45 @@ export function BetEditor({
             onToggle={toggleAsset}
             label={t("bet.assets")}
           />
-          <span className="text-meta text-text-3">{t("bet.assetsHint")}</span>
-        </div>
-
-        {bet.basket.length > 0 ? (
-          <div className="mt-5 grid gap-2">
-            <span className="text-meta uppercase tracking-label text-text-3">
-              {t("bet.weight")}
-            </span>
-            {bet.basket.map((asset) => (
-              <div key={asset.symbol} className="flex items-center gap-3">
-                <span className="w-16 font-mono text-meta text-text-1">
-                  {asset.symbol}
-                </span>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min="0.01"
-                  max="100"
-                  step="0.01"
-                  disabled={disabled}
-                  aria-label={`${asset.symbol} ${t("bet.weight")}`}
-                  className="w-24"
-                  value={
-                    weightDraft[asset.symbol] ??
-                    formatWeightPercent(asset.weight_bps)
-                  }
-                  onChange={(event) => {
-                    const raw = event.target.value;
-                    setWeightDraft((draft) => ({
-                      ...draft,
-                      [asset.symbol]: raw,
-                    }));
-                    const parsed = Number(raw);
-                    onChange({
-                      ...bet,
-                      basket: bet.basket.map((entry) =>
-                        entry.symbol === asset.symbol
-                          ? {
-                              ...entry,
-                              weight_bps: Number.isFinite(parsed)
-                                ? Math.round(parsed * 100)
-                                : 0,
-                            }
-                          : entry,
-                      ),
-                    });
-                  }}
-                  onBlur={() =>
-                    setWeightDraft((draft) => {
-                      const next = { ...draft };
-                      delete next[asset.symbol];
-                      return next;
-                    })
-                  }
-                />
-                <span className="text-meta text-text-3">%</span>
-              </div>
-            ))}
-            <div className="mt-1 flex items-center gap-4">
+          {bet.basket.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {bet.basket.map((asset) => (
+                <label key={asset.symbol} className="flex items-center gap-2">
+                  <span className="font-mono text-meta text-text-1">
+                    {asset.symbol}
+                  </span>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0.01"
+                    max="100"
+                    step="0.01"
+                    disabled={disabled}
+                    aria-label={`${asset.symbol} ${t("bet.weight")}`}
+                    className="w-16 px-2 text-right"
+                    value={
+                      weightDraft[asset.symbol] ??
+                      formatWeightPercent(asset.weight_bps)
+                    }
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      setWeightDraft((draft) => ({
+                        ...draft,
+                        [asset.symbol]: raw,
+                      }));
+                      setWeight(asset.symbol, raw);
+                    }}
+                    onBlur={() =>
+                      setWeightDraft((draft) => {
+                        const next = { ...draft };
+                        delete next[asset.symbol];
+                        return next;
+                      })
+                    }
+                  />
+                  <span className="text-meta text-text-3">%</span>
+                </label>
+              ))}
               <span className="font-mono text-meta text-text-2">
                 {t("bet.total")} {formatWeightPercent(total)}%
               </span>
@@ -223,13 +231,10 @@ export function BetEditor({
                 {t("bet.splitEvenly")}
               </Button>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </FormRow>
 
-        <div className="mt-5 grid gap-2">
-          <span className="text-meta uppercase tracking-label text-text-3">
-            {t("bet.reference")}
-          </span>
+        <FormRow label={t("bet.reference")}>
           <FilterBar
             options={allSymbols
               .filter((symbol) => !basketSymbols.includes(symbol))
@@ -238,12 +243,9 @@ export function BetEditor({
             onChange={(symbol) => onChange({ ...bet, reference: { symbol } })}
             label={t("bet.reference")}
           />
-        </div>
+        </FormRow>
 
-        <div className="mt-5 grid gap-2">
-          <span className="text-meta uppercase tracking-label text-text-3">
-            {t("bet.horizon")}
-          </span>
+        <FormRow label={t("bet.horizon")}>
           <FilterBar
             options={limits.allowedHorizons.map((seconds) => ({
               id: String(seconds),
@@ -255,12 +257,9 @@ export function BetEditor({
             }
             label={t("bet.horizon")}
           />
-        </div>
+        </FormRow>
 
-        <div className="mt-5 grid gap-2">
-          <span className="text-meta uppercase tracking-label text-text-3">
-            {t("bet.payoutRange")}
-          </span>
+        <FormRow label={t("bet.payoutRange")}>
           <FilterBar
             options={payoutOptions.map((bps) => ({
               id: String(bps),
@@ -272,25 +271,13 @@ export function BetEditor({
             }
             label={t("bet.payoutRange")}
           />
-          <span className="text-meta text-text-3">
-            {t("bet.payoutRangeHint")}
-          </span>
-        </div>
+          <p className="text-meta text-text-3">{t("bet.payoutRangeHint")}</p>
+        </FormRow>
+      </div>
 
-        <div className="mt-5 border-t border-border pt-5">
-          <span className="text-meta uppercase tracking-label text-text-3">
-            {t("bet.summary")}
-          </span>
-          <p className="mt-2 text-narrative font-semibold text-text-1">
-            {betSentence(bet, locale)}
-          </p>
-          <p className="mt-2 text-meta text-text-3">{t("bet.summaryHint")}</p>
-        </div>
-
-        {error ? (
-          <p className="mt-4 text-meta text-warning">{t(ERROR_KEYS[error])}</p>
-        ) : null}
-      </CardContent>
+      {error ? (
+        <p className="mt-4 text-meta text-warning">{t(ERROR_KEYS[error])}</p>
+      ) : null}
     </Card>
   );
 }

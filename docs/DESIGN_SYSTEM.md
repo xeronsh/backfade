@@ -24,12 +24,20 @@ Routes compose these primitives instead of creating one-off interactive markup. 
 
 - **Home:** Thesis feed with Creator Conviction, Matched Conviction, Open Bounty,
   Alpha, Challenge count, Faded capital, and `Fade it`, beside a track-record rail.
-- **Post:** write the narrative first, preview the compiler structure, explicitly confirm the Reference, enter Conviction, then Bond & Post.
+- **Post:** state the Thesis in your own words, define the Bet beside it — assets and weights, Reference, horizon, payout range — enter Conviction, then Bond & Post. The Bet sentence is derived from the controls; the Thesis is never parsed into it.
 - **Thread:** original Thesis, Live/Realized Alpha, Challenges, capital tape, settlement, and Fade composer.
 - **Profile:** realized P&L, matched capital, resolved count, matched-weighted Creator Alpha, Fade P&L, and losing history.
 - **Leaderboard:** Overall, Creators, and Faders sorted by realized net P&L with matched capital, resolved count, and counterparties. It provides discovery, not identity proof or rewards.
 
 Mobile becomes a single column. Desktop is a three-column product: a fixed left rail (brand, navigation, wallet), the page body, and the page's own aside. The rail is `fixed` so `PageContainer` remains the single owner of page width and gutters. There is no casino grid, odds panel, probability chart, or binary outcome split.
+
+## Layout conventions
+
+Three rules keep route bodies on one screen. They are defaults, not laws — a route with genuinely long content scrolls.
+
+- **A page body fits one viewport.** `SplitLayout align="stretch"` equalises the columns so neither leaves a void beside the other.
+- **One primary action may pin itself.** When a page has exactly one outcome, its control sits in a `sticky bottom-0` bar rather than below content tall enough to push it off screen. Two competing primary actions must not share a bar.
+- **Parameter groups use a label column.** A form of four or more small decisions is a label-plus-one-row grid (`FormRow`), not a stack of headings. Labels align; nothing gains height from sitting above its control.
 
 ## Motion and enforcement
 

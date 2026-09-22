@@ -195,8 +195,6 @@ export const dict = {
       "Your own words, stored onchain as written. It is never parsed into the Bet.",
     "post.thesisTooLong": "The Thesis exceeds the onchain byte limit.",
     "post.convictionLabel": "Creator Conviction (USDG)",
-    "post.fixedParams":
-      "The deployment fixes the Challenge window; you choose the horizon and payout range above.",
     "post.loading": "Loading the approved asset list…",
     "post.limitsError":
       "Could not read the Bet parameters from the Factory contract. Check that VITE_FACTORY_ADDRESS points at the deployed Factory and that the RPC is reachable.",
@@ -235,8 +233,6 @@ export const dict = {
     "bet.payoutRangeHint":
       "The Alpha at which the Challenge Pool transfers in full. A narrower range moves more capital per point of Alpha.",
     "bet.summary": "Bet",
-    "bet.summaryHint":
-      "Derived from the controls above. This is what the contract settles.",
     "bet.errEmpty": "Pick at least one asset.",
     "bet.errTooMany": "At most 5 assets.",
     "bet.errWeightZero": "Every weight must be above zero.",
@@ -413,7 +409,6 @@ export const dict = {
     "post.thesisHint": "你自己的话，原样上链，永远不会被解析成下注。",
     "post.thesisTooLong": "观点超过了链上字节上限。",
     "post.convictionLabel": "创建者信念（USDG）",
-    "post.fixedParams": "挑战窗口由部署参数固定；期限与赔付区间由你选择。",
     "post.loading": "正在加载可用标的列表…",
     "post.limitsError":
       "无法从工厂合约读取下注参数。请确认 VITE_FACTORY_ADDRESS 指向已部署的工厂，且 RPC 可达。",
@@ -452,7 +447,6 @@ export const dict = {
     "bet.payoutRangeHint":
       "Alpha 达到这个幅度时挑战池全额转移。区间越窄，同样的 Alpha 转移越多资金。",
     "bet.summary": "下注内容",
-    "bet.summaryHint": "由上面的控件推导，合约结算的就是这个。",
     "bet.errEmpty": "至少选择一个标的。",
     "bet.errTooMany": "最多 5 个标的。",
     "bet.errWeightZero": "每个权重都必须大于 0。",

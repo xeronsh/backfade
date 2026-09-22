@@ -9,6 +9,8 @@ interface SplitLayoutProps {
   asidePosition?: "sticky" | "flow";
   asideWidth?: "narrow" | "wide";
   gap?: "tight" | "loose";
+  /** `stretch` equalises the columns, so neither leaves a void beside the other. */
+  align?: "start" | "stretch";
 }
 
 /**
@@ -22,12 +24,13 @@ export function SplitLayout({
   asidePosition = "flow",
   asideWidth = "narrow",
   gap = "tight",
+  align = "start",
 }: SplitLayoutProps) {
   return (
     <div
       data-slot="split-layout"
       className={cn(
-        "grid items-start",
+        align === "stretch" ? "grid items-stretch" : "grid items-start",
         gap === "tight" ? "gap-5" : "gap-8",
         asideWidth === "narrow"
           ? "lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]"

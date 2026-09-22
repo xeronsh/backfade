@@ -26,6 +26,7 @@ import { useListAssets } from "@/lib/api/generated";
 import {
   type BetLimits,
   type BetStructure,
+  betSentence,
   evenWeights,
   validateBet,
 } from "@/lib/bet";
@@ -132,6 +133,7 @@ export default function PostThesis() {
         : null;
   const betError =
     activeBet && limits ? validateBet(activeBet, limits) : ("empty" as const);
+  const blocked = Boolean(betError || thesisError);
 
   async function postThesis(values: FormValues) {
     if (!activeBet || betError) {
@@ -228,22 +230,25 @@ export default function PostThesis() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer className="pb-4">
       <PageHeader
+        className="pb-5"
         eyebrow={t("post.eyebrow")}
         title={t("post.title")}
         lede={t("post.lede")}
       />
-      <div className="mt-8">
+      <div className="mt-4">
         <SplitLayout
+          align="stretch"
+          asideWidth="wide"
+          gap="loose"
           main={
-            <PageSection title={t("post.step1")}>
-              <Card className="p-5">
+            <PageSection title={t("post.step1")} className="flex flex-col">
+              <Card className="flex flex-1 flex-col">
                 <Label htmlFor="thesis">{t("post.thesis")}</Label>
                 <Textarea
                   id="thesis"
-                  rows={12}
-                  className="mt-2"
+                  className="mt-2 min-h-40 flex-1 resize-none"
                   placeholder={t("post.thesisPlaceholder")}
                   value={thesis}
                   onChange={(event) => setThesis(event.target.value)}
@@ -270,67 +275,67 @@ export default function PostThesis() {
           aside={
             <PageSection title={t("post.step2")}>
               {activeBet && limits ? (
-                <>
-                  <BetEditor
-                    bet={activeBet}
-                    symbols={registry.map((asset) => asset.symbol)}
-                    limits={limits}
-                    disabled={transaction.isPending}
-                    onChange={setBet}
-                  />
-                  <form
-                    onSubmit={form.handleSubmit(postThesis)}
-                    className="mt-5"
-                  >
-                    <Label htmlFor="conviction">
-                      {t("post.convictionLabel")}
-                    </Label>
-                    <Input
-                      id="conviction"
-                      inputMode="decimal"
-                      required
-                      placeholder="1000"
-                      className="mt-2"
-                      {...form.register("conviction")}
-                    />
-                    <p className="mt-2 text-meta text-text-3">
-                      {t("post.fixedParams")}
-                    </p>
-                    <Button
-                      variant="primary"
-                      type="submit"
-                      className="mt-5 w-full"
-                      disabled={
-                        transaction.isPending || !!betError || !!thesisError
-                      }
-                    >
-                      {transaction.isPending
-                        ? t("post.posting")
-                        : t("post.submit")}
-                    </Button>
-                    <TransactionFlow
-                      phase={transaction.phase}
-                      hash={transaction.hash}
-                    />
-                  </form>
-                </>
+                <BetEditor
+                  bet={activeBet}
+                  symbols={registry.map((asset) => asset.symbol)}
+                  limits={limits}
+                  disabled={transaction.isPending}
+                  onChange={setBet}
+                />
               ) : limitsQuery.isError || assetsQuery.isError ? (
-                <Card className="p-5">
+                <Card>
                   <p className="text-body text-warning">
                     {t("post.limitsError")}
                   </p>
                 </Card>
               ) : (
-                <Card className="p-5">
+                <Card>
                   <p className="text-body text-text-2">{t("post.loading")}</p>
                 </Card>
               )}
             </PageSection>
           }
-          asideWidth="wide"
-          gap="loose"
         />
       </div>
+
+      {/*
+        The Bond action is the page's only outcome, so it stays pinned rather
+        than sitting below a panel tall enough to push it off screen.
+      */}
+      <form
+        onSubmit={form.handleSubmit(postThesis)}
+        className="sticky bottom-0 z-10 mt-3 border-t border-border bg-canvas pt-4"
+      >
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-0 flex-1">
+            <span className="text-meta uppercase tracking-label text-text-3">
+              {t("bet.summary")}
+            </span>
+            <p className="truncate text-body font-semibold text-text-1">
+              {activeBet ? betSentence(activeBet, locale) : t("post.loading")}
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="conviction">{t("post.convictionLabel")}</Label>
+            <Input
+              id="conviction"
+              inputMode="decimal"
+              required
+              placeholder="1000"
+              className="mt-1 w-36"
+              {...form.register("conviction")}
+            />
+          </div>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={transaction.isPending || blocked}
+          >
+            {transaction.isPending ? t("post.posting") : t("post.submit")}
+          </Button>
+        </div>
+        <TransactionFlow phase={transaction.phase} hash={transaction.hash} />
+      </form>
     </PageContainer>
   );
 }
