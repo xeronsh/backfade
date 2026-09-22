@@ -314,9 +314,15 @@ export default function PostThesis() {
                     />
                   </form>
                 </>
+              ) : limitsQuery.isError || assetsQuery.isError ? (
+                <Card className="p-5">
+                  <p className="text-body text-warning">
+                    {t("post.limitsError")}
+                  </p>
+                </Card>
               ) : (
                 <Card className="p-5">
-                  <p className="text-body text-text-2">{t("post.noAssets")}</p>
+                  <p className="text-body text-text-2">{t("post.loading")}</p>
                 </Card>
               )}
             </PageSection>

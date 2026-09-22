@@ -197,7 +197,9 @@ export const dict = {
     "post.convictionLabel": "Creator Conviction (USDG)",
     "post.fixedParams":
       "The deployment fixes the Challenge window; you choose the horizon and payout range above.",
-    "post.noAssets": "Loading the approved asset list…",
+    "post.loading": "Loading the approved asset list…",
+    "post.limitsError":
+      "Could not read the Bet parameters from the Factory contract. Check that VITE_FACTORY_ADDRESS points at the deployed Factory and that the RPC is reachable.",
     "post.betInvalid": "Fix the Bet before posting.",
     "post.posting": "Posting…",
     "post.submit": "Bond & Post",
@@ -412,7 +414,9 @@ export const dict = {
     "post.thesisTooLong": "观点超过了链上字节上限。",
     "post.convictionLabel": "创建者信念（USDG）",
     "post.fixedParams": "挑战窗口由部署参数固定；期限与赔付区间由你选择。",
-    "post.noAssets": "正在加载可用标的列表…",
+    "post.loading": "正在加载可用标的列表…",
+    "post.limitsError":
+      "无法从工厂合约读取下注参数。请确认 VITE_FACTORY_ADDRESS 指向已部署的工厂，且 RPC 可达。",
     "post.betInvalid": "请先修正下注内容再发布。",
     "post.posting": "发布中…",
     "post.submit": "质押并发布",
