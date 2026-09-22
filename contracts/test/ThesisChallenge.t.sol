@@ -33,7 +33,7 @@ contract ThesisChallengeTest is ThesisChallengeBase {
         vm.prank(creator);
         usdg.approve(address(factory), type(uint256).max);
         vm.expectRevert();
-        factory.createThesis("unsupported feed", basket, address(refFeed), BOND);
+        factory.createThesis("unsupported feed", basket, address(refFeed), HORIZON, PAYOUT_RANGE, BOND);
     }
 
     function test_ChallengeAggregatesAndCapsAtOpenBounty() public {
@@ -245,7 +245,7 @@ contract ThesisChallengeTest is ThesisChallengeBase {
         vm.startPrank(creator);
         usdg.approve(address(factory), type(uint256).max);
         vm.expectRevert();
-        factory.createThesis("wrong reference", basket, address(outsider), BOND);
+        factory.createThesis("wrong reference", basket, address(outsider), HORIZON, PAYOUT_RANGE, BOND);
         vm.stopPrank();
     }
 }

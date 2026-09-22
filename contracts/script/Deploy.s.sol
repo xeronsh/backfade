@@ -16,8 +16,16 @@ contract Deploy is Script {
     function run() external {
         uint256 pk = vm.envUint("DEPLOYER_PK");
         address deployer = vm.addr(pk);
-        uint64 challengeWindow = uint64(vm.envOr("V2_CHALLENGE_WINDOW", uint256(30 minutes)));
-        uint64 horizon = uint64(vm.envOr("V2_HORIZON", uint256(7 days)));
+        // A redeploy should not strand test wallets: reuse the deployed collateral
+        // unless the caller explicitly wants a fresh one.
+        address collateral_ = vm.envOr("V2_COLLATERAL", address(0));
+        uint64 challengeWindow = uint64(vm.envOr("V2_CHALLENGE_WINDOW", uint256(45 seconds)));
+        uint64[] memory horizons = new uint64[](5);
+        horizons[0] = uint64(vm.envOr("V2_HORIZON_5M", uint256(5 minutes)));
+        horizons[1] = uint64(vm.envOr("V2_HORIZON_1H", uint256(1 hours)));
+        horizons[2] = uint64(vm.envOr("V2_HORIZON_8H", uint256(8 hours)));
+        horizons[3] = uint64(vm.envOr("V2_HORIZON_1D", uint256(1 days)));
+        horizons[4] = uint64(vm.envOr("V2_HORIZON_1W", uint256(7 days)));
         uint64 settlementWindow = uint64(vm.envOr("V2_SETTLEMENT_WINDOW", uint256(30 minutes)));
         uint256 maxStartAge = vm.envOr("V2_MAX_START_AGE", uint256(30 minutes));
         address[] memory feeds = new address[](5);
@@ -28,20 +36,20 @@ contract Deploy is Script {
         feeds[4] = COIN_FEED;
 
         vm.startBroadcast(pk);
-        MockUSDG usdg = new MockUSDG();
+        address collateral = collateral_ == address(0) ? address(new MockUSDG()) : collateral_;
         ThesisFactory factory =
-            new ThesisFactory(address(usdg), feeds, challengeWindow, horizon, settlementWindow, maxStartAge);
+            new ThesisFactory(collateral, feeds, challengeWindow, horizons, settlementWindow, maxStartAge);
         vm.stopBroadcast();
 
         console2.log("deployer:", deployer);
-        console2.log("MockUSDG:", address(usdg));
+        console2.log("collateral:", collateral);
         console2.log("ThesisFactory v0.2:", address(factory));
         console2.log("challengeWindow:", challengeWindow);
-        console2.log("horizon:", horizon);
+        console2.log("horizons:", horizons.length);
         console2.log("settlementWindow:", settlementWindow);
 
         string memory j = "final";
-        vm.serializeAddress(j, "usdg", address(usdg));
+        vm.serializeAddress(j, "usdg", collateral);
         string memory out = vm.serializeAddress(j, "factory", address(factory));
         vm.writeFile("deployment-v0.2.json", out);
     }

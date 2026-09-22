@@ -3,6 +3,13 @@ pragma solidity ^0.8.24;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ThesisChallenge} from "./ThesisChallenge.sol";
+import {
+    MAX_BASKET_ASSETS,
+    MAX_PAYOUT_RANGE_BPS,
+    MIN_PAYOUT_RANGE_BPS,
+    NARRATIVE_MAX_BYTES,
+    WEIGHTS_TOTAL_BPS
+} from "./ProtocolLimits.sol";
 
 /// @title ThesisFactory
 /// @notice Deployment-configured factory for immutable social theses.
@@ -10,17 +17,15 @@ import {ThesisChallenge} from "./ThesisChallenge.sol";
 contract ThesisFactory {
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_BASKET_ASSETS = 5;
-    uint256 public constant WEIGHTS_TOTAL_BPS = 10_000;
-
     IERC20 public immutable canonicalCollateral;
     uint64 public immutable challengeWindow;
-    uint64 public immutable horizon;
     uint64 public immutable settlementWindow;
     uint256 public immutable maxStartAge;
 
     address[] public allowedFeeds;
     mapping(address => bool) public allowedFeed;
+    uint64[] public allowedHorizons;
+    mapping(uint64 => bool) public allowedHorizon;
     address[] public theses;
     mapping(address => bool) public isThesis;
 
@@ -32,20 +37,29 @@ contract ThesisFactory {
         address collateral_,
         address[] memory allowedFeeds_,
         uint64 challengeWindow_,
-        uint64 horizon_,
+        uint64[] memory allowedHorizons_,
         uint64 settlementWindow_,
         uint256 maxStartAge_
     ) {
         if (collateral_ == address(0) || collateral_.code.length == 0) {
             revert InvalidParams("invalid collateral");
         }
-        if (challengeWindow_ == 0 || horizon_ <= challengeWindow_) revert InvalidParams("timing");
+        if (challengeWindow_ == 0) revert InvalidParams("timing");
         if (settlementWindow_ == 0 || maxStartAge_ == 0) revert InvalidParams("oracle timing");
         canonicalCollateral = IERC20(collateral_);
         challengeWindow = challengeWindow_;
-        horizon = horizon_;
         settlementWindow = settlementWindow_;
         maxStartAge = maxStartAge_;
+
+        for (uint256 i = 0; i < allowedHorizons_.length; i++) {
+            uint64 horizon = allowedHorizons_[i];
+            if (horizon <= challengeWindow_ || allowedHorizon[horizon]) {
+                revert InvalidParams("horizon allowlist");
+            }
+            allowedHorizon[horizon] = true;
+            allowedHorizons.push(horizon);
+        }
+        if (allowedHorizons.length == 0) revert InvalidParams("empty horizon allowlist");
 
         for (uint256 i = 0; i < allowedFeeds_.length; i++) {
             address feed = allowedFeeds_[i];
@@ -62,9 +76,11 @@ contract ThesisFactory {
         string calldata narrative,
         ThesisChallenge.BasketAsset[] calldata basket,
         address referenceFeed,
+        uint64 horizon,
+        uint256 payoutRangeBps,
         uint256 creatorBond
     ) external returns (address thesis) {
-        _validate(narrative, basket, referenceFeed, creatorBond);
+        _validate(narrative, basket, referenceFeed, horizon, payoutRangeBps, creatorBond);
 
         canonicalCollateral.safeTransferFrom(msg.sender, address(this), creatorBond);
         ThesisChallenge.BasketAsset[] memory basketCopy = new ThesisChallenge.BasketAsset[](basket.length);
@@ -80,6 +96,7 @@ contract ThesisFactory {
             resolvesAt: uint64(block.timestamp + horizon),
             settlementWindow: settlementWindow,
             maxStartAge: maxStartAge,
+            payoutRangeBps: payoutRangeBps,
             collateral: address(canonicalCollateral)
         });
 
@@ -102,15 +119,41 @@ contract ThesisFactory {
         return allowedFeeds.length;
     }
 
+    function allowedHorizonsLength() external view returns (uint256) {
+        return allowedHorizons.length;
+    }
+
+    /// The payout-range bounds are file-level constants, so they need readers for
+    /// a client to show the creator the legal range instead of hardcoding it.
+    function minPayoutRangeBps() external pure returns (uint256) {
+        return MIN_PAYOUT_RANGE_BPS;
+    }
+
+    function maxPayoutRangeBps() external pure returns (uint256) {
+        return MAX_PAYOUT_RANGE_BPS;
+    }
+
+    function narrativeMaxBytes() external pure returns (uint256) {
+        return NARRATIVE_MAX_BYTES;
+    }
+
     function _validate(
         string calldata narrative,
         ThesisChallenge.BasketAsset[] calldata basket,
         address referenceFeed,
+        uint64 horizon,
+        uint256 payoutRangeBps,
         uint256 creatorBond
     ) private view {
         if (creatorBond == 0) revert InvalidParams("zero bond");
         uint256 narrativeBytes = bytes(narrative).length;
-        if (narrativeBytes == 0 || narrativeBytes > 280) revert InvalidParams("narrative");
+        if (narrativeBytes == 0 || narrativeBytes > NARRATIVE_MAX_BYTES) {
+            revert InvalidParams("narrative");
+        }
+        if (!allowedHorizon[horizon]) revert InvalidParams("horizon");
+        if (payoutRangeBps < MIN_PAYOUT_RANGE_BPS || payoutRangeBps > MAX_PAYOUT_RANGE_BPS) {
+            revert InvalidParams("payout range");
+        }
         if (basket.length == 0 || basket.length > MAX_BASKET_ASSETS) revert InvalidParams("basket length");
         if (!allowedFeed[referenceFeed]) revert InvalidParams("reference feed");
 

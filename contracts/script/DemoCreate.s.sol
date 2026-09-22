@@ -25,7 +25,10 @@ contract DemoCreate is Script {
         feeds[1] = address(vst);
         feeds[2] = address(gev);
         feeds[3] = address(nvda);
-        ThesisFactory factory = new ThesisFactory(address(usdg), feeds, 10 minutes, 20 minutes, 30 minutes, 30 minutes);
+        uint64[] memory horizons = new uint64[](2);
+        horizons[0] = 20 minutes;
+        horizons[1] = 1 hours;
+        ThesisFactory factory = new ThesisFactory(address(usdg), feeds, 10 minutes, horizons, 30 minutes, 30 minutes);
 
         address creator = vm.addr(vm.envUint("DEMO_CREATOR_PK"));
         usdg.mint(creator, 10_000e18);
@@ -43,8 +46,9 @@ contract DemoCreate is Script {
         basket[1] = ThesisChallenge.BasketAsset(address(vst), 3500);
         basket[2] = ThesisChallenge.BasketAsset(address(gev), 2500);
         usdg.approve(address(factory), type(uint256).max);
-        address thesisAddress =
-            factory.createThesis("AI is rotating into nuclear energy.", basket, address(nvda), 1_000e18);
+        address thesisAddress = factory.createThesis(
+            "AI is rotating into nuclear energy.", basket, address(nvda), 20 minutes, 1_000, 1_000e18
+        );
         ThesisChallenge thesis = ThesisChallenge(thesisAddress);
         string memory out = vm.serializeAddress(json, "thesis", thesisAddress);
         vm.writeFile("demo-state.json", out);

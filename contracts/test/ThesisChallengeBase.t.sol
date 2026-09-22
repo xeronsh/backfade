@@ -21,8 +21,17 @@ abstract contract ThesisChallengeBase is Test {
     uint256 internal constant BOND = 1_000e18;
     uint64 internal constant CHALLENGE_WINDOW = 30 minutes;
     uint64 internal constant HORIZON = 7 days;
+    uint64 internal constant HORIZON_SHORT = 1 hours;
+    uint256 internal constant PAYOUT_RANGE = 1_000;
     uint64 internal constant SETTLEMENT_WINDOW = 30 minutes;
     uint256 internal constant MAX_START_AGE = 30 minutes;
+
+    /// The factory now takes a horizon allowlist instead of one fixed horizon.
+    function horizons() internal pure returns (uint64[] memory list) {
+        list = new uint64[](2);
+        list[0] = HORIZON;
+        list[1] = HORIZON_SHORT;
+    }
 
     function setUp() public virtual {
         usdg = new MockUSDG();
@@ -33,7 +42,8 @@ abstract contract ThesisChallengeBase is Test {
         feeds[0] = address(assetA);
         feeds[1] = address(assetB);
         feeds[2] = address(refFeed);
-        factory = new ThesisFactory(address(usdg), feeds, CHALLENGE_WINDOW, HORIZON, SETTLEMENT_WINDOW, MAX_START_AGE);
+        factory =
+            new ThesisFactory(address(usdg), feeds, CHALLENGE_WINDOW, horizons(), SETTLEMENT_WINDOW, MAX_START_AGE);
         usdg.mint(creator, 100_000e18);
         usdg.mint(faderA, 100_000e18);
         usdg.mint(faderB, 100_000e18);
@@ -47,7 +57,14 @@ abstract contract ThesisChallengeBase is Test {
         vm.startPrank(creator);
         usdg.approve(address(factory), type(uint256).max);
         thesis = ThesisChallenge(
-            factory.createThesis("A capital-backed thesis about relative performance.", basket, address(refFeed), bond)
+            factory.createThesis(
+                "A capital-backed thesis about relative performance.",
+                basket,
+                address(refFeed),
+                HORIZON,
+                PAYOUT_RANGE,
+                bond
+            )
         );
         vm.stopPrank();
     }

@@ -27,6 +27,8 @@ contract CreateDemo is Script {
                 "AI infrastructure keeps outperforming: AMD and PLTR beat a TSLA reference.",
                 basket,
                 TSLA_FEED,
+                8 hours,
+                1_000,
                 1_000e18
             );
         vm.stopBroadcast();

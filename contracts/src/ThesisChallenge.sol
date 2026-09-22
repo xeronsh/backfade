@@ -5,16 +5,13 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {OracleMath} from "./OracleMath.sol";
+import {MAX_BASKET_ASSETS, NARRATIVE_MAX_BYTES, NOTE_MAX_BYTES} from "./ProtocolLimits.sol";
 
 /// @title ThesisChallenge
 /// @notice An immutable capital-backed thesis with capped challenges and relative settlement.
 /// @dev The factory supplies canonical collateral, approved feeds, and deployment timings.
 contract ThesisChallenge is ReentrancyGuard {
     using SafeERC20 for IERC20;
-
-    uint256 public constant PAYOUT_RANGE_BPS = 1_000;
-    uint256 public constant MAX_BASKET_ASSETS = 5;
-    uint256 public constant NOTE_MAX_BYTES = 280;
 
     enum State {
         OPEN,
@@ -36,6 +33,7 @@ contract ThesisChallenge is ReentrancyGuard {
         uint64 resolvesAt;
         uint64 settlementWindow;
         uint256 maxStartAge;
+        uint256 payoutRangeBps;
         address collateral;
     }
 
@@ -46,6 +44,10 @@ contract ThesisChallenge is ReentrancyGuard {
     uint64 public immutable challengeEndsAt;
     uint64 public immutable resolvesAt;
     uint64 public immutable settlementWindow;
+
+    /// Alpha that maps to a full Challenge Pool transfer. A narrower range moves
+    /// more money per unit of Alpha, so the creator picks their own leverage.
+    uint256 public immutable payoutRangeBps;
 
     uint256 public creatorBond;
     uint256 public challengePool;
@@ -81,7 +83,8 @@ contract ThesisChallenge is ReentrancyGuard {
         address referenceFeed,
         uint256 creatorBond,
         uint64 challengeEndsAt,
-        uint64 resolvesAt
+        uint64 resolvesAt,
+        uint256 payoutRangeBps
     );
     event ConvictionRaised(
         address indexed creator, uint256 amount, string note, uint256 creatorBond, uint256 openBounty
@@ -103,7 +106,7 @@ contract ThesisChallenge is ReentrancyGuard {
         if (creator_ == address(0)) revert InvalidParams("zero creator");
         if (creatorBond_ == 0) revert InvalidParams("zero bond");
         if (params.collateral == address(0)) revert InvalidParams("zero collateral");
-        if (bytes(params.narrative).length == 0 || bytes(params.narrative).length > NOTE_MAX_BYTES) {
+        if (bytes(params.narrative).length == 0 || bytes(params.narrative).length > NARRATIVE_MAX_BYTES) {
             revert InvalidParams("invalid narrative");
         }
         if (params.basket.length == 0 || params.basket.length > MAX_BASKET_ASSETS) {
@@ -115,6 +118,7 @@ contract ThesisChallenge is ReentrancyGuard {
         if (params.settlementWindow == 0 || params.maxStartAge == 0) {
             revert InvalidParams("invalid oracle windows");
         }
+        if (params.payoutRangeBps == 0) revert InvalidParams("zero payout range");
 
         creator = creator_;
         collateral = IERC20(params.collateral);
@@ -123,6 +127,7 @@ contract ThesisChallenge is ReentrancyGuard {
         challengeEndsAt = params.challengeEndsAt;
         resolvesAt = params.resolvesAt;
         settlementWindow = params.settlementWindow;
+        payoutRangeBps = params.payoutRangeBps;
         creatorBond = creatorBond_;
         _state = State.OPEN;
 
@@ -154,7 +159,8 @@ contract ThesisChallenge is ReentrancyGuard {
             params.referenceFeed,
             creatorBond_,
             params.challengeEndsAt,
-            params.resolvesAt
+            params.resolvesAt,
+            params.payoutRangeBps
         );
     }
 
@@ -249,8 +255,8 @@ contract ThesisChallenge is ReentrancyGuard {
         realizedAlphaBps = basketReturn - referenceReturn;
 
         uint256 bounded = _abs(realizedAlphaBps);
-        if (bounded > PAYOUT_RANGE_BPS) bounded = PAYOUT_RANGE_BPS;
-        uint256 transferAmount = challengePool == 0 ? 0 : (challengePool * bounded) / PAYOUT_RANGE_BPS;
+        if (bounded > payoutRangeBps) bounded = payoutRangeBps;
+        uint256 transferAmount = challengePool == 0 ? 0 : (challengePool * bounded) / payoutRangeBps;
 
         if (realizedAlphaBps > 0) {
             _creatorPayout = creatorBond + transferAmount;

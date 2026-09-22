@@ -41,14 +41,18 @@ contract ThesisChallengeInvariantTest is Test {
         feeds[0] = address(assetA);
         feeds[1] = address(assetB);
         feeds[2] = address(refFeed);
-        ThesisFactory factory = new ThesisFactory(address(usdg), feeds, 30 minutes, 7 days, 30 minutes, 30 minutes);
+        uint64[] memory horizons = new uint64[](1);
+        horizons[0] = 7 days;
+        ThesisFactory factory = new ThesisFactory(address(usdg), feeds, 30 minutes, horizons, 30 minutes, 30 minutes);
         usdg.mint(creator, 1_000e18);
         ThesisChallenge.BasketAsset[] memory basket = new ThesisChallenge.BasketAsset[](2);
         basket[0] = ThesisChallenge.BasketAsset(address(assetA), 6_000);
         basket[1] = ThesisChallenge.BasketAsset(address(assetB), 4_000);
         vm.startPrank(creator);
         usdg.approve(address(factory), type(uint256).max);
-        thesis = ThesisChallenge(factory.createThesis("Invariant thesis", basket, address(refFeed), 1_000e18));
+        thesis = ThesisChallenge(
+            factory.createThesis("Invariant thesis", basket, address(refFeed), 7 days, 1_000, 1_000e18)
+        );
         vm.stopPrank();
 
         ChallengeHandler handler = new ChallengeHandler(thesis, usdg);

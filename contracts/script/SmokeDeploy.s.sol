@@ -12,7 +12,8 @@ contract SmokeDeploy is Script {
     function run() external {
         uint256 pk = vm.envUint("SMOKE_PK");
         uint64 challengeWindow = uint64(vm.envOr("SMOKE_CHALLENGE_WINDOW", uint256(30 minutes)));
-        uint64 horizon = uint64(vm.envOr("SMOKE_HORIZON", uint256(7 days)));
+        uint64[] memory horizons = new uint64[](1);
+        horizons[0] = uint64(vm.envOr("SMOKE_HORIZON", uint256(7 days)));
         uint64 settlementWindow = uint64(vm.envOr("SMOKE_SETTLEMENT_WINDOW", uint256(30 minutes)));
         uint256 maxStartAge = vm.envOr("SMOKE_MAX_START_AGE", uint256(30 minutes));
         vm.startBroadcast(pk);
@@ -25,7 +26,7 @@ contract SmokeDeploy is Script {
         feeds[1] = address(pltr);
         feeds[2] = address(tsla);
         ThesisFactory factory =
-            new ThesisFactory(address(usdg), feeds, challengeWindow, horizon, settlementWindow, maxStartAge);
+            new ThesisFactory(address(usdg), feeds, challengeWindow, horizons, settlementWindow, maxStartAge);
         LocalMulticall3 multicall = new LocalMulticall3();
         vm.stopBroadcast();
 
