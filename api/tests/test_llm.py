@@ -1,8 +1,13 @@
+import re
+from pathlib import Path
+
 import pytest
 
 from api.assets import load_assets, symbol_to_feed
 from api.services.llm import mock_compile
-from api.validator import ValidationError, validate_spec
+from api.validator import NARRATIVE_MAX_BYTES, ValidationError, validate_spec
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_mock_compiler_is_deterministic_and_valid() -> None:
@@ -57,9 +62,24 @@ def test_validator_rejects_unsupported_reference() -> None:
     assert error.value.code == "ASSET_UNSUPPORTED"
 
 
-def test_validator_matches_contract_utf8_narrative_limit() -> None:
-    spec = mock_compile("A valid thesis.", load_assets()).model_copy(
-        update={"narrative": "啊" * 94}
+def test_narrative_limit_matches_the_contract() -> None:
+    """The cap belongs to ProtocolLimits.sol. Drift between the two would make the
+    API accept or reject narratives the contract treats differently."""
+    source = (REPO_ROOT / "contracts/src/ProtocolLimits.sol").read_text()
+    match = re.search(r"NARRATIVE_MAX_BYTES\s*=\s*([\d_]+)", source)
+    assert match is not None, "NARRATIVE_MAX_BYTES is missing from ProtocolLimits.sol"
+    assert int(match.group(1).replace("_", "")) == NARRATIVE_MAX_BYTES
+
+
+def test_validator_counts_utf8_bytes_not_characters() -> None:
+    """Three bytes per CJK character, so the byte cap bites well before the
+    character count does."""
+    accepted = mock_compile("A valid thesis.", load_assets()).model_copy(
+        update={"narrative": "啊" * 666}
     )
+    assert len(accepted.narrative.encode("utf-8")) == 1_998
+    validate_spec(accepted, symbol_to_feed())
+
+    rejected = accepted.model_copy(update={"narrative": "啊" * 667})
     with pytest.raises(ValidationError, match="UTF-8 bytes"):
-        validate_spec(spec, symbol_to_feed())
+        validate_spec(rejected, symbol_to_feed())

@@ -5,7 +5,9 @@ from api.models import ThesisAsset, ThesisReference, ThesisSpecV2
 WEIGHTS_TOTAL_BPS = 10_000
 BASKET_MIN = 1
 BASKET_MAX = 5
-NARRATIVE_MAX_BYTES = 280
+# Mirrors NARRATIVE_MAX_BYTES in contracts/src/ProtocolLimits.sol. A Thesis states
+# an opinion at length; the 280-byte cap belongs to Challenge notes only.
+NARRATIVE_MAX_BYTES = 2_000
 
 
 class ValidationError(Exception):

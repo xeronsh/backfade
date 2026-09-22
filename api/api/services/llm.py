@@ -9,6 +9,7 @@ import structlog
 
 from api.core.config import Settings, get_settings
 from api.models import ThesisAsset, ThesisReference, ThesisSpecV2
+from api.validator import NARRATIVE_MAX_BYTES
 
 logger = structlog.get_logger(__name__)
 
@@ -23,7 +24,7 @@ Rules:
 """
 
 
-def _truncate_utf8(text: str, max_bytes: int = 280) -> str:
+def _truncate_utf8(text: str, max_bytes: int = NARRATIVE_MAX_BYTES) -> str:
     encoded = text.encode("utf-8")
     if len(encoded) <= max_bytes:
         return text
