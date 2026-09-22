@@ -84,6 +84,7 @@ export const dict = {
     "common.creatorPayout": "Creator payout",
     "common.challengePoolPayout": "Challenge pool payout",
     "common.alphaUnavailable": "—",
+    "common.viewOnExplorer": "Verify on explorer",
 
     "state.OPEN": "Open",
     "state.LOCKED": "Locked",
@@ -104,6 +105,8 @@ export const dict = {
     "feed.network": "Network",
     "feed.theses": "Theses",
     "feed.openNow": "Open now",
+    "feed.factory": "ThesisFactory",
+    "feed.collateral": "Collateral",
     "feed.trackRecords": "Track records",
 
     "card.fade": "Fade it →",
@@ -287,6 +290,7 @@ export const dict = {
     "common.creatorPayout": "创建者可得",
     "common.challengePoolPayout": "挑战池可得",
     "common.alphaUnavailable": "—",
+    "common.viewOnExplorer": "在浏览器中验证",
 
     "state.OPEN": "开放中",
     "state.LOCKED": "已锁定",
@@ -307,6 +311,8 @@ export const dict = {
     "feed.network": "网络概况",
     "feed.theses": "观点数",
     "feed.openNow": "开放中",
+    "feed.factory": "观点工厂",
+    "feed.collateral": "抵押代币",
     "feed.trackRecords": "战绩榜",
 
     "card.fade": "挑战它 →",

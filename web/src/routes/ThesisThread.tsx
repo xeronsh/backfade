@@ -6,7 +6,7 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { ChallengeComposer } from "@/components/backfade/ChallengeComposer";
 import { EmptyState } from "@/components/backfade/EmptyState";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
-import { DataRow, Metric, MetricGroup } from "@/components/data";
+import { DataRow, ExplorerLink, Metric, MetricGroup } from "@/components/data";
 import {
   PageContainer,
   PageHeader,
@@ -139,7 +139,20 @@ export default function ThesisThread() {
       <PageHeader
         eyebrow={t("thread.eyebrow")}
         title={thesis.narrative}
-        lede={`${shortAddress(thesis.creator)} · ${thesis.basket.map((asset) => asset.symbol).join(" + ")} vs ${thesis.reference.symbol}`}
+        lede={
+          <>
+            <ExplorerLink
+              kind="address"
+              value={thesis.creator}
+              title={t("common.viewOnExplorer")}
+            >
+              {shortAddress(thesis.creator)}
+            </ExplorerLink>
+            {" · "}
+            {thesis.basket.map((asset) => asset.symbol).join(" + ")} vs{" "}
+            {thesis.reference.symbol}
+          </>
+        }
         actions={
           !final ? (
             <Button
@@ -240,11 +253,16 @@ export default function ThesisThread() {
                           <span className="font-semibold text-text-1">
                             {activity.label}
                           </span>
-                          <span className="font-mono text-meta text-text-3">
+                          <ExplorerLink
+                            kind="tx"
+                            value={activity.transactionHash}
+                            title={t("common.viewOnExplorer")}
+                            className="font-mono text-meta text-text-3"
+                          >
                             {t("thread.block", {
                               block: activity.blockNumber.toString(),
                             })}
-                          </span>
+                          </ExplorerLink>
                         </div>
                         <p className="mt-1 text-body text-text-2">
                           {activity.detail}

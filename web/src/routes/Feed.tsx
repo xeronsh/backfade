@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/backfade/EmptyState";
 import { ThesisPost } from "@/components/backfade/ThesisPost";
-import { Metric, MetricGroup } from "@/components/data";
+import { ExplorerLink, Metric, MetricGroup } from "@/components/data";
 import { PageContainer, PageSection, SplitLayout } from "@/components/layout";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { useLeaderboard, useTheses } from "@/features/thesis/hooks";
+import { config } from "@/lib/config";
 import { formatAmount, formatError, shortAddress } from "@/lib/format";
 import { useLocale } from "@/lib/locale-provider";
 
@@ -85,6 +86,38 @@ export default function Feed() {
                       tone="brand"
                     />
                   </MetricGroup>
+                  <dl className="mt-5 grid gap-2 border-t border-border pt-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="font-mono text-meta uppercase tracking-label text-text-3">
+                        {t("feed.factory")}
+                      </dt>
+                      <dd>
+                        <ExplorerLink
+                          kind="address"
+                          value={config.factoryAddress}
+                          title={t("common.viewOnExplorer")}
+                          className="font-mono text-meta text-text-2"
+                        >
+                          {shortAddress(config.factoryAddress)}
+                        </ExplorerLink>
+                      </dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="font-mono text-meta uppercase tracking-label text-text-3">
+                        {t("feed.collateral")}
+                      </dt>
+                      <dd>
+                        <ExplorerLink
+                          kind="address"
+                          value={config.collateralAddress}
+                          title={t("common.viewOnExplorer")}
+                          className="font-mono text-meta text-text-2"
+                        >
+                          {shortAddress(config.collateralAddress)}
+                        </ExplorerLink>
+                      </dd>
+                    </div>
+                  </dl>
                 </CardContent>
               </Card>
             </PageSection>

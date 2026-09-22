@@ -6,6 +6,7 @@ import { Metric, MetricGroup } from "@/components/data";
 import { PageContainer, PageHeader, PageSection } from "@/components/layout";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
+import { ExplorerLink } from "@/components/data";
 import { useProfile } from "@/features/thesis/hooks";
 import { aggregateLeaderboard } from "@/features/thesis/stats";
 import {
@@ -84,7 +85,15 @@ export default function Profile() {
     <PageContainer>
       <PageHeader
         eyebrow={t("profile.eyebrow")}
-        title={shortAddress(address)}
+        title={
+          <ExplorerLink
+            kind="address"
+            value={address}
+            title={t("common.viewOnExplorer")}
+          >
+            {shortAddress(address)}
+          </ExplorerLink>
+        }
         lede={t("profile.lede")}
       />
       <Card className="mt-8">
