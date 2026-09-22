@@ -3,22 +3,15 @@ import { Metric, MetricGroup } from "@/components/data";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { ThesisDetail } from "@/features/thesis/types";
 import { formatAmount, formatBps, shortAddress } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 
-function alphaLabel(thesis: ThesisDetail) {
-  return thesis.state === "SETTLED" || thesis.state === "CANCELLED"
-    ? "Realized Alpha"
-    : "Live Alpha · indicative";
-}
-
-function alphaValue(thesis: ThesisDetail) {
-  return formatBps(
-    thesis.state === "SETTLED" || thesis.state === "CANCELLED"
-      ? thesis.realizedAlphaBps
-      : thesis.liveAlphaBps,
-  );
+function isResolved(thesis: ThesisDetail) {
+  return thesis.state === "SETTLED" || thesis.state === "CANCELLED";
 }
 
 export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
+  const { t, stateLabel } = useLocale();
+  const resolved = isResolved(thesis);
   const faded = thesis.challengers.reduce(
     (total, challenger) => total + challenger.stake,
     0n,
@@ -35,7 +28,7 @@ export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
             {shortAddress(thesis.creator)}
           </Link>
           <span className="px-2 text-text-3">·</span>
-          <span>{thesis.state}</span>
+          <span>{stateLabel(thesis.state)}</span>
         </p>
         <Link
           to={`/thesis/${thesis.address}`}
@@ -56,20 +49,22 @@ export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
         </Link>
         <MetricGroup columns={4} className="mt-6">
           <Metric
-            label={alphaLabel(thesis)}
-            value={alphaValue(thesis)}
+            label={resolved ? t("common.realizedAlpha") : t("thread.liveAlpha")}
+            value={formatBps(
+              resolved ? thesis.realizedAlphaBps : (thesis.liveAlphaBps ?? 0n),
+            )}
             tone="brand"
           />
           <Metric
-            label="Creator Conviction"
+            label={t("common.creatorConviction")}
             value={`${formatAmount(thesis.creatorBond)} USDG`}
           />
           <Metric
-            label="Matched"
+            label={t("common.matched")}
             value={`${formatAmount(thesis.matchedConviction)} USDG`}
           />
           <Metric
-            label="Open Bounty"
+            label={t("common.openBounty")}
             value={`${formatAmount(thesis.openBounty)} USDG`}
           />
         </MetricGroup>
@@ -79,18 +74,26 @@ export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
               <span className="font-mono text-text-1">
                 {thesis.challengers.length}
               </span>{" "}
-              {thesis.challengers.length === 1 ? "Challenge" : "Challenges"}
+              {thesis.challengers.length === 1
+                ? t("card.challengeCountOne", {
+                    count: thesis.challengers.length,
+                  })
+                : t("card.challengeCount", {
+                    count: thesis.challengers.length,
+                  })}
             </span>
             <span className="text-text-3">
-              <span className="font-mono text-fade">{formatAmount(faded)}</span>{" "}
-              USDG Faded
+              <span className="font-mono text-fade">
+                {formatAmount(faded)}
+              </span>{" "}
+              USDG {t("card.faded")}
             </span>
           </div>
           <Link
             to={`/thesis/${thesis.address}`}
             className="font-mono text-meta font-semibold uppercase tracking-label text-brand hover:text-brand-hover"
           >
-            {thesis.state === "OPEN" ? "Fade it →" : "Open thread →"}
+            {thesis.state === "OPEN" ? t("card.fade") : t("card.openThread")}
           </Link>
         </div>
       </CardContent>

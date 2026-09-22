@@ -26,9 +26,22 @@ import {
   formatError,
   shortAddress,
 } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { THESIS_ABI } from "@/lib/web3/contracts";
 
-function AlphaBlock({ label, value }: { label: string; value?: bigint }) {
+/**
+ * `hint` is passed explicitly rather than inferred from the label text: the
+ * label is translated, so matching on a magic prefix would break in zh.
+ */
+function AlphaBlock({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value?: bigint;
+  hint?: string;
+}) {
   return (
     <div className="border-y border-border py-5">
       <p className="font-mono text-meta font-semibold uppercase tracking-eyebrow text-text-3">
@@ -40,16 +53,13 @@ function AlphaBlock({ label, value }: { label: string; value?: bigint }) {
       >
         {formatBps(value)}
       </p>
-      {label.startsWith("Live") ? (
-        <p className="mt-1 text-meta text-text-3">
-          Indicative until settlement.
-        </p>
-      ) : null}
+      {hint ? <p className="mt-1 text-meta text-text-3">{hint}</p> : null}
     </div>
   );
 }
 
 export default function ThesisThread() {
+  const { t, stateLabel, locale } = useLocale();
   const rawAddress = useParams().address;
   const address =
     rawAddress && isAddress(rawAddress) ? (rawAddress as Address) : undefined;
@@ -61,17 +71,19 @@ export default function ThesisThread() {
 
   if (!address) {
     return (
-      <EmptyState
-        title="Invalid Thesis address"
-        description="Use a valid onchain Thesis address."
-        action={{ label: "Back to Feed", to: "/" }}
-      />
+      <PageContainer>
+        <EmptyState
+          title={t("thread.invalidTitle")}
+          description={t("thread.invalidBody")}
+          action={{ label: t("common.backToFeed"), to: "/" }}
+        />
+      </PageContainer>
     );
   }
   if (query.isLoading) {
     return (
       <PageContainer>
-        <p className="text-body text-text-2">Loading Thesis…</p>
+        <p className="text-body text-text-2">{t("thread.loading")}</p>
       </PageContainer>
     );
   }
@@ -79,12 +91,8 @@ export default function ThesisThread() {
     return (
       <PageContainer>
         <Alert
-          title="Thesis unavailable"
-          description={formatError(
-            query.error,
-            "en",
-            "Chain data could not be read.",
-          )}
+          title={t("thread.unavailable")}
+          description={formatError(query.error, locale, t("error.chainRead"))}
         />
       </PageContainer>
     );
@@ -96,7 +104,7 @@ export default function ThesisThread() {
 
   async function action(functionName: "settle" | "cancel" | "claim") {
     if (!account) {
-      toast("Connect a wallet to continue.");
+      toast(t("thread.connectToContinue"));
       return;
     }
     if (chainId !== config.chainId) {
@@ -112,7 +120,7 @@ export default function ThesisThread() {
       if (functionName !== "claim")
         await queryClient.refetchQueries({ queryKey: ["thesis", address] });
     } catch (error) {
-      toast(formatError(error));
+      toast(formatError(error, locale));
     }
   }
 
@@ -129,7 +137,7 @@ export default function ThesisThread() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="THESIS THREAD"
+        eyebrow={t("thread.eyebrow")}
         title={thesis.narrative}
         lede={`${shortAddress(thesis.creator)} · ${thesis.basket.map((asset) => asset.symbol).join(" + ")} vs ${thesis.reference.symbol}`}
         actions={
@@ -139,7 +147,7 @@ export default function ThesisThread() {
               onClick={() => void action("settle")}
               disabled={transaction.isPending}
             >
-              Settle Thesis
+              {t("thread.settle")}
             </Button>
           ) : canClaim ? (
             <Button
@@ -147,7 +155,7 @@ export default function ThesisThread() {
               onClick={() => void action("claim")}
               disabled={transaction.isPending}
             >
-              Claim Payout
+              {t("thread.claim")}
             </Button>
           ) : null
         }
@@ -157,7 +165,7 @@ export default function ThesisThread() {
         <SplitLayout
           main={
             <div className="grid gap-6">
-              <PageSection title="Original Thesis">
+              <PageSection title={t("thread.original")}>
                 <Card>
                   <p className="text-narrative font-semibold leading-snug text-text-1">
                     {thesis.narrative}
@@ -169,19 +177,22 @@ export default function ThesisThread() {
                           `${asset.symbol} ${formatBps(asset.weightBps)}`,
                       )
                       .join(" · ")}{" "}
-                    · Reference {thesis.reference.symbol}
+                    · {t("spec.reference")} {thesis.reference.symbol}
                   </p>
                   <AlphaBlock
-                    label={final ? "Realized Alpha" : "Live Alpha · indicative"}
+                    label={
+                      final ? t("common.realizedAlpha") : t("thread.liveAlpha")
+                    }
                     value={alpha}
+                    hint={final ? undefined : t("thread.liveAlphaHint")}
                   />
                 </Card>
               </PageSection>
-              <PageSection title="Challenges">
+              <PageSection title={t("common.challenges")}>
                 {thesis.challengers.length === 0 ? (
                   <Card>
                     <p className="text-body text-text-2">
-                      No capital-backed Challenges yet.
+                      {t("thread.noChallenges")}
                     </p>
                   </Card>
                 ) : (
@@ -203,11 +214,13 @@ export default function ThesisThread() {
                               className="font-mono text-meta text-fade"
                               data-financial
                             >
-                              FADED {formatAmount(challenger.stake)} USDG
+                              {t("thread.fadedAmount", {
+                                amount: formatAmount(challenger.stake),
+                              })}
                             </span>
                           </div>
                           <p className="mt-3 text-body text-text-2">
-                            {note || "Capital-backed disagreement."}
+                            {note || t("thread.challengesLede")}
                           </p>
                         </Card>
                       );
@@ -215,7 +228,7 @@ export default function ThesisThread() {
                   </div>
                 )}
               </PageSection>
-              <PageSection title="Capital Activity">
+              <PageSection title={t("thread.activity")}>
                 <Card>
                   <ol className="grid gap-4">
                     {thesis.activities.map((activity) => (
@@ -228,7 +241,9 @@ export default function ThesisThread() {
                             {activity.label}
                           </span>
                           <span className="font-mono text-meta text-text-3">
-                            Block {activity.blockNumber.toString()}
+                            {t("thread.block", {
+                              block: activity.blockNumber.toString(),
+                            })}
                           </span>
                         </div>
                         <p className="mt-1 text-body text-text-2">
@@ -246,26 +261,26 @@ export default function ThesisThread() {
               <Card>
                 <CardHeader>
                   <h2 className="text-narrative font-semibold">
-                    Conviction Summary
+                    {t("thread.convictionSummary")}
                   </h2>
                 </CardHeader>
                 <CardContent className="pt-5">
                   <MetricGroup columns={2}>
                     <Metric
-                      label="Creator Conviction"
+                      label={t("common.creatorConviction")}
                       value={`${formatAmount(thesis.creatorBond)} USDG`}
                     />
                     <Metric
-                      label="Matched Conviction"
+                      label={t("common.matchedConviction")}
                       value={`${formatAmount(thesis.matchedConviction)} USDG`}
                       tone="brand"
                     />
                     <Metric
-                      label="Open Bounty"
+                      label={t("common.openBounty")}
                       value={`${formatAmount(thesis.openBounty)} USDG`}
                     />
                     <Metric
-                      label="Challenges"
+                      label={t("common.challenges")}
                       value={thesis.challengers.length}
                     />
                   </MetricGroup>
@@ -275,7 +290,7 @@ export default function ThesisThread() {
                 <Card>
                   <CardHeader>
                     <h2 className="text-narrative font-semibold">
-                      Fade this Thesis
+                      {t("thread.fadeTitle")}
                     </h2>
                   </CardHeader>
                   <CardContent className="pt-5">
@@ -286,22 +301,26 @@ export default function ThesisThread() {
               {final ? (
                 <Card>
                   <CardHeader>
-                    <h2 className="text-narrative font-semibold">Settlement</h2>
+                    <h2 className="text-narrative font-semibold">
+                      {t("common.settlement")}
+                    </h2>
                   </CardHeader>
                   <CardContent className="pt-5">
                     <dl className="grid gap-3">
-                      <DataRow label="State">{thesis.state}</DataRow>
-                      <DataRow label="Realized Alpha">
+                      <DataRow label={t("common.state")}>
+                        {stateLabel(thesis.state)}
+                      </DataRow>
+                      <DataRow label={t("common.realizedAlpha")}>
                         {formatBps(thesis.realizedAlphaBps)}
                       </DataRow>
-                      <DataRow label="Creator payout">
+                      <DataRow label={t("common.creatorPayout")}>
                         {formatAmount(thesis.creatorPayout)} USDG
                       </DataRow>
-                      <DataRow label="Challenge pool payout">
+                      <DataRow label={t("common.challengePoolPayout")}>
                         {formatAmount(thesis.challengePayoutPool)} USDG
                       </DataRow>
-                      <DataRow label="Settled at">
-                        {formatDate(thesis.settledAt)}
+                      <DataRow label={t("common.settledAt")}>
+                        {formatDate(thesis.settledAt, locale)}
                       </DataRow>
                     </dl>
                   </CardContent>
@@ -313,7 +332,7 @@ export default function ThesisThread() {
                   onClick={() => void action("cancel")}
                   disabled={transaction.isPending}
                 >
-                  Cancel after unsafe window
+                  {t("thread.cancelUnsafe")}
                 </Button>
               ) : null}
             </div>

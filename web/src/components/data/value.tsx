@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { formatAmount, formatDate, shortAddress } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { cn } from "@/lib/utils";
 
 /** A USDG amount: mono, tabular, always carrying its unit. */
@@ -45,9 +46,10 @@ export function Timestamp({
   value: bigint | number | undefined;
   className?: string;
 }) {
+  const { locale } = useLocale();
   return (
     <span className={cn("tabular-nums", className)} data-financial>
-      {formatDate(value)}
+      {formatDate(value, locale)}
     </span>
   );
 }

@@ -8,24 +8,14 @@ import {
   useState,
 } from "react";
 import {
+  detectLocale,
   type Locale,
-  locales,
+  LOCALE_STORAGE_KEY,
   type MessageKey,
   phaseLabel,
+  stateLabel as resolveStateLabel,
   translate,
 } from "@/lib/i18n";
-
-const STORAGE_KEY = "backfade.locale";
-
-function detectLocale(): Locale {
-  if (typeof window === "undefined") return "en";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored && (locales as readonly string[]).includes(stored))
-    return stored as Locale;
-  // English is the default regardless of browser language; the toggle is the
-  // only thing that switches it.
-  return "en";
-}
 
 interface LocaleContextValue {
   locale: Locale;
@@ -35,6 +25,8 @@ interface LocaleContextValue {
   t: (key: MessageKey, vars?: Record<string, string | number>) => string;
   /** Label a chain-owned enum such as a transaction phase. */
   phaseLabel: (phase: string) => string;
+  /** Label a chain-owned Thesis state for display. */
+  stateLabel: (state: string) => string;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -50,7 +42,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     try {
-      window.localStorage.setItem(STORAGE_KEY, next);
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
     } catch {
       // Private mode: the choice simply does not persist.
     }
@@ -63,6 +55,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       toggleLocale: () => setLocale(locale === "en" ? "zh" : "en"),
       t: (key, vars) => translate(locale, key, vars),
       phaseLabel: (phase) => phaseLabel(locale, phase),
+      stateLabel: (state) => resolveStateLabel(locale, state),
     }),
     [locale, setLocale],
   );

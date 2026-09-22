@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Abi, Address } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { formatError } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 
 export type TransactionPhase =
   | "IDLE"
@@ -21,13 +22,17 @@ export interface ContractRequest {
   args?: readonly unknown[];
 }
 
-export function assertReceiptSuccess(status: "success" | "reverted") {
+export function assertReceiptSuccess(
+  status: "success" | "reverted",
+  message = "Transaction reverted onchain.",
+) {
   if (status !== "success") {
-    throw new Error("Transaction reverted onchain.");
+    throw new Error(message);
   }
 }
 
 export function useTransaction() {
+  const { t, locale } = useLocale();
   const { address: account } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -38,8 +43,8 @@ export function useTransaction() {
   async function execute(request: ContractRequest, approval = false) {
     setError(null);
     setHash(null);
-    if (!account) throw new Error("Connect your wallet before signing.");
-    if (!publicClient) throw new Error("Blockchain client is not ready.");
+    if (!account) throw new Error(t("tx.connect"));
+    if (!publicClient) throw new Error(t("tx.clientNotReady"));
     try {
       setPhase("VALIDATING");
       setPhase("SIMULATING");
@@ -60,12 +65,12 @@ export function useTransaction() {
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: transactionHash,
       });
-      assertReceiptSuccess(receipt.status);
+      assertReceiptSuccess(receipt.status, t("tx.reverted"));
       setPhase("CONFIRMED");
       return transactionHash;
     } catch (cause) {
       setPhase("FAILED");
-      const message = formatError(cause);
+      const message = formatError(cause, locale);
       setError(message);
       throw new Error(message);
     }

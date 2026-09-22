@@ -14,10 +14,12 @@ import type { ThesisDetail } from "@/features/thesis/types";
 import { useTransaction } from "@/features/wallet/useTransaction";
 import { config } from "@/lib/config";
 import { formatAmount, formatError } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, THESIS_ABI } from "@/lib/web3/contracts";
 
 export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
+  const { t, locale } = useLocale();
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const transaction = useTransaction();
@@ -30,12 +32,12 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (thesis.state !== "OPEN") {
-      toast("The Challenge window is closed.");
+      toast(t("challenge.closed"));
       return;
     }
     if (!account) {
       openConnectModal?.();
-      toast("Connect a wallet to Fade this Thesis.");
+      toast(t("challenge.connect"));
       return;
     }
     if (chainId !== config.chainId) {
@@ -43,22 +45,22 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
       return;
     }
     if (!note.trim() || new TextEncoder().encode(note).length > 280) {
-      toast("Challenge note must be 1–280 UTF-8 bytes.");
+      toast(t("challenge.noteError"));
       return;
     }
     let stake: bigint;
     try {
       stake = parseUnits(amount, 18);
     } catch {
-      toast("Enter a valid Fade amount.");
+      toast(t("challenge.amountInvalid"));
       return;
     }
     if (stake <= 0n) {
-      toast("Fade amount must be greater than zero.");
+      toast(t("challenge.amountZero"));
       return;
     }
     if (stake > thesis.openBounty) {
-      toast("Fade amount cannot exceed the Open Bounty.");
+      toast(t("challenge.amountExceeds"));
       return;
     }
 
@@ -86,28 +88,30 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
         queryKey: ["thesis", thesis.address],
       });
     } catch (error) {
-      toast(formatError(error));
+      toast(formatError(error, locale));
     }
   }
 
   return (
     <form onSubmit={submit} className="grid gap-4">
       <div>
-        <Label htmlFor="challenge-note">Write your Challenge</Label>
+        <Label htmlFor="challenge-note">{t("challenge.write")}</Label>
         <Textarea
           id="challenge-note"
           value={note}
           onChange={(event) => setNote(event.target.value)}
           maxLength={280}
-          placeholder="Unlock pressure is underestimated."
+          placeholder={t("challenge.placeholder")}
           className="mt-2 min-h-28"
         />
         <p className="mt-2 text-meta text-text-3">
-          {new TextEncoder().encode(note).length}/280 UTF-8 bytes
+          {t("challenge.noteBytes", {
+            used: new TextEncoder().encode(note).length,
+          })}
         </p>
       </div>
       <div>
-        <Label htmlFor="fade-amount">Fade amount (USDG)</Label>
+        <Label htmlFor="fade-amount">{t("challenge.amountLabel")}</Label>
         <Input
           id="fade-amount"
           value={amount}
@@ -118,13 +122,15 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
         />
       </div>
       <div className="flex items-baseline justify-between border-y border-border py-3 text-body">
-        <span className="text-text-3">Open Bounty</span>
+        <span className="text-text-3">{t("challenge.openBounty")}</span>
         <span className="font-mono font-semibold text-brand" data-financial>
           {formatAmount(thesis.openBounty)} USDG
         </span>
       </div>
       <Button variant="fade" type="submit" disabled={transaction.isPending}>
-        {transaction.isPending ? "Fading…" : "Fade this Thesis"}
+        {transaction.isPending
+          ? t("challenge.fading")
+          : t("challenge.submit")}
       </Button>
       <TransactionFlow phase={transaction.phase} hash={transaction.hash} />
     </form>

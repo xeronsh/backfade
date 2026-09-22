@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { useLeaderboard, useTheses } from "@/features/thesis/hooks";
 import { formatAmount, formatError, shortAddress } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 
 type Filter = "all" | "open" | "resolved";
 
 export default function Feed() {
+  const { t, locale } = useLocale();
   const [filter, setFilter] = useState<Filter>("all");
   const theses = useTheses();
   const leaderboard = useLeaderboard();
@@ -29,25 +31,21 @@ export default function Feed() {
     <PageContainer>
       {theses.error ? (
         <Alert
-          title="Feed unavailable"
-          description={formatError(
-            theses.error,
-            "en",
-            "Chain data could not be read.",
-          )}
+          title={t("feed.unavailable")}
+          description={formatError(theses.error, locale, t("error.chainRead"))}
         />
       ) : null}
       <SplitLayout
         main={
           <PageSection
-            title="Thesis feed"
+            title={t("feed.title")}
             action={
               <FilterBar
-                label="Feed filter"
+                label={t("feed.filterLabel")}
                 options={[
-                  { id: "all", label: "All" },
-                  { id: "open", label: "Open" },
-                  { id: "resolved", label: "Resolved" },
+                  { id: "all", label: t("feed.filter.all") },
+                  { id: "open", label: t("feed.filter.open") },
+                  { id: "resolved", label: t("feed.filter.resolved") },
                 ]}
                 value={filter}
                 onChange={setFilter}
@@ -55,14 +53,14 @@ export default function Feed() {
             }
           >
             {theses.isLoading ? (
-              <p className="text-body text-text-2">Loading the Thesis feed…</p>
+              <p className="text-body text-text-2">{t("feed.loading")}</p>
             ) : null}
             {!theses.isLoading && !theses.error ? (
               visible.length === 0 ? (
                 <EmptyState
-                  title="No Theses yet"
-                  description="Creators bond a Thesis. Challengers put money behind disagreement. Verified price feeds settle the argument."
-                  action={{ label: "Post a Thesis", to: "/post" }}
+                  title={t("feed.emptyTitle")}
+                  description={t("feed.emptyBody")}
+                  action={{ label: t("feed.post"), to: "/post" }}
                 />
               ) : (
                 <div className="grid gap-4">
@@ -76,13 +74,13 @@ export default function Feed() {
         }
         aside={
           <>
-            <PageSection title="Network">
+            <PageSection title={t("feed.network")}>
               <Card>
                 <CardContent className="pt-4">
                   <MetricGroup columns={2}>
-                    <Metric label="Theses" value={data.length} />
+                    <Metric label={t("feed.theses")} value={data.length} />
                     <Metric
-                      label="Open now"
+                      label={t("feed.openNow")}
                       value={openCount}
                       tone="brand"
                     />
@@ -91,23 +89,27 @@ export default function Feed() {
               </Card>
             </PageSection>
             <PageSection
-              title="Track records"
+              title={t("feed.trackRecords")}
               action={
                 <Link
                   to="/leaderboard"
                   className="font-mono text-meta uppercase tracking-label text-brand hover:text-brand-hover"
                 >
-                  View all →
+                  {t("common.viewAll")}
                 </Link>
               }
             >
               <Card>
                 <CardHeader>
-                  <h2 className="text-narrative font-semibold">Realized P&L</h2>
+                  <h2 className="text-narrative font-semibold">
+                    {t("common.realizedPnl")}
+                  </h2>
                 </CardHeader>
                 <CardContent className="pt-4">
                   {leaderboard.isLoading ? (
-                    <p className="text-body text-text-2">Loading…</p>
+                    <p className="text-body text-text-2">
+                      {t("common.loading")}
+                    </p>
                   ) : null}
                   <ol className="grid gap-3">
                     {leaderboard.data?.slice(0, 5).map((entry, index) => (

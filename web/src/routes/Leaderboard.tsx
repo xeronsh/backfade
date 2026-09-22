@@ -5,8 +5,8 @@ import { PageContainer, PageHeader, PageSection } from "@/components/layout";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useLeaderboard } from "@/features/thesis/hooks";
 import type { LeaderboardMode } from "@/features/thesis/stats";
+import { useLeaderboard } from "@/features/thesis/hooks";
 import {
   formatAmount,
   formatBps,
@@ -14,27 +14,29 @@ import {
   formatSignedAmount,
   shortAddress,
 } from "@/lib/format";
-
-const modes: Array<{ value: LeaderboardMode; label: string }> = [
-  { value: "overall", label: "Overall" },
-  { value: "creators", label: "Creators" },
-  { value: "faders", label: "Faders" },
-];
+import { useLocale } from "@/lib/locale-provider";
 
 export default function Leaderboard() {
+  const { t, locale } = useLocale();
   const [mode, setMode] = useState<LeaderboardMode>("overall");
   const query = useLeaderboard(mode);
+
+  const modes: Array<{ value: LeaderboardMode; label: string }> = [
+    { value: "overall", label: t("leaderboard.mode.overall") },
+    { value: "creators", label: t("leaderboard.mode.creators") },
+    { value: "faders", label: t("leaderboard.mode.faders") },
+  ];
 
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="DISCOVERY"
-        title="Realized P&L leaderboard"
-        lede="Find capital-backed track records. Ranking is a discovery surface, not proof of human identity."
+        eyebrow={t("leaderboard.eyebrow")}
+        title={t("leaderboard.title")}
+        lede={t("leaderboard.lede")}
         actions={
           <fieldset
             className="flex flex-wrap gap-2"
-            aria-label="Leaderboard mode"
+            aria-label={t("leaderboard.modeLabel")}
           >
             {modes.map((item) => (
               <Button
@@ -52,22 +54,22 @@ export default function Leaderboard() {
       />
       <div className="mt-8">
         <PageSection
-          title="All time"
-          description="Sorted by realized net P&L. No rank rewards."
+          title={t("leaderboard.allTime")}
+          description={t("leaderboard.sectionDescription")}
         >
           {query.error ? (
             <Alert
-              title="Leaderboard unavailable"
-              description={formatError(query.error)}
+              title={t("leaderboard.unavailable")}
+              description={formatError(query.error, locale)}
             />
           ) : null}
           {query.isLoading ? (
-            <p className="text-body text-text-2">Loading realized results…</p>
+            <p className="text-body text-text-2">{t("leaderboard.loading")}</p>
           ) : null}
           {!query.isLoading && !query.error && query.data?.length === 0 ? (
             <Card>
               <p className="text-body text-text-2">
-                No resolved capital activity yet.
+                {t("leaderboard.emptyBody")}
               </p>
             </Card>
           ) : null}
@@ -93,14 +95,20 @@ export default function Leaderboard() {
                 </CardHeader>
                 <CardContent className="pt-4">
                   <MetricGroup columns={4}>
-                    <Metric label="ROI" value={formatBps(entry.roiBps)} />
                     <Metric
-                      label="Matched Capital"
+                      label={t("leaderboard.roi")}
+                      value={formatBps(entry.roiBps)}
+                    />
+                    <Metric
+                      label={t("leaderboard.matchedCapital")}
                       value={`${formatAmount(entry.matchedCapital)} USDG`}
                     />
-                    <Metric label="Resolved" value={entry.resolvedPositions} />
                     <Metric
-                      label="Counterparties"
+                      label={t("leaderboard.resolved")}
+                      value={entry.resolvedPositions}
+                    />
+                    <Metric
+                      label={t("leaderboard.counterparties")}
                       value={entry.counterparties}
                     />
                   </MetricGroup>

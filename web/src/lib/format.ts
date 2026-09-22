@@ -33,9 +33,14 @@ export function formatBps(value: number | bigint | undefined) {
   return `${(Number(value) / 100).toFixed(2)}%`;
 }
 
-export function formatDate(value: bigint | number | undefined) {
+export function formatDate(
+  value: bigint | number | undefined,
+  locale?: Locale,
+) {
   if (value === undefined) return "—";
-  return new Intl.DateTimeFormat(undefined, {
+  // An explicit locale beats the browser default so a zh reader does not get
+  // English month names on a machine set to another language.
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(Number(value) * 1000));

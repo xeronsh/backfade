@@ -15,8 +15,10 @@ import {
   formatSignedAmount,
   shortAddress,
 } from "@/lib/format";
+import { useLocale } from "@/lib/locale-provider";
 
 export default function Profile() {
+  const { t, locale } = useLocale();
   const rawAddress = useParams().address;
   const address =
     rawAddress && isAddress(rawAddress) ? (rawAddress as Address) : undefined;
@@ -24,17 +26,19 @@ export default function Profile() {
 
   if (!address) {
     return (
-      <EmptyState
-        title="Invalid profile address"
-        description="Use a valid onchain address."
-        action={{ label: "Back to Feed", to: "/" }}
-      />
+      <PageContainer>
+        <EmptyState
+          title={t("profile.invalidTitle")}
+          description={t("profile.invalidBody")}
+          action={{ label: t("common.backToFeed"), to: "/" }}
+        />
+      </PageContainer>
     );
   }
   if (query.isLoading) {
     return (
       <PageContainer>
-        <p className="text-body text-text-2">Loading track record…</p>
+        <p className="text-body text-text-2">{t("profile.loading")}</p>
       </PageContainer>
     );
   }
@@ -42,12 +46,8 @@ export default function Profile() {
     return (
       <PageContainer>
         <Alert
-          title="Profile unavailable"
-          description={formatError(
-            query.error,
-            "en",
-            "Chain data could not be read.",
-          )}
+          title={t("profile.unavailable")}
+          description={formatError(query.error, locale, t("error.chainRead"))}
         />
       </PageContainer>
     );
@@ -83,32 +83,32 @@ export default function Profile() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="FINANCIAL IDENTITY"
+        eyebrow={t("profile.eyebrow")}
         title={shortAddress(address)}
-        lede="Every posted Thesis and capital-backed Challenge remains part of the track record."
+        lede={t("profile.lede")}
       />
       <Card className="mt-8">
         <MetricGroup columns={5}>
           <Metric
-            label="Realized P&L"
+            label={t("common.realizedPnl")}
             value={`${formatSignedAmount(overall?.pnl)} USDG`}
             tone="brand"
           />
           <Metric
-            label="Matched Conviction"
+            label={t("common.matchedConviction")}
             value={`${formatAmount(creator?.matchedCapital)} USDG`}
           />
           <Metric
-            label="Resolved Theses"
+            label={t("profile.resolvedTheses")}
             value={creator?.resolvedPositions ?? 0}
           />
           <Metric
-            label="Creator Alpha"
+            label={t("profile.creatorAlpha")}
             value={formatBps(creatorAlpha)}
             tone="brand"
           />
           <Metric
-            label="Fade P&L"
+            label={t("profile.fadePnl")}
             value={`${formatSignedAmount(fader?.pnl)} USDG`}
             tone="fade"
           />
@@ -116,13 +116,13 @@ export default function Profile() {
       </Card>
       <div className="mt-8">
         <PageSection
-          title="Track Record"
-          description="Losing history stays visible."
+          title={t("profile.trackRecord")}
+          description={t("profile.trackRecordLede")}
         >
           {theses.length === 0 ? (
             <EmptyState
-              title="No track record yet"
-              description="Post or Fade a Thesis to start one."
+              title={t("profile.emptyTitle")}
+              description={t("profile.emptyBody")}
             />
           ) : (
             <div className="grid gap-4">

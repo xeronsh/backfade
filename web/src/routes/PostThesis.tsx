@@ -27,6 +27,7 @@ import { config } from "@/lib/config";
 import { formatError } from "@/lib/format";
 import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, FACTORY_ABI } from "@/lib/web3/contracts";
+import { useLocale } from "@/lib/locale-provider";
 
 const schema = z.object({
   narrative: z.string().trim().min(8).max(280),
@@ -35,6 +36,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function PostThesis() {
+  const { t, locale } = useLocale();
   const [compiled, setCompiled] = useState<ThesisSpecV2 | null>(null);
   const [referenceConfirmed, setReferenceConfirmed] = useState(false);
   const compile = useCompileThesis();
@@ -54,25 +56,24 @@ export default function PostThesis() {
       const result = await compile.mutateAsync({
         data: { text: values.narrative },
       });
-      if (result.status !== 200)
-        throw new Error("The compiler returned an invalid response.");
+      if (result.status !== 200) throw new Error(t("post.compilerInvalid"));
       setCompiled(result.data);
       setReferenceConfirmed(false);
-      toast("Thesis structure ready. Confirm the Reference before posting.");
+      toast(t("post.confirmReference"));
     } catch (error) {
-      toast(formatError(error));
+      toast(formatError(error, locale));
     }
   }
 
   async function postThesis(values: FormValues) {
     if (!compiled) return;
     if (!referenceConfirmed) {
-      toast("Confirm the Reference before posting.");
+      toast(t("post.confirmReference"));
       return;
     }
     if (!account) {
       openConnectModal?.();
-      toast("Connect a wallet to post this Thesis.");
+      toast(t("post.connect"));
       return;
     }
     if (chainId !== config.chainId) {
@@ -85,11 +86,11 @@ export default function PostThesis() {
     try {
       conviction = parseUnits(values.conviction ?? "", 18);
     } catch {
-      toast("Enter a valid conviction amount.");
+      toast(t("post.invalidConviction"));
       return;
     }
     if (conviction <= 0n) {
-      toast("Conviction must be greater than zero.");
+      toast(t("post.zeroConviction"));
       return;
     }
 
@@ -101,7 +102,7 @@ export default function PostThesis() {
       !isAddress(compiled.reference.feed) ||
       basket.some((asset) => !isAddress(asset.feed))
     ) {
-      toast("The compiler returned an unapproved feed.");
+      toast(t("post.compilerFeed"));
       return;
     }
 
@@ -154,35 +155,35 @@ export default function PostThesis() {
       }
       navigate("/");
     } catch (error) {
-      toast(formatError(error));
+      toast(formatError(error, locale));
     }
   }
 
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="POST THESIS"
-        title="Say it. Bond it."
-        lede="Write a relative crypto opinion, confirm its Reference, and expose conviction to people willing to Fade it."
+        eyebrow={t("post.eyebrow")}
+        title={t("post.title")}
+        lede={t("post.lede")}
       />
       <div className="mt-8">
         <SplitLayout
           main={
-            <PageSection title="1. What's your Thesis?">
+            <PageSection title={t("post.step1")}>
               <Card>
                 <form onSubmit={form.handleSubmit(compileNarrative)}>
-                  <Label htmlFor="narrative">Narrative</Label>
+                  <Label htmlFor="narrative">{t("post.narrative")}</Label>
                   <Textarea
                     id="narrative"
                     maxLength={280}
-                    placeholder="AMD and PLTR will outperform TSLA this week."
+                    placeholder={t("post.narrativePlaceholder")}
                     className="mt-2"
                     {...form.register("narrative")}
                   />
                   <div className="mt-2 flex justify-between text-meta text-text-3">
                     <span>
                       {form.formState.errors.narrative?.message ??
-                        "Keep it clear and relative."}
+                        t("post.narrativeHint")}
                     </span>
                     <span>{form.watch("narrative").length}/280</span>
                   </div>
@@ -192,14 +193,16 @@ export default function PostThesis() {
                     className="mt-5"
                     disabled={compile.isPending}
                   >
-                    {compile.isPending ? "Compiling…" : "Structure Thesis"}
+                    {compile.isPending
+                      ? t("post.compiling")
+                      : t("post.structure")}
                   </Button>
                 </form>
               </Card>
             </PageSection>
           }
           aside={
-            <PageSection title="2. Bond conviction">
+            <PageSection title={t("post.step2")}>
               <Card>
                 {compiled ? (
                   <>
@@ -213,15 +216,19 @@ export default function PostThesis() {
                       aria-pressed={referenceConfirmed}
                     >
                       {referenceConfirmed
-                        ? `Reference confirmed: ${compiled.reference.symbol}`
-                        : `Confirm Reference: ${compiled.reference.symbol}`}
+                        ? t("post.confirmedToggle", {
+                            symbol: compiled.reference.symbol,
+                          })
+                        : t("post.confirmToggle", {
+                            symbol: compiled.reference.symbol,
+                          })}
                     </Button>
                     <form
                       onSubmit={form.handleSubmit(postThesis)}
                       className="mt-5 border-t border-border pt-5"
                     >
                       <Label htmlFor="conviction">
-                        Creator Conviction (USDG)
+                        {t("post.convictionLabel")}
                       </Label>
                       <Input
                         id="conviction"
@@ -232,8 +239,7 @@ export default function PostThesis() {
                         {...form.register("conviction")}
                       />
                       <p className="mt-2 text-meta text-text-3">
-                        The deployment fixes the Challenge window and settlement
-                        horizon.
+                        {t("post.fixedParams")}
                       </p>
                       <Button
                         variant="primary"
@@ -241,7 +247,9 @@ export default function PostThesis() {
                         className="mt-5 w-full"
                         disabled={transaction.isPending}
                       >
-                        {transaction.isPending ? "Posting…" : "Bond & Post"}
+                        {transaction.isPending
+                          ? t("post.posting")
+                          : t("post.submit")}
                       </Button>
                       <TransactionFlow
                         phase={transaction.phase}
@@ -251,8 +259,7 @@ export default function PostThesis() {
                   </>
                 ) : (
                   <p className="text-body text-text-2">
-                    Your Thesis structure appears here before any wallet
-                    transaction.
+                    {t("post.emptyPreview")}
                   </p>
                 )}
               </Card>

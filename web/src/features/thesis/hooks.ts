@@ -9,6 +9,8 @@ import {
 } from "@/features/thesis/chainReads";
 import { config } from "@/lib/config";
 import { formatAmount, formatBps, shortAddress } from "@/lib/format";
+import type { MessageKey } from "@/lib/i18n";
+import { useLocale } from "@/lib/locale-provider";
 import { addresses } from "@/lib/web3/addresses";
 import {
   ERC20_ABI,
@@ -171,9 +173,21 @@ function normalizePrice(answer: bigint, decimals: bigint) {
   return answer / 10n ** BigInt(decimalCount - 18);
 }
 
+/**
+ * Activity labels are user-facing copy, so they are built through the caller's
+ * translator rather than hard-coded here. `fetchActivities` stays a pure
+ * function; the hook passes its `t`. The cache key carries the locale so a
+ * language switch rebuilds the strings instead of serving stale ones.
+ */
+type Translate = (
+  key: MessageKey,
+  vars?: Record<string, string | number>,
+) => string;
+
 async function fetchActivities(
   publicClient: PublicClient,
   address: Address,
+  t: Translate,
 ): Promise<ThesisActivity[]> {
   const eventAbi = THESIS_ABI.filter((item) => item.type === "event");
   const latestBlock = await publicClient.getBlockNumber({ cacheTime: 0 });
@@ -211,8 +225,11 @@ async function fetchActivities(
             kind: "created" as const,
             actor: creator,
             amount: args.creatorBond as bigint,
-            label: "Thesis posted",
-            detail: `${shortAddress(creator)} bonded ${formatAmount(args.creatorBond as bigint)} USDG.`,
+            label: t("activity.posted"),
+            detail: t("activity.postedDetail", {
+              who: shortAddress(creator),
+              amount: formatAmount(args.creatorBond as bigint),
+            }),
             blockNumber,
             transactionHash,
           };
@@ -223,8 +240,11 @@ async function fetchActivities(
             actor: args.creator as Address,
             amount: args.amount as bigint,
             note: args.note as string,
-            label: "Conviction raised",
-            detail: `${formatAmount(args.amount as bigint)} USDG · ${args.note as string}`,
+            label: t("activity.raised"),
+            detail: t("activity.raisedDetail", {
+              amount: formatAmount(args.amount as bigint),
+              note: args.note as string,
+            }),
             blockNumber,
             transactionHash,
           };
@@ -234,8 +254,12 @@ async function fetchActivities(
             actor: args.challenger as Address,
             amount: args.amount as bigint,
             note: args.note as string,
-            label: "Capital-backed Challenge",
-            detail: `${shortAddress(args.challenger as Address)} Faded ${formatAmount(args.amount as bigint)} USDG · ${args.note as string}`,
+            label: t("activity.challenge"),
+            detail: t("activity.challengeDetail", {
+              who: shortAddress(args.challenger as Address),
+              amount: formatAmount(args.amount as bigint),
+              note: args.note as string,
+            }),
             blockNumber,
             transactionHash,
           };
@@ -243,16 +267,19 @@ async function fetchActivities(
           return {
             kind: "settled" as const,
             amount: args.transferAmount as bigint,
-            label: "Thesis settled",
-            detail: `Realized Alpha ${formatBps(args.realizedAlphaBps as bigint)} · transfer ${formatAmount(args.transferAmount as bigint)} USDG.`,
+            label: t("activity.settled"),
+            detail: t("activity.settledDetail", {
+              alpha: formatBps(args.realizedAlphaBps as bigint),
+              amount: formatAmount(args.transferAmount as bigint),
+            }),
             blockNumber,
             transactionHash,
           };
         case "ThesisCancelled":
           return {
             kind: "cancelled" as const,
-            label: "Thesis cancelled",
-            detail: "Principal is available to claim.",
+            label: t("activity.cancelled"),
+            detail: t("activity.cancelledDetail"),
             blockNumber,
             transactionHash,
           };
@@ -261,8 +288,11 @@ async function fetchActivities(
             kind: "claimed" as const,
             actor: args.claimant as Address,
             amount: args.amount as bigint,
-            label: "Claimed",
-            detail: `${shortAddress(args.claimant as Address)} claimed ${formatAmount(args.amount as bigint)} USDG.`,
+            label: t("activity.claimed"),
+            detail: t("activity.claimedDetail", {
+              who: shortAddress(args.claimant as Address),
+              amount: formatAmount(args.amount as bigint),
+            }),
             blockNumber,
             transactionHash,
           };
@@ -277,6 +307,7 @@ async function fetchActivities(
 async function fetchDetail(
   publicClient: PublicClient,
   address: Address,
+  t: Translate,
 ): Promise<ThesisDetail> {
   const summary = await fetchSummary(publicClient, address);
   const baseResults = await readContracts(publicClient, [
@@ -360,7 +391,7 @@ async function fetchDetail(
       )
     : undefined;
 
-  const activities = await fetchActivities(publicClient, address);
+  const activities = await fetchActivities(publicClient, address, t);
   const challengerAddresses = [
     ...new Set(
       activities
@@ -414,6 +445,7 @@ async function fetchDetail(
 
 export async function fetchThesisDetails(
   publicClient: PublicClient,
+  t: Translate,
 ): Promise<ThesisDetail[]> {
   const count = Number(
     await publicClient.readContract({
@@ -437,7 +469,7 @@ export async function fetchThesisDetails(
     .filter((value): value is Address => Boolean(value && isAddress(value)));
   const details = await Promise.all(
     thesisAddresses.map((address) =>
-      fetchDetail(publicClient, address).catch(() => undefined),
+      fetchDetail(publicClient, address, t).catch(() => undefined),
     ),
   );
   return details
@@ -447,11 +479,12 @@ export async function fetchThesisDetails(
 
 export function useTheses() {
   const publicClient = usePublicClient();
+  const { t, locale } = useLocale();
   return useQuery({
-    queryKey: ["theses"],
+    queryKey: ["theses", locale],
     queryFn: () =>
       publicClient
-        ? fetchThesisDetails(publicClient)
+        ? fetchThesisDetails(publicClient, t)
         : Promise.reject(new Error("Blockchain client is not ready.")),
     enabled: Boolean(publicClient),
     staleTime: 5_000,
@@ -462,11 +495,12 @@ export function useTheses() {
 
 export function useThesis(address: Address | undefined) {
   const publicClient = usePublicClient();
+  const { t, locale } = useLocale();
   return useQuery<ThesisDetail | undefined>({
-    queryKey: ["thesis", address],
+    queryKey: ["thesis", address, locale],
     queryFn: () =>
       publicClient && address
-        ? fetchDetail(publicClient, address)
+        ? fetchDetail(publicClient, address, t)
         : Promise.reject(new Error("Thesis address is not ready.")),
     enabled: Boolean(publicClient && address),
     staleTime: 5_000,
@@ -532,11 +566,15 @@ export function useThesisPosition(address: Address | undefined) {
 
 export function useLeaderboard(mode: LeaderboardMode = "overall") {
   const publicClient = usePublicClient();
+  const { t, locale } = useLocale();
   return useQuery<LeaderboardEntry[]>({
-    queryKey: ["leaderboard", mode],
+    queryKey: ["leaderboard", mode, locale],
     queryFn: async () => {
       if (!publicClient) throw new Error("Blockchain client is not ready.");
-      return aggregateLeaderboard(await fetchThesisDetails(publicClient), mode);
+      return aggregateLeaderboard(
+        await fetchThesisDetails(publicClient, t),
+        mode,
+      );
     },
     enabled: Boolean(publicClient),
     staleTime: 15_000,
