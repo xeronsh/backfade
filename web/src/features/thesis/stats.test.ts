@@ -32,6 +32,7 @@ function thesis(overrides: Partial<ThesisDetail> = {}): ThesisDetail {
     settledAt: 2n,
     creatorPayout: 1_200n,
     challengePayoutPool: 300n,
+    payoutRangeBps: 1_000n,
     basket: [],
     reference: {
       feed: "0x0000000000000000000000000000000000000004",

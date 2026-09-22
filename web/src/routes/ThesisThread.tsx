@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useThesis } from "@/features/thesis/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
+import { formatPayoutRange } from "@/lib/bet";
 import { config } from "@/lib/config";
 import {
   formatAmount,
@@ -190,7 +191,9 @@ export default function ThesisThread() {
                           `${asset.symbol} ${formatBps(asset.weightBps)}`,
                       )
                       .join(" · ")}{" "}
-                    · {t("spec.reference")} {thesis.reference.symbol}
+                    · {t("bet.reference")} {thesis.reference.symbol}·{" "}
+                    {t("bet.payoutRange")}{" "}
+                    {formatPayoutRange(Number(thesis.payoutRangeBps))}
                   </p>
                   <AlphaBlock
                     label={

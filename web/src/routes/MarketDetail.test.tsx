@@ -21,6 +21,7 @@ const thesis: ThesisDetail = {
   settledAt: 0n,
   creatorPayout: 0n,
   challengePayoutPool: 0n,
+  payoutRangeBps: 1_000n,
   basket: [
     {
       feed: "0x0000000000000000000000000000000000000001",

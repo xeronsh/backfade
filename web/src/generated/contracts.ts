@@ -21,9 +21,9 @@ export const FACTORY_ABI = [
         "internalType": "uint64"
       },
       {
-        "name": "horizon_",
-        "type": "uint64",
-        "internalType": "uint64"
+        "name": "allowedHorizons_",
+        "type": "uint64[]",
+        "internalType": "uint64[]"
       },
       {
         "name": "settlementWindow_",
@@ -37,32 +37,6 @@ export const FACTORY_ABI = [
       }
     ],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "MAX_BASKET_ASSETS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "WEIGHTS_TOTAL_BPS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -105,6 +79,57 @@ export const FACTORY_ABI = [
   {
     "type": "function",
     "name": "allowedFeedsLength",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "allowedHorizon",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "allowedHorizons",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "allowedHorizonsLength",
     "inputs": [],
     "outputs": [
       {
@@ -173,6 +198,16 @@ export const FACTORY_ABI = [
         "internalType": "address"
       },
       {
+        "name": "horizon",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "payoutRangeBps",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "creatorBond",
         "type": "uint256",
         "internalType": "uint256"
@@ -186,19 +221,6 @@ export const FACTORY_ABI = [
       }
     ],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "horizon",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -221,6 +243,19 @@ export const FACTORY_ABI = [
   },
   {
     "type": "function",
+    "name": "maxPayoutRangeBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
     "name": "maxStartAge",
     "inputs": [],
     "outputs": [
@@ -231,6 +266,32 @@ export const FACTORY_ABI = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "minPayoutRangeBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "narrativeMaxBytes",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -402,6 +463,11 @@ export const THESIS_ABI = [
             "internalType": "uint256"
           },
           {
+            "name": "payoutRangeBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
             "name": "collateral",
             "type": "address",
             "internalType": "address"
@@ -420,45 +486,6 @@ export const THESIS_ABI = [
       }
     ],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "MAX_BASKET_ASSETS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "NOTE_MAX_BYTES",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PAYOUT_RANGE_BPS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -712,6 +739,19 @@ export const THESIS_ABI = [
   {
     "type": "function",
     "name": "openBounty",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "payoutRangeBps",
     "inputs": [],
     "outputs": [
       {
@@ -1015,6 +1055,12 @@ export const THESIS_ABI = [
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
+      },
+      {
+        "name": "payoutRangeBps",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false

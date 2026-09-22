@@ -8,24 +8,35 @@ import {
 } from "@/components/ui/filter-bar";
 import { Input } from "@/components/ui/input";
 import {
-  type ClaimStructure,
-  claimSentence,
+  type BetError,
+  type BetLimits,
+  type BetStructure,
+  betSentence,
   evenWeights,
+  formatHorizon,
+  formatPayoutRange,
   formatWeightPercent,
   MAX_BASKET_ASSETS,
   totalWeightBps,
-  validateClaim,
+  validateBet,
   WEIGHTS_TOTAL_BPS,
-} from "@/lib/claim";
+} from "@/lib/bet";
 import { useLocale } from "@/lib/locale-provider";
 
 const ERROR_KEYS = {
-  empty: "spec.errEmpty",
-  tooMany: "spec.errTooMany",
-  weightZero: "spec.errWeightZero",
-  weights: "spec.errWeights",
-  referenceInBasket: "spec.errReferenceInBasket",
-} as const;
+  empty: "bet.errEmpty",
+  tooMany: "bet.errTooMany",
+  weightZero: "bet.errWeightZero",
+  weights: "bet.errWeights",
+  referenceInBasket: "bet.errReferenceInBasket",
+  horizon: "bet.errHorizon",
+  payoutRange: "bet.errPayoutRange",
+} as const satisfies Record<BetError, string>;
+
+/// Presets spanning the factory's legal range. Anything outside the deployed
+/// bounds is dropped, and the current value is kept visible even if it is not a
+/// preset, so a bound change can never hide the selected range.
+const PAYOUT_PRESETS = [100, 500, 1_000, 2_500, 5_000];
 
 /**
  * Scales weights to exactly 10000 while preserving their ratios. The remainder
@@ -43,48 +54,59 @@ function rescale(weights: number[]): number[] {
 }
 
 /**
- * The creator authors the Thesis structure directly. The compiler only seeds it;
- * whatever ends up here is what the contract validates and scores, and the claim
- * sentence below is derived from it rather than typed.
+ * The creator authors the Bet directly: what is held, against what, over how
+ * long, and how much Alpha moves the pool. The compiler is not involved — the
+ * thesis is prose, the Bet is precise, and the two are written separately.
  */
-export function ThesisStructureEditor({
-  structure,
+export function BetEditor({
+  bet,
   onChange,
   symbols,
+  limits,
   disabled = false,
 }: {
-  structure: ClaimStructure;
-  onChange: (next: ClaimStructure) => void;
+  bet: BetStructure;
+  onChange: (next: BetStructure) => void;
   symbols: string[];
+  limits: BetLimits;
   disabled?: boolean;
 }) {
   const { t, locale } = useLocale();
   const [weightDraft, setWeightDraft] = useState<Record<string, string>>({});
 
-  const basketSymbols = structure.basket.map((asset) => asset.symbol);
-  const error = validateClaim(structure);
-  const total = totalWeightBps(structure);
+  const basketSymbols = bet.basket.map((asset) => asset.symbol);
+  const error = validateBet(bet, limits);
+  const total = totalWeightBps(bet);
   // Keep the current picks visible even if the registry no longer lists them:
   // the contract, not this list, is the authority.
   const allSymbols = [
-    ...new Set([...symbols, ...basketSymbols, structure.reference.symbol]),
+    ...new Set([...symbols, ...basketSymbols, bet.reference.symbol]),
   ];
   const option = (symbol: string): FilterOption<string> => ({
     id: symbol,
     label: symbol,
   });
+  const payoutOptions = [
+    ...new Set([
+      ...PAYOUT_PRESETS.filter(
+        (bps) =>
+          bps >= limits.minPayoutRangeBps && bps <= limits.maxPayoutRangeBps,
+      ),
+      bet.payoutRangeBps,
+    ]),
+  ].sort((a, b) => a - b);
 
   function toggleAsset(symbol: string) {
     if (basketSymbols.includes(symbol)) {
       const kept = basketSymbols.filter((entry) => entry !== symbol);
       if (kept.length === 0) return;
       const scaled = rescale(
-        structure.basket
+        bet.basket
           .filter((asset) => asset.symbol !== symbol)
           .map((asset) => asset.weight_bps),
       );
       onChange({
-        ...structure,
+        ...bet,
         basket: kept.map((entry, index) => ({
           symbol: entry,
           weight_bps: scaled[index],
@@ -97,11 +119,11 @@ export function ThesisStructureEditor({
       WEIGHTS_TOTAL_BPS / (basketSymbols.length + 1),
     );
     const scaled = rescale([
-      ...structure.basket.map((asset) => asset.weight_bps),
+      ...bet.basket.map((asset) => asset.weight_bps),
       fairShare,
     ]);
     onChange({
-      ...structure,
+      ...bet,
       basket: [...basketSymbols, symbol].map((entry, index) => ({
         symbol: entry,
         weight_bps: scaled[index],
@@ -109,44 +131,33 @@ export function ThesisStructureEditor({
     });
   }
 
-  function setWeight(symbol: string, raw: string) {
-    const parsed = Number(raw);
-    const next = Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
-    onChange({
-      ...structure,
-      basket: structure.basket.map((asset) =>
-        asset.symbol === symbol ? { ...asset, weight_bps: next } : asset,
-      ),
-    });
-  }
-
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-narrative font-semibold">{t("spec.title")}</h2>
+        <h2 className="text-narrative font-semibold">{t("bet.title")}</h2>
       </CardHeader>
       <CardContent className="pt-5">
         <div className="grid gap-2">
           <span className="text-meta uppercase tracking-label text-text-3">
-            {t("spec.assets")}
+            {t("bet.assets")}
           </span>
           <ToggleChips
             options={allSymbols
-              .filter((symbol) => symbol !== structure.reference.symbol)
+              .filter((symbol) => symbol !== bet.reference.symbol)
               .map(option)}
             values={basketSymbols}
             onToggle={toggleAsset}
-            label={t("spec.assets")}
+            label={t("bet.assets")}
           />
-          <span className="text-meta text-text-3">{t("spec.assetsHint")}</span>
+          <span className="text-meta text-text-3">{t("bet.assetsHint")}</span>
         </div>
 
-        {structure.basket.length > 0 ? (
+        {bet.basket.length > 0 ? (
           <div className="mt-5 grid gap-2">
             <span className="text-meta uppercase tracking-label text-text-3">
-              {t("spec.weight")}
+              {t("bet.weight")}
             </span>
-            {structure.basket.map((asset) => (
+            {bet.basket.map((asset) => (
               <div key={asset.symbol} className="flex items-center gap-3">
                 <span className="w-16 font-mono text-meta text-text-1">
                   {asset.symbol}
@@ -158,18 +169,32 @@ export function ThesisStructureEditor({
                   max="100"
                   step="0.01"
                   disabled={disabled}
-                  aria-label={`${asset.symbol} ${t("spec.weight")}`}
+                  aria-label={`${asset.symbol} ${t("bet.weight")}`}
                   className="w-24"
                   value={
                     weightDraft[asset.symbol] ??
                     formatWeightPercent(asset.weight_bps)
                   }
                   onChange={(event) => {
+                    const raw = event.target.value;
                     setWeightDraft((draft) => ({
                       ...draft,
-                      [asset.symbol]: event.target.value,
+                      [asset.symbol]: raw,
                     }));
-                    setWeight(asset.symbol, event.target.value);
+                    const parsed = Number(raw);
+                    onChange({
+                      ...bet,
+                      basket: bet.basket.map((entry) =>
+                        entry.symbol === asset.symbol
+                          ? {
+                              ...entry,
+                              weight_bps: Number.isFinite(parsed)
+                                ? Math.round(parsed * 100)
+                                : 0,
+                            }
+                          : entry,
+                      ),
+                    });
                   }}
                   onBlur={() =>
                     setWeightDraft((draft) => {
@@ -184,7 +209,7 @@ export function ThesisStructureEditor({
             ))}
             <div className="mt-1 flex items-center gap-4">
               <span className="font-mono text-meta text-text-2">
-                {t("spec.total")} {formatWeightPercent(total)}%
+                {t("bet.total")} {formatWeightPercent(total)}%
               </span>
               <Button
                 type="button"
@@ -192,10 +217,10 @@ export function ThesisStructureEditor({
                 className="min-h-9 px-2 text-meta"
                 disabled={disabled}
                 onClick={() =>
-                  onChange({ ...structure, basket: evenWeights(basketSymbols) })
+                  onChange({ ...bet, basket: evenWeights(basketSymbols) })
                 }
               >
-                {t("spec.splitEvenly")}
+                {t("bet.splitEvenly")}
               </Button>
             </div>
           </div>
@@ -203,28 +228,63 @@ export function ThesisStructureEditor({
 
         <div className="mt-5 grid gap-2">
           <span className="text-meta uppercase tracking-label text-text-3">
-            {t("spec.reference")}
+            {t("bet.reference")}
           </span>
           <FilterBar
             options={allSymbols
               .filter((symbol) => !basketSymbols.includes(symbol))
               .map(option)}
-            value={structure.reference.symbol}
-            onChange={(symbol) =>
-              onChange({ ...structure, reference: { symbol } })
-            }
-            label={t("spec.reference")}
+            value={bet.reference.symbol}
+            onChange={(symbol) => onChange({ ...bet, reference: { symbol } })}
+            label={t("bet.reference")}
           />
+        </div>
+
+        <div className="mt-5 grid gap-2">
+          <span className="text-meta uppercase tracking-label text-text-3">
+            {t("bet.horizon")}
+          </span>
+          <FilterBar
+            options={limits.allowedHorizons.map((seconds) => ({
+              id: String(seconds),
+              label: formatHorizon(seconds, locale),
+            }))}
+            value={String(bet.horizonSeconds)}
+            onChange={(next) =>
+              onChange({ ...bet, horizonSeconds: Number(next) })
+            }
+            label={t("bet.horizon")}
+          />
+        </div>
+
+        <div className="mt-5 grid gap-2">
+          <span className="text-meta uppercase tracking-label text-text-3">
+            {t("bet.payoutRange")}
+          </span>
+          <FilterBar
+            options={payoutOptions.map((bps) => ({
+              id: String(bps),
+              label: formatPayoutRange(bps),
+            }))}
+            value={String(bet.payoutRangeBps)}
+            onChange={(next) =>
+              onChange({ ...bet, payoutRangeBps: Number(next) })
+            }
+            label={t("bet.payoutRange")}
+          />
+          <span className="text-meta text-text-3">
+            {t("bet.payoutRangeHint")}
+          </span>
         </div>
 
         <div className="mt-5 border-t border-border pt-5">
           <span className="text-meta uppercase tracking-label text-text-3">
-            {t("spec.claim")}
+            {t("bet.summary")}
           </span>
           <p className="mt-2 text-narrative font-semibold text-text-1">
-            {claimSentence(structure, locale)}
+            {betSentence(bet, locale)}
           </p>
-          <p className="mt-2 text-meta text-text-3">{t("spec.claimHint")}</p>
+          <p className="mt-2 text-meta text-text-3">{t("bet.summaryHint")}</p>
         </div>
 
         {error ? (

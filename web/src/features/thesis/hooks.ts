@@ -7,6 +7,7 @@ import {
   readContractResult,
   requireContractResult,
 } from "@/features/thesis/chainReads";
+import type { BetLimits } from "@/lib/bet";
 import { config } from "@/lib/config";
 import { formatAmount, formatBps, shortAddress } from "@/lib/format";
 import type { MessageKey } from "@/lib/i18n";
@@ -97,6 +98,7 @@ const summaryFunctions = [
   "settledAt",
   "creatorPayout",
   "challengePayoutPool",
+  "payoutRangeBps",
 ] as const;
 
 function summaryFromResults(
@@ -151,6 +153,10 @@ function summaryFromResults(
     challengePayoutPool: requireContractResult<bigint>(
       results[offset + 13],
       "challengePayoutPool",
+    ),
+    payoutRangeBps: requireContractResult<bigint>(
+      results[offset + 14],
+      "payoutRangeBps",
     ),
   };
 }
@@ -490,6 +496,80 @@ export function useTheses() {
     staleTime: 5_000,
     refetchInterval: config.disableMulticall ? false : 15_000,
     refetchIntervalInBackground: !config.disableMulticall,
+  });
+}
+
+/**
+ * The factory is the authority on which horizons and payout ranges a creator may
+ * choose, so the client reads the bounds instead of hardcoding them. A
+ * redeployed factory with a different allowlist must not need a frontend change.
+ */
+export function useFactoryLimits() {
+  const publicClient = usePublicClient();
+  return useQuery({
+    queryKey: ["factoryLimits", addresses.factory],
+    queryFn: async () => {
+      if (!publicClient) throw new Error("Blockchain client is not ready.");
+      const horizonCount = Number(
+        await publicClient.readContract({
+          address: addresses.factory,
+          abi: FACTORY_ABI,
+          functionName: "allowedHorizonsLength",
+        }),
+      );
+      const results = await readContracts(publicClient, [
+        ...Array.from({ length: horizonCount }, (_, index) => ({
+          address: addresses.factory,
+          abi: FACTORY_ABI,
+          functionName: "allowedHorizons",
+          args: [BigInt(index)],
+        })),
+        {
+          address: addresses.factory,
+          abi: FACTORY_ABI,
+          functionName: "minPayoutRangeBps",
+        },
+        {
+          address: addresses.factory,
+          abi: FACTORY_ABI,
+          functionName: "maxPayoutRangeBps",
+        },
+        {
+          address: addresses.factory,
+          abi: FACTORY_ABI,
+          functionName: "narrativeMaxBytes",
+        },
+      ]);
+      return {
+        limits: {
+          allowedHorizons: results
+            .slice(0, horizonCount)
+            .map((result) =>
+              Number(requireContractResult<bigint>(result, "horizon")),
+            ),
+          minPayoutRangeBps: Number(
+            requireContractResult<bigint>(
+              results[horizonCount],
+              "min payout range",
+            ),
+          ),
+          maxPayoutRangeBps: Number(
+            requireContractResult<bigint>(
+              results[horizonCount + 1],
+              "max payout range",
+            ),
+          ),
+        } satisfies BetLimits,
+        narrativeMaxBytes: Number(
+          requireContractResult<bigint>(
+            results[horizonCount + 2],
+            "narrative max bytes",
+          ),
+        ),
+      };
+    },
+    enabled: Boolean(publicClient),
+    staleTime: 60_000,
   });
 }
 

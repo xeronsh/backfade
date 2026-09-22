@@ -1,13 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { type Address, decodeEventLog, isAddress, parseUnits } from "viem";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { z } from "zod";
-import { ThesisStructureEditor } from "@/components/backfade/ThesisStructureEditor";
+import { BetEditor } from "@/components/backfade/BetEditor";
 import { TransactionFlow } from "@/components/backfade/TransactionFlow";
 import {
   PageContainer,
@@ -20,10 +20,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useFactoryLimits } from "@/features/thesis/hooks";
 import { useTransaction } from "@/features/wallet/useTransaction";
-import { useCompileThesis, useListAssets } from "@/lib/api/generated";
-import type { ThesisSpecV2 } from "@/lib/api/generated/model/thesisSpecV2";
-import { canonicalClaim, validateClaim } from "@/lib/claim";
+import { useListAssets } from "@/lib/api/generated";
+import {
+  type BetLimits,
+  type BetStructure,
+  evenWeights,
+  validateBet,
+} from "@/lib/bet";
 import { config } from "@/lib/config";
 import { formatError } from "@/lib/format";
 import { useLocale } from "@/lib/locale-provider";
@@ -31,17 +36,21 @@ import { addresses } from "@/lib/web3/addresses";
 import { ERC20_ABI, FACTORY_ABI } from "@/lib/web3/contracts";
 
 const schema = z.object({
-  narrative: z.string().trim().min(8).max(280),
   conviction: z.string().trim().optional(),
 });
 type FormValues = z.infer<typeof schema>;
+
+interface RegistryAsset {
+  symbol: string;
+  feed: string;
+}
 
 /**
  * The allowlist is the contract's, not this list's, but the editor should only
  * offer assets the factory will accept. The payload is typed loosely upstream,
  * so narrow it here rather than trusting the shape.
  */
-function readAssets(payload: unknown): Array<{ symbol: string; feed: string }> {
+function readAssets(payload: unknown): RegistryAsset[] {
   if (!payload || typeof payload !== "object") return [];
   const assets = (payload as { assets?: unknown }).assets;
   if (!Array.isArray(assets)) return [];
@@ -56,12 +65,36 @@ function readAssets(payload: unknown): Array<{ symbol: string; feed: string }> {
     .map((entry) => ({ symbol: entry.symbol, feed: entry.feed ?? "" }));
 }
 
+/**
+ * A Bet is two assets against a third until the creator says otherwise. Seeding
+ * it here keeps the editor controlled without an effect that could overwrite an
+ * edit the moment the registry refetches.
+ */
+function defaultBet(symbols: string[], limits: BetLimits): BetStructure | null {
+  if (symbols.length < 2 || limits.allowedHorizons.length === 0) return null;
+  const basketSymbols = symbols.slice(0, Math.min(2, symbols.length - 1));
+  return {
+    basket: evenWeights(basketSymbols),
+    reference: { symbol: symbols[basketSymbols.length] },
+    horizonSeconds: limits.allowedHorizons[0],
+    payoutRangeBps: Math.min(
+      Math.max(1_000, limits.minPayoutRangeBps),
+      limits.maxPayoutRangeBps,
+    ),
+  };
+}
+
+/** UTF-8 bytes, because the contract caps `narrative` in bytes and CJK is 3 each. */
+function byteLength(value: string): number {
+  return new TextEncoder().encode(value).length;
+}
+
 export default function PostThesis() {
   const { t, locale } = useLocale();
-  const [structure, setStructure] = useState<ThesisSpecV2 | null>(null);
-  const [referenceConfirmed, setReferenceConfirmed] = useState(false);
-  const compile = useCompileThesis();
-  const assets = useListAssets();
+  const [bet, setBet] = useState<BetStructure | null>(null);
+  const [thesis, setThesis] = useState("");
+  const limitsQuery = useFactoryLimits();
+  const assetsQuery = useListAssets();
   const transaction = useTransaction();
   const { address: account, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -70,37 +103,42 @@ export default function PostThesis() {
   const navigate = useNavigate();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { narrative: "", conviction: "" },
+    defaultValues: { conviction: "" },
   });
 
-  const registry = readAssets(assets.data?.data);
-  const availableSymbols = registry.map((asset) => asset.symbol);
+  const registry = readAssets(assetsQuery.data?.data);
+  const limits = limitsQuery.data?.limits;
+  const narrativeMaxBytes = limitsQuery.data?.narrativeMaxBytes ?? 2_000;
+  const activeBet = useMemo(
+    () =>
+      bet ??
+      (limits
+        ? defaultBet(
+            registry.map((a) => a.symbol),
+            limits,
+          )
+        : null),
+    [bet, limits, registry],
+  );
   const feedFor = (symbol: string) =>
     registry.find((asset) => asset.symbol === symbol)?.feed ?? "";
-  const structureError = structure
-    ? validateClaim(structure)
-    : ("empty" as const);
 
-  async function compileNarrative(values: FormValues) {
-    try {
-      const result = await compile.mutateAsync({
-        data: { text: values.narrative },
-      });
-      if (result.status !== 200) throw new Error(t("post.compilerInvalid"));
-      setStructure(result.data);
-      setReferenceConfirmed(false);
-      toast(t("post.confirmReference"));
-    } catch (error) {
-      toast(formatError(error, locale));
-    }
-  }
+  const thesisBytes = byteLength(thesis.trim());
+  const thesisError =
+    thesisBytes === 0
+      ? ("empty" as const)
+      : thesisBytes > narrativeMaxBytes
+        ? ("long" as const)
+        : null;
+  const betError =
+    activeBet && limits ? validateBet(activeBet, limits) : ("empty" as const);
 
   async function postThesis(values: FormValues) {
-    if (!structure || structureError) return;
-    if (!referenceConfirmed) {
-      toast(t("post.confirmReference"));
+    if (!activeBet || betError) {
+      toast(t("post.betInvalid"));
       return;
     }
+    if (thesisError) return;
     if (!account) {
       openConnectModal?.();
       toast(t("post.connect"));
@@ -124,15 +162,13 @@ export default function PostThesis() {
       return;
     }
 
-    const basket = structure.basket.map((asset) => ({
-      feed: asset.feed as Address,
+    const basket = activeBet.basket.map((asset) => ({
+      feed: feedFor(asset.symbol) as Address,
       weightBps: asset.weight_bps,
     }));
-    if (
-      !isAddress(structure.reference.feed) ||
-      basket.some((asset) => !isAddress(asset.feed))
-    ) {
-      toast(t("post.compilerFeed"));
+    const referenceFeed = feedFor(activeBet.reference.symbol);
+    if (!isAddress(referenceFeed) || basket.some((a) => !isAddress(a.feed))) {
+      toast(t("post.betInvalid"));
       return;
     }
 
@@ -159,9 +195,11 @@ export default function PostThesis() {
         abi: FACTORY_ABI,
         functionName: "createThesis",
         args: [
-          canonicalClaim(structure),
+          thesis.trim(),
           basket,
-          structure.reference.feed as Address,
+          referenceFeed as Address,
+          BigInt(activeBet.horizonSeconds),
+          BigInt(activeBet.payoutRangeBps),
           conviction,
         ],
       });
@@ -200,120 +238,87 @@ export default function PostThesis() {
         <SplitLayout
           main={
             <PageSection title={t("post.step1")}>
-              <Card>
-                <form onSubmit={form.handleSubmit(compileNarrative)}>
-                  <Label htmlFor="narrative">{t("post.narrative")}</Label>
-                  <Textarea
-                    id="narrative"
-                    maxLength={280}
-                    placeholder={t("post.narrativePlaceholder")}
-                    className="mt-2"
-                    {...form.register("narrative")}
-                  />
-                  <div className="mt-2 flex justify-between text-meta text-text-3">
-                    <span>
-                      {form.formState.errors.narrative?.message ??
-                        t("post.narrativeHint")}
-                    </span>
-                    <span>{form.watch("narrative").length}/280</span>
-                  </div>
-                  <Button
-                    variant="primary"
-                    type="submit"
-                    className="mt-5"
-                    disabled={compile.isPending}
+              <Card className="p-5">
+                <Label htmlFor="thesis">{t("post.thesis")}</Label>
+                <Textarea
+                  id="thesis"
+                  rows={12}
+                  className="mt-2"
+                  placeholder={t("post.thesisPlaceholder")}
+                  value={thesis}
+                  onChange={(event) => setThesis(event.target.value)}
+                />
+                <div className="mt-2 flex justify-between gap-4 text-meta text-text-3">
+                  <span>
+                    {thesisError === "long"
+                      ? t("post.thesisTooLong")
+                      : t("post.thesisHint")}
+                  </span>
+                  <span
+                    className={
+                      thesisBytes > narrativeMaxBytes
+                        ? "text-warning"
+                        : undefined
+                    }
                   >
-                    {compile.isPending
-                      ? t("post.compiling")
-                      : t("post.structure")}
-                  </Button>
-                </form>
+                    {thesisBytes}/{narrativeMaxBytes}
+                  </span>
+                </div>
               </Card>
             </PageSection>
           }
           aside={
             <PageSection title={t("post.step2")}>
-              <Card>
-                {structure ? (
-                  <>
-                    <ThesisStructureEditor
-                      structure={structure}
-                      symbols={availableSymbols}
-                      disabled={transaction.isPending}
-                      onChange={(next) => {
-                        // The editor works in symbols; feeds are resolved from the
-                        // registry here so no symbol can reach the contract without one.
-                        setStructure({
-                          ...structure,
-                          basket: next.basket.map((asset) => ({
-                            ...asset,
-                            feed: feedFor(asset.symbol),
-                          })),
-                          reference: {
-                            symbol: next.reference.symbol,
-                            feed: feedFor(next.reference.symbol),
-                          },
-                        });
-                        setReferenceConfirmed(false);
-                      }}
+              {activeBet && limits ? (
+                <>
+                  <BetEditor
+                    bet={activeBet}
+                    symbols={registry.map((asset) => asset.symbol)}
+                    limits={limits}
+                    disabled={transaction.isPending}
+                    onChange={setBet}
+                  />
+                  <form
+                    onSubmit={form.handleSubmit(postThesis)}
+                    className="mt-5"
+                  >
+                    <Label htmlFor="conviction">
+                      {t("post.convictionLabel")}
+                    </Label>
+                    <Input
+                      id="conviction"
+                      inputMode="decimal"
+                      required
+                      placeholder="1000"
+                      className="mt-2"
+                      {...form.register("conviction")}
                     />
+                    <p className="mt-2 text-meta text-text-3">
+                      {t("post.fixedParams")}
+                    </p>
                     <Button
-                      variant={referenceConfirmed ? "back" : "default"}
+                      variant="primary"
+                      type="submit"
                       className="mt-5 w-full"
-                      disabled={!!structureError}
-                      onClick={() =>
-                        setReferenceConfirmed((confirmed) => !confirmed)
+                      disabled={
+                        transaction.isPending || !!betError || !!thesisError
                       }
-                      aria-pressed={referenceConfirmed}
                     >
-                      {referenceConfirmed
-                        ? t("post.confirmedToggle", {
-                            symbol: structure.reference.symbol,
-                          })
-                        : t("post.confirmToggle", {
-                            symbol: structure.reference.symbol,
-                          })}
+                      {transaction.isPending
+                        ? t("post.posting")
+                        : t("post.submit")}
                     </Button>
-                    <form
-                      onSubmit={form.handleSubmit(postThesis)}
-                      className="mt-5 border-t border-border pt-5"
-                    >
-                      <Label htmlFor="conviction">
-                        {t("post.convictionLabel")}
-                      </Label>
-                      <Input
-                        id="conviction"
-                        inputMode="decimal"
-                        required
-                        placeholder="1000"
-                        className="mt-2"
-                        {...form.register("conviction")}
-                      />
-                      <p className="mt-2 text-meta text-text-3">
-                        {t("post.fixedParams")}
-                      </p>
-                      <Button
-                        variant="primary"
-                        type="submit"
-                        className="mt-5 w-full"
-                        disabled={transaction.isPending || !!structureError}
-                      >
-                        {transaction.isPending
-                          ? t("post.posting")
-                          : t("post.submit")}
-                      </Button>
-                      <TransactionFlow
-                        phase={transaction.phase}
-                        hash={transaction.hash}
-                      />
-                    </form>
-                  </>
-                ) : (
-                  <p className="text-body text-text-2">
-                    {t("post.emptyPreview")}
-                  </p>
-                )}
-              </Card>
+                    <TransactionFlow
+                      phase={transaction.phase}
+                      hash={transaction.hash}
+                    />
+                  </form>
+                </>
+              ) : (
+                <Card className="p-5">
+                  <p className="text-body text-text-2">{t("post.noAssets")}</p>
+                </Card>
+              )}
             </PageSection>
           }
           asideWidth="wide"

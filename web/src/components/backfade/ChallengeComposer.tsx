@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useThesisPosition } from "@/features/thesis/hooks";
 import type { ThesisDetail } from "@/features/thesis/types";
 import { useTransaction } from "@/features/wallet/useTransaction";
+import { formatPayoutRange } from "@/lib/bet";
 import { config } from "@/lib/config";
 import { formatAmount, formatError } from "@/lib/format";
 import { useLocale } from "@/lib/locale-provider";
@@ -127,10 +128,14 @@ export function ChallengeComposer({ thesis }: { thesis: ThesisDetail }) {
           {formatAmount(thesis.openBounty)} USDG
         </span>
       </div>
+      <div className="flex items-baseline justify-between border-b border-border pb-3 text-body">
+        <span className="text-text-3">{t("challenge.terms")}</span>
+        <span className="font-mono font-semibold text-text-1" data-financial>
+          {formatPayoutRange(Number(thesis.payoutRangeBps))}
+        </span>
+      </div>
       <Button variant="fade" type="submit" disabled={transaction.isPending}>
-        {transaction.isPending
-          ? t("challenge.fading")
-          : t("challenge.submit")}
+        {transaction.isPending ? t("challenge.fading") : t("challenge.submit")}
       </Button>
       <TransactionFlow phase={transaction.phase} hash={transaction.hash} />
     </form>

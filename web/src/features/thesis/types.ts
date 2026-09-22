@@ -49,6 +49,8 @@ export interface ThesisSummary {
   settledAt: bigint;
   creatorPayout: bigint;
   challengePayoutPool: bigint;
+  /** Alpha that maps to a full Challenge Pool transfer; the creator's own terms. */
+  payoutRangeBps: bigint;
 }
 
 export interface ThesisDetail extends ThesisSummary {

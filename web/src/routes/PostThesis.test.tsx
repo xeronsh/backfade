@@ -4,15 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/lib/locale-provider";
 
 const mocks = vi.hoisted(() => ({
-  mutateAsync: vi.fn(),
   execute: vi.fn(),
 }));
 
 vi.mock("@/lib/api/generated", () => ({
-  useCompileThesis: () => ({
-    mutateAsync: mocks.mutateAsync,
-    isPending: false,
-  }),
   useListAssets: () => ({
     data: {
       data: {
@@ -40,6 +35,18 @@ vi.mock("@/lib/api/generated", () => ({
     },
   }),
 }));
+vi.mock("@/features/thesis/hooks", () => ({
+  useFactoryLimits: () => ({
+    data: {
+      limits: {
+        allowedHorizons: [300, 3_600],
+        minPayoutRangeBps: 100,
+        maxPayoutRangeBps: 5_000,
+      },
+      narrativeMaxBytes: 2_000,
+    },
+  }),
+}));
 vi.mock("@/features/wallet/useTransaction", () => ({
   useTransaction: () => ({
     phase: "IDLE",
@@ -59,56 +66,53 @@ vi.mock("wagmi", () => ({
 
 import PostThesis from "./PostThesis";
 
+function renderPage() {
+  return render(
+    <LocaleProvider>
+      <MemoryRouter>
+        <PostThesis />
+      </MemoryRouter>
+    </LocaleProvider>,
+  );
+}
+
 describe("Post Thesis flow", () => {
-  it("requires a confirmed Reference before the wallet step", async () => {
-    mocks.mutateAsync.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        version: 2,
-        narrative: "AMD will outperform TSLA.",
-        basket: [
-          {
-            symbol: "AMD",
-            feed: "0x0000000000000000000000000000000000000001",
-            weight_bps: 10_000,
-          },
-        ],
-        reference: {
-          symbol: "TSLA",
-          feed: "0x0000000000000000000000000000000000000002",
-        },
-        reference_origin: "explicit",
-      },
-    });
-    render(
-      <LocaleProvider>
-        <MemoryRouter>
-          <PostThesis />
-        </MemoryRouter>
-      </LocaleProvider>,
-    );
+  it("keeps the Thesis and the Bet as separate authored inputs", () => {
+    renderPage();
 
-    fireEvent.change(screen.getByLabelText("Narrative"), {
-      target: { value: "AMD will outperform TSLA." },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Structure Thesis" }));
+    // The Bet renders from its own structured controls.
     expect(
-      await screen.findByRole("button", { name: "Confirm Reference: TSLA" }),
+      screen.getByText("AMD 50% + PLTR 50% beats TSLA · 5min"),
     ).toBeInTheDocument();
-    // The claim is derived from the structure, never from the compiled narrative.
-    expect(screen.getByText("AMD 100% beats TSLA")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Creator Conviction (USDG)"), {
-      target: { value: "1000" },
+    // Writing the opinion must not change the Bet: the prose is never parsed.
+    fireEvent.change(screen.getByLabelText("Thesis"), {
+      target: { value: "I think holding NVIDIA is better than AMD." },
     });
+    expect(
+      screen.getByText("AMD 50% + PLTR 50% beats TSLA · 5min"),
+    ).toBeInTheDocument();
+  });
+
+  it("blocks posting while the Bet is invalid", async () => {
+    renderPage();
+    fireEvent.change(screen.getByLabelText("Thesis"), {
+      target: { value: "AMD and PLTR beat TSLA." },
+    });
+    const submit = screen.getByRole("button", { name: "Bond & Post" });
+    expect(submit).not.toBeDisabled();
+
+    // 40 + 50 leaves the total at 90%, which the contract would reject.
+    fireEvent.change(screen.getByLabelText("AMD Weight"), {
+      target: { value: "40" },
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Bond & Post" }),
+      ).toBeDisabled(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Bond & Post" }));
     await waitFor(() => expect(mocks.execute).not.toHaveBeenCalled());
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Confirm Reference: TSLA" }),
-    );
-    expect(
-      screen.getByRole("button", { name: "Reference confirmed: TSLA" }),
-    ).toBeInTheDocument();
   });
 });
