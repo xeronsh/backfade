@@ -11,7 +11,7 @@ export function LocaleToggle({ className }: { className?: string }) {
   const { locale, setLocale, t } = useLocale();
 
   return (
-    <div className={cn("grid grid-cols-2 gap-0.5", className)}>
+    <div data-slot="locale-toggle" className={cn("grid grid-cols-2 gap-0.5", className)}>
       {(["en", "zh"] as const).map((code) => {
         const active = locale === code;
         return (

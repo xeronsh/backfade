@@ -68,7 +68,7 @@ export function AppShell() {
           </ButtonLink>        </div>
         <div className="mt-auto grid gap-3 px-3 pt-6">
           <LocaleToggle />
-          <WalletStatus />
+          <WalletStatus className="w-full" />
         </div>
       </aside>
 

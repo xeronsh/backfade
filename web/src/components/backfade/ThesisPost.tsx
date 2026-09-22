@@ -75,12 +75,8 @@ export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
                 {thesis.challengers.length}
               </span>{" "}
               {thesis.challengers.length === 1
-                ? t("card.challengeCountOne", {
-                    count: thesis.challengers.length,
-                  })
-                : t("card.challengeCount", {
-                    count: thesis.challengers.length,
-                  })}
+                ? t("card.challengeCountOne")
+                : t("card.challengeCount")}
             </span>
             <span className="text-text-3">
               <span className="font-mono text-fade">

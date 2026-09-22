@@ -109,8 +109,8 @@ export const dict = {
     "card.fade": "Fade it →",
     "card.openThread": "Open thread →",
     "card.faded": "Faded",
-    "card.challengeCountOne": "{count} Challenge",
-    "card.challengeCount": "{count} Challenges",
+    "card.challengeCountOne": "Challenge",
+    "card.challengeCount": "Challenges",
 
     "leaderboard.eyebrow": "DISCOVERY",
     "leaderboard.title": "Realized P&L leaderboard",
@@ -312,8 +312,8 @@ export const dict = {
     "card.fade": "挑战它 →",
     "card.openThread": "进入讨论 →",
     "card.faded": "已挑战",
-    "card.challengeCountOne": "{count} 个挑战",
-    "card.challengeCount": "{count} 个挑战",
+    "card.challengeCountOne": "个挑战",
+    "card.challengeCount": "个挑战",
 
     "leaderboard.eyebrow": "发现",
     "leaderboard.title": "已实现盈亏排行",

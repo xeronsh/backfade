@@ -8,11 +8,15 @@ import { cn } from "@/lib/utils";
  * would slide that toggle sideways when the locale flips. Every state is
  * therefore given the same slot width and the account name truncates inside
  * it, keeping the header geometry identical in both locales.
+ *
+ * The rail overrides that fixed width with `className`, so the control lines up
+ * with the language switch and the rest of the rail column.
  */
 const SLOT = "w-40 shrink-0 px-2";
 
-export function WalletStatus() {
+export function WalletStatus({ className }: { className?: string }) {
   const { t } = useLocale();
+  const slot = cn(SLOT, className);
 
   return (
     <ConnectButton.Custom>
@@ -26,7 +30,7 @@ export function WalletStatus() {
       }) => {
         if (!mounted)
           return (
-            <Button variant="ghost" size="sm" className={cn(SLOT, "invisible")}>
+            <Button variant="ghost" size="sm" className={cn(slot, "invisible")}>
               {t("wallet.connect")}
             </Button>
           );
@@ -35,7 +39,7 @@ export function WalletStatus() {
             <Button
               variant="danger"
               size="sm"
-              className={SLOT}
+              className={slot}
               onClick={openChainModal}
             >
               {t("wallet.wrongNetwork")}
@@ -46,7 +50,7 @@ export function WalletStatus() {
             <Button
               size="sm"
               variant="primary"
-              className={SLOT}
+              className={slot}
               onClick={openConnectModal}
             >
               {t("wallet.connect")}
@@ -56,7 +60,7 @@ export function WalletStatus() {
           <Button
             size="sm"
             variant="default"
-            className={cn(SLOT, "justify-start")}
+            className={cn(slot, "justify-start")}
             onClick={openAccountModal}
             aria-label={t("wallet.account", { name: account.displayName })}
           >
