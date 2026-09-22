@@ -30,8 +30,12 @@ def _truncate_utf8(text: str, max_bytes: int = 280) -> str:
     return encoded[:max_bytes].decode("utf-8", errors="ignore")
 
 
+# Bilingual by necessity: the interface ships zh/en, so a Chinese opinion that
+# names its own benchmark must not fall through to the keyword table. The `\b`
+# guard is on the English branch only — `\b` never fires before a CJK character.
 _REFERENCE_PATTERN = re.compile(
-    r"\b(?:outperform(?:s|ed)?|beat(?:s|ing)?|vs\.?|versus|against|relative\s+to)\s+"
+    r"(?:\b(?:outperform(?:s|ed)?|beat(?:s|ing)?|vs\.?|versus|against|relative\s+to)"
+    r"|跑赢|胜过|强于|优于|打败|对比)\s*"
     r"\$?([A-Za-z][A-Za-z0-9_-]{1,11})\b",
     re.IGNORECASE,
 )

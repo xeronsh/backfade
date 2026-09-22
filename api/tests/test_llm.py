@@ -33,6 +33,14 @@ def test_explicit_reference_survives_compilation() -> None:
     )
 
 
+def test_explicit_reference_is_read_from_chinese_connectors() -> None:
+    """The interface ships zh/en; a zh opinion naming its benchmark must not
+    fall through to the keyword table and seed an unrelated structure."""
+    spec = mock_compile("AMD 和 PLTR 本周将跑赢 TSLA。", load_assets())
+    assert spec.reference.symbol == "TSLA"
+    assert spec.reference_origin == "explicit"
+
+
 def test_validator_fails_closed_on_wrong_weight_total() -> None:
     universe = load_assets()
     spec = mock_compile("AI is rotating into nuclear energy.", universe)
