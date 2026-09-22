@@ -183,6 +183,18 @@
   content: "";
 }
 
+/* The desktop rail reads top-to-bottom, so its active marker is a left rule that
+   only spans the row. The bottom underline above belongs to the horizontal tab
+   bar on small screens, where a left rule would point at nothing. */
+.nav-link--rail.nav-link--active::after {
+  top: 0.5rem;
+  right: auto;
+  bottom: 0.5rem;
+  left: 0;
+  width: 2px;
+  height: auto;
+}
+
 /* Capital-backed conviction uses the same token rails as financial values. */
 .conviction-bar__track {
   position: relative;

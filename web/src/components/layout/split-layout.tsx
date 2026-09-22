@@ -30,7 +30,7 @@ export function SplitLayout({
         "grid items-start",
         gap === "tight" ? "gap-5" : "gap-8",
         asideWidth === "narrow"
-          ? "lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
+          ? "lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]"
           : "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
         className,
       )}

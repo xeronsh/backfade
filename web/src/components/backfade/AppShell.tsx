@@ -51,7 +51,7 @@ export function AppShell() {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  "relative flex min-h-11 items-center rounded-button px-3 text-body font-semibold transition-colors duration-standard",
+                  "nav-link--rail relative flex min-h-11 items-center rounded-button px-3 text-body font-semibold transition-colors duration-standard",
                   isActive
                     ? "nav-link--active bg-brand/10 text-text-1"
                     : "text-text-3 hover:bg-surface-2 hover:text-text-1",
