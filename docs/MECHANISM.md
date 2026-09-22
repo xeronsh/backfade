@@ -8,18 +8,25 @@ The protocol has three primitives: a bonded Thesis, a capital-backed Challenge, 
 
 ## Thesis
 
-A Thesis is a relative investment opinion:
+A Thesis is a relative investment opinion, and it has two halves that the creator authors separately:
 
-- `narrative`: immutable text written by the creator;
+- the **Thesis** — `narrative`, immutable free text written by the creator. It is
+  stored as written and is never parsed into the Bet. Capped at 2,000 UTF-8 bytes;
+- the **Bet** — the short, deterministic claim the contract actually settles.
+
+A Bet is:
+
 - `basket`: one to five approved feeds with integer `weightBps` values summing to `10,000`;
 - `reference`: one different approved feed that the Thesis claims to outperform;
+- `horizon`: one of the deployment's allowed horizons;
+- `payoutRangeBps`: the creator's own settlement band, bounded by the deployment;
 - `creatorBond`: canonical collateral posted by the creator;
 - `challengeEndsAt`: deployment-configured opening window;
-- `resolvesAt`: deployment-configured horizon.
+- `resolvesAt`: deployment-fixed `challengeEndsAt` plus the chosen `horizon`.
 
-The creator explicitly confirms the Reference before the wallet transaction. The AI compiler may structure the narrative and suggest a Reference, but it never silently chooses financial truth, payout rules, collateral, or settlement.
+Splitting the two is deliberate. An opinion says more than any single bet can encode, so deriving one from the other would silently narrow what the creator actually claimed. The Bet is rendered from its own fields and can never disagree with the numbers that pay out.
 
-After creation, narrative, basket, reference, and start prices cannot be edited. The Factory accepts only its deployment-configured collateral and feed allowlist. v0.2 has no arbitrary ERC20, arbitrary feed, fee, governance, proxy, or upgrade path.
+The creator selects the Reference and the horizon directly. After creation, narrative, basket, reference, and start prices cannot be edited. The Factory accepts only its deployment-configured collateral, feed allowlist, horizon allowlist, and payout-range bounds. v0.2 has no arbitrary ERC20, arbitrary feed, fee, governance, proxy, or upgrade path.
 
 ## Challenge and Open Bounty
 
@@ -69,11 +76,11 @@ Narrative Alpha is a Backfade product metric. It is not Jensen's Alpha or CAPM a
 
 ## Continuous payout
 
-`PAYOUT_RANGE_BPS = 1,000` represents a financial transfer range of ±10%. Actual Narrative Alpha is not capped; only the transfer is bounded:
+`payoutRangeBps` is the creator's own settlement band, bounded by `MIN_PAYOUT_RANGE_BPS = 100` and `MAX_PAYOUT_RANGE_BPS = 5,000`. It is leverage by another name: a narrower band transfers more Challenge Pool per unit of Alpha. Actual Narrative Alpha is not capped; only the transfer is bounded:
 
 ```text
-bounded = min(abs(realizedAlphaBps), PAYOUT_RANGE_BPS)
-transfer = challengePool × bounded / PAYOUT_RANGE_BPS
+bounded = min(abs(realizedAlphaBps), payoutRangeBps)
+transfer = challengePool × bounded / payoutRangeBps
 ```
 
 For positive Alpha:
@@ -92,7 +99,7 @@ challengePayoutPool = challengePool + transfer
 
 At zero Alpha, both sides receive principal. A positive Alpha never decreases the creator payout or increases the Challenge payout pool. A negative Alpha has the inverse effect. Alpha outside ±10% does not increase the financial transfer further.
 
-Examples with a `$1,000` creator bond, `$600` Challenge Pool, and ±10% payout range:
+Examples with a `$1,000` creator bond, `$600` Challenge Pool, and `payoutRangeBps = 1,000` (±10%). The transfer scales linearly with the band, so `±1%` on the same pool moves ten times as much:
 
 | Realized Alpha | Creator payout | Challengers total |
 | ---: | ---: | ---: |

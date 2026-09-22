@@ -12,7 +12,36 @@
 | Optimizer | enabled, 200 runs |
 | Collateral | MockUSDG, testnet only |
 
+## Active v0.2.1 deployment (per-Thesis horizon and payout range)
+
+The creator now chooses the horizon and the payout range per Thesis, and the Thesis narrative is capped at `2,000` bytes instead of sharing the Challenge note's `280`. The Factory enforces the horizon allowlist and the payout-range bounds; the contract cannot read its own file-level constants cross-contract, so `ProtocolLimits.sol` holds them once for both contracts.
+
+| Setting | Value |
+|---|---:|
+| Challenge window | `45 s` |
+| Horizon allowlist | `300 s`, `3,600 s`, `28,800 s`, `86,400 s`, `604,800 s` |
+| Payout range bounds | `100` .. `5,000` bps |
+| Narrative cap | `2,000` bytes |
+| Settlement window | `1,800 s` (`30 min`) |
+| Maximum start-price age | `2,592,000 s` (`30 d`) |
+
+Maximum start-price age is deliberately generous. This testnet's stock feeds freeze for days at a time — at deployment the freshest observation was already `6.4` days old, which a `30 min` window rejects outright and makes the product unusable. Settlement still demands a *post-expiry* observation, so a stale start price can never manufacture a result; it only ever defers the Thesis to `CANCELLED`.
+
+| Contract | Address | Deployment transaction |
+|---|---|---|
+| MockUSDG (reused) | `0x84C5f600720532f71009dd2cBED168e766383eE8` | [`0x04ef0d163d6968fb8d5f9030a92504bbf1c1cdbf549f84cce66d87176000a515`](https://explorer.testnet.chain.robinhood.com/tx/0x04ef0d163d6968fb8d5f9030a92504bbf1c1cdbf549f84cce66d87176000a515) |
+| ThesisFactory | `0x1531218CA9e05fDA3065FD2BDfeBD4F44036ba09` | [`0xd027202b5e83122e44643cc36d01e341512ead426082a9a38c2c61d9763c0a23`](https://explorer.testnet.chain.robinhood.com/tx/0xd027202b5e83122e44643cc36d01e341512ead426082a9a38c2c61d9763c0a23) |
+
+| Thesis | Bet | Address | Create transaction |
+|---|---|---|---|
+| Long narrative | `AMD 60% + PLTR 40% beats TSLA · 5min` at `±10%` | `0x241b023cC641ed72090f08E3A82a52Ba698031a4` | [`0x13b29f90c6316158e35ea583d258b39ec1befece6c4e7e29f674201e107c83a0`](https://explorer.testnet.chain.robinhood.com/tx/0x13b29f90c6316158e35ea583d258b39ec1befece6c4e7e29f674201e107c83a0) |
+| Maximum leverage | `NVDA 100% beats AMD · 1h` at `±1%` | `0x4C34775d8c7943543c193C967110570670A03FD2` | [`0xa9a421abdc8fe537e2bb2d11a053ac0ef858d7f39208b8375affe14c59758ece`](https://explorer.testnet.chain.robinhood.com/tx/0xa9a421abdc8fe537e2bb2d11a053ac0ef858d7f39208b8375affe14c59758ece) |
+
+The first Thesis carries a `621`-byte narrative, which the previous `280`-byte cap would have rejected. It holds a `1,000 USDG` Creator bond and one `300 USDG` Challenge, [`0xd6b4d36e5d7c2690183bdfe5292e8a94f2b85a40e2de77b7dd279cb727b44326`](https://explorer.testnet.chain.robinhood.com/tx/0xd6b4d36e5d7c2690183bdfe5292e8a94f2b85a40e2de77b7dd279cb727b44326). The second holds a single-asset bet at the narrowest allowed band, so the two demonstrate the full range of both new parameters.
+
 ## Fresh v0.2 settlement attempt (safely cancelled)
+
+> Historical. Superseded by the active v0.2.1 deployment above; retained because its cancellation and refund sequence is the reference evidence for the fail-closed settlement path.
 
 This v0.2 deployment was used for the first bounded live settlement attempt. Its `8 h` horizon placed expiry after the next verified stock-feed window. The `48 h` maximum start age was explicit because the feeds' last verified observations were more than 24 h old at creation; no unverified or fabricated price was used.
 

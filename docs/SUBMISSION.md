@@ -21,7 +21,7 @@ The frontend uses the local FastAPI compiler through the Vite `/v1` proxy. Walle
 | Network | Robinhood Chain Testnet |
 | Chain ID | `46630` |
 | RPC | `https://rpc.testnet.chain.robinhood.com` |
-| Factory | `0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94` |
+| Factory | `0x1531218CA9e05fDA3065FD2BDfeBD4F44036ba09` |
 | Collateral | `0x84C5f600720532f71009dd2cBED168e766383eE8` |
 
 All addresses and configuration are canonical in [`DEPLOYMENTS.md`](DEPLOYMENTS.md). The v0.1 binary deployment remains historical and is not reused.

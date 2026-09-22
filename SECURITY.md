@@ -23,6 +23,8 @@ The v0.1 binary contracts and addresses remain historical evidence only. The v0.
 - Basket weights must sum to 10,000 bps, use one to five distinct approved feeds, and exclude the Reference.
 - Creator Bond is the only original conviction. `challengePool <= creatorBond` and `openBounty = creatorBond - challengePool` are enforced.
 - The creator cannot Challenge their own Thesis. Notes are plain UTF-8 text capped at 280 bytes.
+- The Thesis narrative is separate from the Bet and capped at 2,000 bytes. It is stored as written and never parsed into the payout terms.
+- The chosen horizon must be in the deployment's allowlist, and the chosen payout range must sit inside the deployment's bounds. Neither can be edited after creation.
 - Narrative, basket, Reference, and normalized start prices cannot be edited after creation.
 - Start prices require a positive answer, valid timestamp, deployed feed code, and configured freshness.
 - Settlement requires every feed observation to be positive, non-future, at or after expiry, and inside the bounded settlement window.

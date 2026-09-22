@@ -29,7 +29,7 @@ The client derives the social activity tape from `ThesisCreated`, `ConvictionRai
 
 ## Contract boundary
 
-`ThesisFactory` is deployment-configured once through its constructor with canonical collateral, approved feeds, challenge window, horizon, settlement window, and start-price age. It has no owner, setter, proxy, governance, or upgrade path. It validates basket weights and deploys `ThesisChallenge` instances.
+`ThesisFactory` is deployment-configured once through its constructor with canonical collateral, approved feeds, the challenge window, the horizon allowlist, the payout-range bounds, the settlement window, and the start-price age. It has no owner, setter, proxy, governance, or upgrade path. It validates basket weights, the chosen horizon, and the chosen payout range, then deploys `ThesisChallenge` instances.
 
 `ThesisChallenge` owns immutable narrative/reference/basket/start prices, creator bond, Challenge Pool, Open Bounty, Matched Conviction, Alpha, payout pools, pull claims, and lifecycle state. It does not store profiles, likes, followers, ranking, or free comments.
 
