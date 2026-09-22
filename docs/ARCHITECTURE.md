@@ -1,6 +1,6 @@
 # Architecture
 
-Backfade keeps financial truth onchain and keeps social presentation in the client. The product is a social feed for capital-backed crypto opinions; the protocol is an immutable Thesis/Challenge lifecycle.
+Backfade keeps financial truth onchain and keeps social presentation in the client. The product is a social feed for capital-backed investment opinions; the protocol is an immutable Thesis/Challenge lifecycle.
 
 ## Runtime
 

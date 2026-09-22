@@ -1,6 +1,6 @@
 # Backfade v0.2 Mechanism
 
-Backfade is a social protocol for capital-backed crypto opinions:
+Backfade is a social protocol for capital-backed investment opinions:
 
 > If you call it, bond it. If you doubt it, fade it.
 

@@ -1,11 +1,11 @@
 # Backfade
 
-Crypto calls with skin in the game.
+Investment calls with skin in the game.
 
 If you call it, bond it.
 If you doubt it, fade it.
 
-Backfade turns crypto opinions into capital-backed social challenges. Creators bond a Thesis, Challengers put money behind disagreement, and verified price feeds settle the argument. Wins and losses stay on the track record.
+Backfade turns investment opinions into capital-backed social challenges. Creators bond a Thesis, Challengers put money behind disagreement, and verified price feeds settle the argument. Wins and losses stay on the track record.
 
 ## v0.2 Social Alpha
 
@@ -14,7 +14,7 @@ Backfade turns crypto opinions into capital-backed social challenges. Creators b
 - **Backend:** FastAPI compiler returning `ThesisSpecV2`
 - **Contracts:** Foundry Solidity; `ThesisFactory` deploys immutable `ThesisChallenge` instances
 - **Collateral:** deployment-configured MockUSDG on testnet only; no real value
-- **Feeds:** only the deployment allowlist is accepted. The current registry is equity-heavy until reliable verified crypto feeds are available.
+- **Assets:** the deployment allowlist is the only accepted price source, and it is fixed at deploy time. The current registry covers tokenized equity on Robinhood Chain (AMD, PLTR, NVDA, TSLA, COIN); the protocol is asset-agnostic, but no feed can be added at runtime and none is invented to satisfy product copy.
 
 The chain owns narrative commitments, collateral, oracle settlement, claims, and lifecycle state. The API only structures narrative input and re-anchors feeds from the checked-in registry. The browser wallet signs every write; there is no custody, database, indexer, or social graph.
 

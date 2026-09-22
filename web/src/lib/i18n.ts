@@ -185,7 +185,7 @@ export const dict = {
     "post.eyebrow": "POST THESIS",
     "post.title": "Say it. Bond it.",
     "post.lede":
-      "Write a relative crypto opinion, confirm its Reference, and expose conviction to people willing to Fade it.",
+      "Write a relative investment opinion, confirm its Reference, and expose conviction to people willing to Fade it.",
     "post.step1": "1. What's your Thesis?",
     "post.step2": "2. Bond conviction",
     "post.narrative": "Narrative",
