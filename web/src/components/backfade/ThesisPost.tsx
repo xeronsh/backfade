@@ -19,6 +19,11 @@ function alphaValue(thesis: ThesisDetail) {
 }
 
 export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
+  const faded = thesis.challengers.reduce(
+    (total, challenger) => total + challenger.stake,
+    0n,
+  );
+
   return (
     <Card className="transition-colors duration-standard hover:border-border-strong">
       <CardHeader className="justify-between">
@@ -69,10 +74,18 @@ export function ThesisPost({ thesis }: { thesis: ThesisDetail }) {
           />
         </MetricGroup>
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
-          <span className="text-meta text-text-3">
-            {thesis.challengers.length}{" "}
-            {thesis.challengers.length === 1 ? "Challenge" : "Challenges"}
-          </span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-meta">
+            <span className="text-text-3">
+              <span className="font-mono text-text-1">
+                {thesis.challengers.length}
+              </span>{" "}
+              {thesis.challengers.length === 1 ? "Challenge" : "Challenges"}
+            </span>
+            <span className="text-text-3">
+              <span className="font-mono text-fade">{formatAmount(faded)}</span>{" "}
+              USDG Faded
+            </span>
+          </div>
           <Link
             to={`/thesis/${thesis.address}`}
             className="font-mono text-meta font-semibold uppercase tracking-label text-brand hover:text-brand-hover"
