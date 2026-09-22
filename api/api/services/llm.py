@@ -177,13 +177,16 @@ def mock_compile(text: str, universe: list[dict]) -> ThesisSpecV2:
     if not by_symbol:
         raise ValueError("No enabled assets are configured")
 
+    # Demo keyword table for the no-LLM fallback. Every symbol must exist in the
+    # deployment allowlist: one that does not is filtered out, which silently
+    # degrades the basket to an unrelated default. "meme" was dropped because
+    # GME is not in the current registry and no listed equity stands in for it.
     keyword_map = {
         "nuclear": (["AMD", "PLTR", "NVDA"], "TSLA"),
         "energy": (["AMD", "PLTR"], "TSLA"),
         "ai": (["NVDA", "PLTR"], "TSLA"),
         "electric": (["TSLA", "COIN"], "AMD"),
         "crypto": (["COIN"], "TSLA"),
-        "meme": (["GME"], "TSLA"),
     }
     lowered = text.lower()
     chosen: tuple[list[str], str] | None = None
