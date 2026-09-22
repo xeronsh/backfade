@@ -1,6 +1,12 @@
 .PHONY: dev api web contracts codegen codegen-check api-check web-check test e2e live-check check
 
-CHAIN_ENV = VITE_CHAIN_ID=46630 VITE_CHAIN_NAME='Robinhood Chain Testnet' VITE_RPC_URL=https://rpc.testnet.chain.robinhood.com VITE_EXPLORER_URL=https://explorer.testnet.chain.robinhood.com VITE_FACTORY_ADDRESS=0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94 VITE_COLLATERAL_ADDRESS=0x84C5f600720532f71009dd2cBED168e766383eE8 VITE_FACTORY_DEPLOYMENT_BLOCK=120693575 VITE_API_BASE=/v1 VITE_WALLETCONNECT_PROJECT_ID=ci-placeholder
+# A public client-side identifier, not a secret, but the placeholder is kept as
+# the default so CI and `make web-check` never call out to WalletConnect. Real
+# wallet support needs a project id:
+#   make dev WALLETCONNECT_PROJECT_ID=<id>
+WALLETCONNECT_PROJECT_ID ?= ci-placeholder
+
+CHAIN_ENV = VITE_CHAIN_ID=46630 VITE_CHAIN_NAME='Robinhood Chain Testnet' VITE_RPC_URL=https://rpc.testnet.chain.robinhood.com VITE_EXPLORER_URL=https://explorer.testnet.chain.robinhood.com VITE_FACTORY_ADDRESS=0x841Ec0cBBD931243e8d973BaC9854eE1a4a65D94 VITE_COLLATERAL_ADDRESS=0x84C5f600720532f71009dd2cBED168e766383eE8 VITE_FACTORY_DEPLOYMENT_BLOCK=120693575 VITE_API_BASE=/v1 VITE_WALLETCONNECT_PROJECT_ID=$(WALLETCONNECT_PROJECT_ID)
 
 api:
 	cd api && uv run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
